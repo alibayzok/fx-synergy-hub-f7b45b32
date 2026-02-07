@@ -5,6 +5,7 @@ import { Plus, MessageSquare, LogIn, MessageCircle } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { RoomCard } from '@/components/community/RoomCard';
 import { RoomChatPanel } from '@/components/community/RoomChatPanel';
+import { UsdtRoomPanel } from '@/components/community/UsdtRoomPanel';
 import { ThreadDetailPanel } from '@/components/community/ThreadDetailPanel';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -32,7 +33,7 @@ import {
 } from '@/components/ui/select';
 
 type Tab = 'rooms' | 'threads';
-type ViewMode = 'list' | 'chat' | 'thread';
+type ViewMode = 'list' | 'chat' | 'thread' | 'usdt';
 
 // Static rooms data
 const roomsData = [
@@ -152,7 +153,12 @@ const CommunityPage = () => {
       return;
     }
     setSelectedRoom(room);
-    setViewMode('chat');
+    // For USDT room, use special panel
+    if (room.id === 'room-usdt') {
+      setViewMode('usdt');
+    } else {
+      setViewMode('chat');
+    }
   };
 
   const handleThreadClick = (thread: Thread) => {
@@ -226,6 +232,15 @@ const CommunityPage = () => {
             {t('auth.login')}
           </Button>
         </div>
+      </AppLayout>
+    );
+  }
+
+  // Show USDT panel
+  if (viewMode === 'usdt') {
+    return (
+      <AppLayout>
+        <UsdtRoomPanel onBack={handleBackToList} />
       </AppLayout>
     );
   }
