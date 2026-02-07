@@ -76,10 +76,24 @@
     "help": "مساعدة",
     "bestAnswer": "أفضل إجابة",
     "pin": "تثبيت",
-    "lock": "قفل"
+    "lock": "قفل",
+    "noThreads": "لا توجد مواضيع بعد",
+    "createFirst": "أنشئ أول موضوع",
+    "threadCreated": "تم إنشاء الموضوع بنجاح",
+    "fillAllFields": "يرجى ملء جميع الحقول",
+    "threadTitle": "عنوان الموضوع",
+    "threadContent": "محتوى الموضوع",
+    "titlePlaceholder": "ما هو سؤالك أو موضوعك؟",
+    "contentPlaceholder": "اكتب تفاصيل موضوعك هنا...",
+    "selectRoom": "اختر الغرفة",
+    "tag": "التصنيف",
+    "createThread": "إنشاء الموضوع",
+    "vipOnly": "للأعضاء VIP فقط",
+    "upgradeToAccess": "قم بالترقية للوصول إلى هذا المحتوى"
   },
   "markets": {
     "title": "الأسواق",
+    "all": "الكل",
     "forex": "فوركس",
     "metals": "المعادن",
     "crypto": "العملات الرقمية",
@@ -92,7 +106,9 @@
     "addToWatchlist": "إضافة للمتابعة",
     "removeFromWatchlist": "إزالة من المتابعة",
     "createAlert": "إنشاء تنبيه",
-    "lastUpdate": "آخر تحديث"
+    "lastUpdate": "آخر تحديث",
+    "noWatchlist": "لا توجد رموز في قائمة المتابعة",
+    "noSymbols": "لم يتم العثور على رموز"
   },
   "services": {
     "title": "الخدمات",
@@ -108,12 +124,27 @@
     "network": "الشبكة",
     "status": "الحالة",
     "pending": "قيد المراجعة",
+    "in_progress": "قيد التنفيذ",
     "approved": "تمت الموافقة",
     "rejected": "مرفوض",
     "completed": "مكتمل",
     "newRequest": "طلب جديد",
     "myRequests": "طلباتي",
-    "uploadProof": "رفع إثبات"
+    "uploadProof": "رفع إثبات",
+    "noRequests": "لا توجد طلبات بعد",
+    "brokerRequest": "طلب خدمة الوسيط",
+    "usdtRequest": "طلب خدمة USDT",
+    "requestType": "نوع الطلب",
+    "selectType": "اختر نوع الطلب",
+    "submitRequest": "إرسال الطلب",
+    "requestSubmitted": "تم إرسال الطلب بنجاح",
+    "fillAllFields": "يرجى ملء جميع الحقول",
+    "broker_deposit": "إيداع الوسيط",
+    "broker_withdraw": "سحب من الوسيط",
+    "usdt_buy": "شراء USDT",
+    "usdt_sell": "بيع USDT",
+    "usdtBuy": "شراء USDT",
+    "usdtSell": "بيع USDT"
   },
   "profile": {
     "title": "الملف الشخصي",
@@ -178,7 +209,9 @@
     "tradeUpdate": "تحديث صفقة",
     "priceAlert": "تنبيه سعر",
     "mention": "إشارة",
-    "reply": "رد جديد"
+    "reply": "رد جديد",
+    "enabled": "تم تفعيل الإشعارات",
+    "disabled": "تم إيقاف الإشعارات"
   },
   "common": {
     "loading": "جاري التحميل...",

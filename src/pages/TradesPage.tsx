@@ -1,54 +1,65 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, Crown } from 'lucide-react';
+import { Filter, Crown, LogIn } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { TradeCard } from '@/components/trades/TradeCard';
-import { mockTrades, currentUser } from '@/data/mockData';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { TradeStatus, TradeVisibility } from '@/types';
+import { useAuth } from '@/hooks/useAuth';
+import { useTrades } from '@/hooks/useTrades';
+import { useNavigate } from 'react-router-dom';
 
 type FilterTab = 'all' | 'running' | 'pending' | 'closed';
 type VisibilityFilter = 'all' | 'free' | 'vip';
 
 const TradesPage = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
   const [visibilityFilter, setVisibilityFilter] = useState<VisibilityFilter>('all');
 
-  const isVip = currentUser.role === 'vip' || currentUser.role === 'admin';
+  const { user, isVip, isAdmin, loading: authLoading } = useAuth();
+  const { trades, loading: tradesLoading, filterTrades, getStats } = useTrades();
 
-  const filterTrades = () => {
-    let filtered = mockTrades;
-
-    // Filter by visibility (VIP access)
-    if (!isVip) {
-      filtered = filtered.filter(t => t.visibility === 'free');
-    } else if (visibilityFilter !== 'all') {
-      filtered = filtered.filter(t => t.visibility === visibilityFilter);
-    }
-
-    // Filter by status
-    if (activeTab === 'running') {
-      filtered = filtered.filter(t => t.status === 'running');
-    } else if (activeTab === 'pending') {
-      filtered = filtered.filter(t => t.status === 'pending');
-    } else if (activeTab === 'closed') {
-      filtered = filtered.filter(t => ['tp_hit', 'sl_hit', 'cancelled', 'closed_manual'].includes(t.status));
-    }
-
-    return filtered;
-  };
-
-  const filteredTrades = filterTrades();
+  const stats = getStats();
+  const isVipUser = isVip || isAdmin;
+  const filteredTrades = filterTrades(activeTab, visibilityFilter);
 
   const tabs: { key: FilterTab; count: number }[] = [
-    { key: 'all', count: mockTrades.length },
-    { key: 'running', count: mockTrades.filter(t => t.status === 'running').length },
-    { key: 'pending', count: mockTrades.filter(t => t.status === 'pending').length },
-    { key: 'closed', count: mockTrades.filter(t => ['tp_hit', 'sl_hit', 'cancelled', 'closed_manual'].includes(t.status)).length },
+    { key: 'all', count: stats.totalTrades },
+    { key: 'running', count: stats.runningCount },
+    { key: 'pending', count: stats.pendingCount },
+    { key: 'closed', count: stats.closedCount },
   ];
+
+  // Show login prompt if not authenticated
+  if (!authLoading && !user) {
+    return (
+      <AppLayout>
+        <header className="sticky top-0 z-40 glass-card border-b border-border/30">
+          <div className="px-4 py-3">
+            <h1 className="text-xl font-bold text-foreground">{t('trades.title')}</h1>
+          </div>
+        </header>
+
+        <div className="flex-1 flex flex-col items-center justify-center p-8 space-y-6">
+          <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center">
+            <LogIn className="w-10 h-10 text-primary" />
+          </div>
+          <div className="text-center space-y-2">
+            <h2 className="text-xl font-bold text-foreground">{t('auth.login')}</h2>
+            <p className="text-muted-foreground">{t('auth.loginPrompt')}</p>
+          </div>
+          <Button onClick={() => navigate('/auth')} className="gap-2">
+            <LogIn className="w-4 h-4" />
+            {t('auth.login')}
+          </Button>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
@@ -86,7 +97,7 @@ const TradesPage = () => {
         </div>
 
         {/* VIP Filter (only for VIP users) */}
-        {isVip && (
+        {isVipUser && (
           <div className="flex gap-2 px-4 pb-3">
             {(['all', 'free', 'vip'] as VisibilityFilter[]).map((filter) => (
               <button
@@ -111,29 +122,41 @@ const TradesPage = () => {
 
       {/* Trades List */}
       <div className="px-4 py-4 space-y-3">
-        <AnimatePresence mode="popLayout">
-          {filteredTrades.length > 0 ? (
-            filteredTrades.map((trade, index) => (
+        {tradesLoading ? (
+          <>
+            <Skeleton className="h-48 w-full rounded-xl" />
+            <Skeleton className="h-48 w-full rounded-xl" />
+            <Skeleton className="h-48 w-full rounded-xl" />
+          </>
+        ) : (
+          <AnimatePresence mode="popLayout">
+            {filteredTrades.length > 0 ? (
+              filteredTrades.map((trade, index) => (
+                <motion.div
+                  key={trade.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ delay: index * 0.05 }}
+                >
+                  <TradeCard trade={{
+                    ...trade,
+                    created_by: trade.created_by || 'admin',
+                    followers_count: trade.followers_count || 0
+                  }} />
+                </motion.div>
+              ))
+            ) : (
               <motion.div
-                key={trade.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ delay: index * 0.05 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex flex-col items-center justify-center py-12 text-center"
               >
-                <TradeCard trade={trade} />
+                <p className="text-muted-foreground">{t('admin.noTrades')}</p>
               </motion.div>
-            ))
-          ) : (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex flex-col items-center justify-center py-12 text-center"
-            >
-              <p className="text-muted-foreground">{t('common.loading')}</p>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            )}
+          </AnimatePresence>
+        )}
       </div>
     </AppLayout>
   );
