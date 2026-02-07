@@ -10,12 +10,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
-type AuthMode = 'login' | 'register';
+type AuthMode = 'login' | 'register' | 'forgot';
 
 const AuthPage = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, resetPassword } = useAuth();
   const { toast } = useToast();
   const isRTL = i18n.language === 'ar';
 
@@ -42,7 +42,7 @@ const AuthPage = () => {
         } else {
           navigate('/');
         }
-      } else {
+      } else if (mode === 'register') {
         const { error } = await signUp(email, password, displayName);
         if (error) {
           toast({
@@ -55,6 +55,21 @@ const AuthPage = () => {
             title: t('auth.checkEmail'),
             description: t('auth.verifyEmail')
           });
+        }
+      } else if (mode === 'forgot') {
+        const { error } = await resetPassword(email);
+        if (error) {
+          toast({
+            title: t('common.error'),
+            description: error.message,
+            variant: 'destructive'
+          });
+        } else {
+          toast({
+            title: t('auth.checkEmail'),
+            description: t('auth.resetEmailSent')
+          });
+          setMode('login');
         }
       }
     } finally {
@@ -89,7 +104,7 @@ const AuthPage = () => {
               {t('app.name')}
             </h1>
             <p className="text-muted-foreground">
-              {mode === 'login' ? t('auth.login') : t('auth.register')}
+              {mode === 'login' ? t('auth.login') : mode === 'register' ? t('auth.register') : t('auth.forgotPassword')}
             </p>
           </div>
 
@@ -128,48 +143,77 @@ const AuthPage = () => {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">{t('auth.password')}</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground rtl:left-auto rtl:right-3" />
-                <Input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 pr-10 rtl:pl-10 rtl:pr-10"
-                  placeholder="••••••••"
-                  required
-                  minLength={6}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground rtl:right-auto rtl:left-3"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+            {mode !== 'forgot' && (
+              <div className="space-y-2">
+                <Label htmlFor="password">{t('auth.password')}</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground rtl:left-auto rtl:right-3" />
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-10 pr-10 rtl:pl-10 rtl:pr-10"
+                    placeholder="••••••••"
+                    required
+                    minLength={6}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground rtl:right-auto rtl:left-3"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             <Button
               type="submit"
               className="w-full"
               disabled={loading}
             >
-              {loading ? t('common.loading') : (mode === 'login' ? t('auth.login') : t('auth.register'))}
+              {loading ? t('common.loading') : (
+                mode === 'login' ? t('auth.login') : 
+                mode === 'register' ? t('auth.register') : 
+                t('auth.sendResetLink')
+              )}
             </Button>
           </form>
 
+          {/* Forgot Password Link (only in login mode) */}
+          {mode === 'login' && (
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => setMode('forgot')}
+                className="text-sm text-muted-foreground hover:text-primary hover:underline"
+              >
+                {t('auth.forgotPassword')}
+              </button>
+            </div>
+          )}
+
           {/* Toggle Mode */}
           <div className="text-center">
-            <button
-              type="button"
-              onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
-              className="text-sm text-primary hover:underline"
-            >
-              {mode === 'login' ? t('auth.noAccount') : t('auth.hasAccount')}
-            </button>
+            {mode === 'forgot' ? (
+              <button
+                type="button"
+                onClick={() => setMode('login')}
+                className="text-sm text-primary hover:underline"
+              >
+                {t('auth.backToLogin')}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
+                className="text-sm text-primary hover:underline"
+              >
+                {mode === 'login' ? t('auth.noAccount') : t('auth.hasAccount')}
+              </button>
+            )}
           </div>
         </motion.div>
       </div>
