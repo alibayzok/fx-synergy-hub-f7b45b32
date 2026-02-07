@@ -212,8 +212,11 @@
   },
   "admin": {
     "title": "Admin Panel",
+    "dashboard": "Overview",
     "trades": "Trades",
     "users": "Users",
+    "analytics": "Analytics",
+    "settings": "Settings",
     "manageTrades": "Manage Trades",
     "manageUsers": "Manage Users",
     "newTrade": "New Trade",
@@ -230,6 +233,22 @@
     "removeVip": "Remove VIP",
     "vipAdded": "VIP membership added",
     "vipRemoved": "VIP membership removed",
-    "unnamed": "Unnamed User"
+    "unnamed": "Unnamed User",
+    "stats": {
+      "totalUsers": "Total Users",
+      "vipUsers": "VIP Members",
+      "totalTrades": "Total Trades",
+      "activeTrades": "Active Trades",
+      "winningTrades": "Winning Trades",
+      "losingTrades": "Losing Trades",
+      "winRate": "Win Rate",
+      "closedTrades": "Closed Trades"
+    },
+    "activity": {
+      "title": "Recent Activity",
+      "newTrade": "New Trade",
+      "newUser": "New User",
+      "noActivity": "No recent activity"
+    }
   }
 }

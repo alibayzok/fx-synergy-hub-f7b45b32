@@ -212,8 +212,11 @@
   },
   "admin": {
     "title": "لوحة التحكم",
+    "dashboard": "نظرة عامة",
     "trades": "الصفقات",
     "users": "المستخدمون",
+    "analytics": "التحليلات",
+    "settings": "الإعدادات",
     "manageTrades": "إدارة الصفقات",
     "manageUsers": "إدارة المستخدمين",
     "newTrade": "صفقة جديدة",
@@ -230,6 +233,22 @@
     "removeVip": "إزالة VIP",
     "vipAdded": "تمت إضافة عضوية VIP",
     "vipRemoved": "تمت إزالة عضوية VIP",
-    "unnamed": "مستخدم بدون اسم"
+    "unnamed": "مستخدم بدون اسم",
+    "stats": {
+      "totalUsers": "إجمالي المستخدمين",
+      "vipUsers": "أعضاء VIP",
+      "totalTrades": "إجمالي الصفقات",
+      "activeTrades": "صفقات نشطة",
+      "winningTrades": "صفقات رابحة",
+      "losingTrades": "صفقات خاسرة",
+      "winRate": "نسبة الفوز",
+      "closedTrades": "صفقات مغلقة"
+    },
+    "activity": {
+      "title": "النشاط الأخير",
+      "newTrade": "صفقة جديدة",
+      "newUser": "مستخدم جديد",
+      "noActivity": "لا يوجد نشاط حديث"
+    }
   }
 }
