@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Bell, Check, Trash2, X, MessageSquare, TrendingUp, AlertCircle } from 'lucide-react';
+import { Bell, Check, X, MessageSquare, TrendingUp, AlertCircle, UserPlus, Mail } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNotifications, UserNotification } from '@/hooks/useNotifications';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,9 @@ import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useState } from 'react';
 
 export const NotificationsPanel = () => {
   const { t, i18n } = useTranslation();
@@ -26,9 +29,11 @@ export const NotificationsPanel = () => {
     loading,
     markAsRead,
     markAllAsRead,
-    deleteNotification
+    deleteNotification,
+    refetch
   } = useNotifications();
   const isArabic = i18n.language === 'ar';
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const formatTime = (dateStr: string) => {
     return formatDistanceToNow(new Date(dateStr), {
@@ -46,8 +51,45 @@ export const NotificationsPanel = () => {
         return TrendingUp;
       case 'alert':
         return AlertCircle;
+      case 'friend_request':
+      case 'friend_accepted':
+        return UserPlus;
+      case 'message':
+        return Mail;
       default:
         return Bell;
+    }
+  };
+
+  const handleFriendRequestAction = async (
+    e: React.MouseEvent,
+    notification: UserNotification,
+    action: 'accept' | 'reject'
+  ) => {
+    e.stopPropagation();
+    const data = notification.data as Record<string, string>;
+    const requestId = data?.request_id;
+    
+    if (!requestId) return;
+    
+    setActionLoading(`${notification.id}-${action}`);
+    
+    try {
+      const { error } = await supabase
+        .from('friend_requests')
+        .update({ status: action === 'accept' ? 'accepted' : 'rejected' })
+        .eq('id', requestId);
+      
+      if (error) throw error;
+      
+      toast.success(action === 'accept' ? t('social.friendRequestAccepted') : t('social.friendRequestRejected'));
+      markAsRead(notification.id);
+      refetch();
+    } catch (err) {
+      console.error('Error handling friend request:', err);
+      toast.error(t('common.error'));
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -62,7 +104,60 @@ export const NotificationsPanel = () => {
       navigate('/community');
     } else if (notification.type === 'trade' && data?.trade_id) {
       navigate('/trades');
+    } else if (notification.type === 'message' && data?.conversation_id) {
+      navigate('/messages');
+    } else if ((notification.type === 'friend_request' || notification.type === 'friend_accepted') && data?.sender_id) {
+      navigate(`/user/${data.sender_id}`);
+    } else if (notification.type === 'friend_accepted' && data?.friend_id) {
+      navigate(`/user/${data.friend_id}`);
     }
+  };
+
+  const renderNotificationActions = (notification: UserNotification) => {
+    const data = notification.data as Record<string, string>;
+    
+    // Friend request actions
+    if (notification.type === 'friend_request' && data?.request_id) {
+      // Check if already handled
+      return (
+        <div className="flex gap-2 mt-2">
+          <Button
+            size="sm"
+            variant="default"
+            className="h-7 text-xs"
+            disabled={actionLoading !== null}
+            onClick={(e) => handleFriendRequestAction(e, notification, 'accept')}
+          >
+            {actionLoading === `${notification.id}-accept` ? (
+              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white" />
+            ) : (
+              <>
+                <Check className="w-3 h-3 me-1" />
+                {t('social.accept')}
+              </>
+            )}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs"
+            disabled={actionLoading !== null}
+            onClick={(e) => handleFriendRequestAction(e, notification, 'reject')}
+          >
+            {actionLoading === `${notification.id}-reject` ? (
+              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current" />
+            ) : (
+              <>
+                <X className="w-3 h-3 me-1" />
+                {t('social.reject')}
+              </>
+            )}
+          </Button>
+        </div>
+      );
+    }
+    
+    return null;
   };
 
   return (
@@ -176,6 +271,8 @@ export const NotificationsPanel = () => {
                           <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
                             {notification.message}
                           </p>
+
+                          {renderNotificationActions(notification)}
 
                           <span className="text-[10px] text-muted-foreground/70 mt-1 block">
                             {formatTime(notification.created_at)}

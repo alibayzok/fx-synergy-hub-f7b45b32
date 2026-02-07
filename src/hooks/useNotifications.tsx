@@ -133,6 +133,7 @@ export const useNotifications = () => {
     fetchNotifications,
     markAsRead,
     markAllAsRead,
-    deleteNotification
+    deleteNotification,
+    refetch: fetchNotifications
   };
 };
