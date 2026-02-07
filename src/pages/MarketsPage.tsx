@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { Search, Star } from 'lucide-react';
+import { Search, Star, RefreshCw } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { MarketCard } from '@/components/market/MarketCard';
-import { mockMarketSymbols, currentUser } from '@/data/mockData';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { AssetType } from '@/types';
+import { useMarketData } from '@/hooks/useMarketData';
 
 type FilterTab = 'all' | 'watchlist' | 'forex' | 'metals' | 'crypto';
 
@@ -15,38 +15,16 @@ const MarketsPage = () => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [watchlist, setWatchlist] = useState<string[]>(currentUser.watchlist);
 
-  const filterSymbols = () => {
-    let filtered = mockMarketSymbols;
+  const { 
+    symbols, 
+    watchlist, 
+    toggleWatchlist, 
+    filterSymbols,
+    refreshData 
+  } = useMarketData();
 
-    // Search
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        s => s.symbol.toLowerCase().includes(query) || s.name.toLowerCase().includes(query)
-      );
-    }
-
-    // Filter by tab
-    if (activeTab === 'watchlist') {
-      filtered = filtered.filter(s => watchlist.includes(s.symbol));
-    } else if (activeTab !== 'all') {
-      filtered = filtered.filter(s => s.asset_type === activeTab);
-    }
-
-    return filtered;
-  };
-
-  const filteredSymbols = filterSymbols();
-
-  const toggleWatchlist = (symbol: string) => {
-    setWatchlist(prev => 
-      prev.includes(symbol) 
-        ? prev.filter(s => s !== symbol)
-        : [...prev, symbol]
-    );
-  };
+  const filteredSymbols = filterSymbols(activeTab, searchQuery);
 
   const tabs: { key: FilterTab; icon?: typeof Star }[] = [
     { key: 'all' },
@@ -61,7 +39,17 @@ const MarketsPage = () => {
       {/* Header */}
       <header className="sticky top-0 z-40 glass-card border-b border-border/30">
         <div className="px-4 py-3">
-          <h1 className="text-xl font-bold text-foreground mb-3">{t('markets.title')}</h1>
+          <div className="flex items-center justify-between mb-3">
+            <h1 className="text-xl font-bold text-foreground">{t('markets.title')}</h1>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={refreshData}
+              className="h-9 gap-2"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+          </div>
           
           {/* Search */}
           <div className="relative">
@@ -87,9 +75,7 @@ const MarketsPage = () => {
                 className={cn(
                   "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap",
                   activeTab === tab.key
-                    ? tab.key === 'watchlist' 
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-primary text-primary-foreground"
+                    ? "bg-primary text-primary-foreground"
                     : "bg-muted/50 text-muted-foreground hover:bg-muted"
                 )}
               >
@@ -123,8 +109,8 @@ const MarketsPage = () => {
             <Star className="w-12 h-12 text-muted-foreground/30 mb-3" />
             <p className="text-muted-foreground">
               {activeTab === 'watchlist' 
-                ? 'No symbols in your watchlist' 
-                : 'No symbols found'}
+                ? t('markets.noWatchlist')
+                : t('markets.noSymbols')}
             </p>
           </div>
         )}

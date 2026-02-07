@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -13,26 +13,71 @@ import {
   LogIn,
   ChevronRight,
   Check,
-  Shield
+  Shield,
+  Edit,
+  X
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from '@/hooks/useProfile';
+import { useMarketData } from '@/hooks/useMarketData';
+import { useTrades } from '@/hooks/useTrades';
+import { countries } from '@/data/countries';
+import { useToast } from '@/hooks/use-toast';
 
 const ProfilePage = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { user, isAdmin, isVip, signOut, loading } = useAuth();
+  const { profile, updateProfile } = useProfile();
+  const { watchlist } = useMarketData();
+  const { trades } = useTrades();
+  
   const [showLanguageDialog, setShowLanguageDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showWatchlistDialog, setShowWatchlistDialog] = useState(false);
+  const [showFollowedDialog, setShowFollowedDialog] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  
+  const [editData, setEditData] = useState({
+    display_name: '',
+    first_name: '',
+    last_name: '',
+    country: '',
+    phone: ''
+  });
+
   const isRTL = i18n.language === 'ar';
+
+  useEffect(() => {
+    if (profile) {
+      setEditData({
+        display_name: profile.display_name || '',
+        first_name: profile.first_name || '',
+        last_name: profile.last_name || '',
+        country: profile.country || '',
+        phone: profile.phone || ''
+      });
+    }
+  }, [profile]);
 
   const changeLanguage = (lng: 'ar' | 'en') => {
     i18n.changeLanguage(lng);
@@ -44,11 +89,27 @@ const ProfilePage = () => {
     navigate('/');
   };
 
+  const handleSaveProfile = async () => {
+    const { error } = await updateProfile(editData);
+    if (!error) {
+      setShowEditDialog(false);
+    }
+  };
+
+  const toggleNotifications = () => {
+    setNotificationsEnabled(!notificationsEnabled);
+    toast({
+      title: notificationsEnabled 
+        ? t('notifications.disabled') 
+        : t('notifications.enabled')
+    });
+  };
+
   const menuItems = [
     { icon: Globe, label: 'profile.language', onClick: () => setShowLanguageDialog(true), value: i18n.language === 'ar' ? 'العربية' : 'English' },
-    { icon: Bell, label: 'profile.notifications', onClick: () => {} },
-    { icon: Star, label: 'profile.watchlist', onClick: () => {}, count: 0 },
-    { icon: TrendingUp, label: 'profile.followedTrades', onClick: () => {}, count: 0 },
+    { icon: Bell, label: 'profile.notifications', onClick: toggleNotifications, value: notificationsEnabled ? '✓' : '✗' },
+    { icon: Star, label: 'profile.watchlist', onClick: () => setShowWatchlistDialog(true), count: watchlist.length },
+    { icon: TrendingUp, label: 'profile.followedTrades', onClick: () => setShowFollowedDialog(true), count: trades.length },
   ];
 
   // Show login prompt if not authenticated
@@ -119,7 +180,7 @@ const ProfilePage = () => {
       <header className="sticky top-0 z-40 glass-card border-b border-border/30">
         <div className="flex items-center justify-between px-4 py-3">
           <h1 className="text-xl font-bold text-foreground">{t('profile.title')}</h1>
-          <Button variant="ghost" size="sm" className="h-9">
+          <Button variant="ghost" size="sm" className="h-9" onClick={() => setShowEditDialog(true)}>
             <Settings className="w-4 h-4" />
           </Button>
         </div>
@@ -145,12 +206,12 @@ const ProfilePage = () => {
               isAdmin ? "bg-primary/20 text-primary" :
               isVip ? "bg-vip/20 text-vip" : "bg-primary/20 text-primary"
             )}>
-              {user?.email?.charAt(0).toUpperCase() || 'U'}
+              {profile?.display_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-bold text-foreground">
-                  {user?.user_metadata?.display_name || user?.email?.split('@')[0]}
+                  {profile?.display_name || user?.user_metadata?.display_name || user?.email?.split('@')[0]}
                 </h2>
                 {isAdmin && (
                   <Badge className="bg-primary text-primary-foreground gap-1">
@@ -166,7 +227,15 @@ const ProfilePage = () => {
                 )}
               </div>
               <p className="text-sm text-muted-foreground">{user?.email}</p>
+              {profile?.country && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {countries.find(c => c.code === profile.country)?.name[i18n.language === 'ar' ? 'ar' : 'en'] || profile.country}
+                </p>
+              )}
             </div>
+            <Button variant="ghost" size="icon" onClick={() => setShowEditDialog(true)}>
+              <Edit className="w-4 h-4" />
+            </Button>
           </div>
 
           {!isVip && !isAdmin && (
@@ -283,6 +352,139 @@ const ProfilePage = () => {
               <span className="font-medium">English</span>
               {i18n.language === 'en' && <Check className="w-4 h-4 text-primary" />}
             </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Profile Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>{t('profile.editProfile')}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{t('auth.displayName')}</label>
+              <Input
+                value={editData.display_name}
+                onChange={(e) => setEditData(prev => ({ ...prev, display_name: e.target.value }))}
+                placeholder={t('auth.displayNamePlaceholder')}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{t('auth.firstName')}</label>
+                <Input
+                  value={editData.first_name}
+                  onChange={(e) => setEditData(prev => ({ ...prev, first_name: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{t('auth.lastName')}</label>
+                <Input
+                  value={editData.last_name}
+                  onChange={(e) => setEditData(prev => ({ ...prev, last_name: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{t('auth.country')}</label>
+              <Select
+                value={editData.country}
+                onValueChange={(value) => setEditData(prev => ({ ...prev, country: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t('auth.selectCountry')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {countries.map(country => (
+                    <SelectItem key={country.code} value={country.code}>
+                      {i18n.language === 'ar' ? country.name.ar : country.name.en}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{t('auth.phone')}</label>
+              <Input
+                value={editData.phone}
+                onChange={(e) => setEditData(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder={t('auth.phonePlaceholder')}
+                dir="ltr"
+              />
+            </div>
+            <Button onClick={handleSaveProfile} className="w-full">
+              {t('common.save')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Watchlist Dialog */}
+      <Dialog open={showWatchlistDialog} onOpenChange={setShowWatchlistDialog}>
+        <DialogContent className="sm:max-w-[350px]">
+          <DialogHeader>
+            <DialogTitle>{t('profile.watchlist')}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 pt-2">
+            {watchlist.length > 0 ? (
+              watchlist.map(symbol => (
+                <div key={symbol} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <span className="font-medium">{symbol}</span>
+                  <Star className="w-4 h-4 text-primary fill-primary" />
+                </div>
+              ))
+            ) : (
+              <p className="text-center text-muted-foreground py-4">
+                {t('markets.noWatchlist')}
+              </p>
+            )}
+            <Button 
+              variant="outline" 
+              className="w-full mt-2"
+              onClick={() => { setShowWatchlistDialog(false); navigate('/markets'); }}
+            >
+              {t('markets.addToWatchlist')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Followed Trades Dialog */}
+      <Dialog open={showFollowedDialog} onOpenChange={setShowFollowedDialog}>
+        <DialogContent className="sm:max-w-[350px]">
+          <DialogHeader>
+            <DialogTitle>{t('profile.followedTrades')}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 pt-2 max-h-[300px] overflow-y-auto">
+            {trades.length > 0 ? (
+              trades.slice(0, 5).map(trade => (
+                <div key={trade.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div>
+                    <span className="font-medium">{trade.symbol}</span>
+                    <span className={cn(
+                      "text-xs ms-2",
+                      trade.direction === 'buy' ? "text-profit" : "text-loss"
+                    )}>
+                      {trade.direction.toUpperCase()}
+                    </span>
+                  </div>
+                  <Badge variant="outline" className="text-xs">{trade.status}</Badge>
+                </div>
+              ))
+            ) : (
+              <p className="text-center text-muted-foreground py-4">
+                {t('admin.noTrades')}
+              </p>
+            )}
+            <Button 
+              variant="outline" 
+              className="w-full mt-2"
+              onClick={() => { setShowFollowedDialog(false); navigate('/trades'); }}
+            >
+              {t('home.viewAll')}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
