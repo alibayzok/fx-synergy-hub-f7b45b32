@@ -10,7 +10,9 @@ import {
   Plus,
   ArrowLeft,
   Trash2,
-  Edit
+  Edit,
+  LayoutDashboard,
+  BarChart3
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +23,8 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { TradeFormDialog } from '@/components/admin/TradeFormDialog';
 import { UserManagement } from '@/components/admin/UserManagement';
+import { DashboardStats } from '@/components/admin/DashboardStats';
+import { RecentActivity } from '@/components/admin/RecentActivity';
 
 interface Trade {
   id: string;
@@ -127,17 +131,34 @@ const AdminPage = () => {
       </header>
 
       <div className="p-4">
-        <Tabs defaultValue="trades" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs defaultValue="dashboard" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="dashboard" className="gap-2">
+              <LayoutDashboard className="w-4 h-4" />
+              <span className="hidden sm:inline">{t('admin.dashboard')}</span>
+            </TabsTrigger>
             <TabsTrigger value="trades" className="gap-2">
               <TrendingUp className="w-4 h-4" />
-              {t('admin.trades')}
+              <span className="hidden sm:inline">{t('admin.trades')}</span>
             </TabsTrigger>
             <TabsTrigger value="users" className="gap-2">
               <Users className="w-4 h-4" />
-              {t('admin.users')}
+              <span className="hidden sm:inline">{t('admin.users')}</span>
             </TabsTrigger>
           </TabsList>
+
+          {/* Dashboard Tab */}
+          <TabsContent value="dashboard" className="space-y-6">
+            <DashboardStats />
+            
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-primary" />
+                {t('admin.activity.title')}
+              </h3>
+              <RecentActivity />
+            </div>
+          </TabsContent>
 
           {/* Trades Tab */}
           <TabsContent value="trades" className="space-y-4">
