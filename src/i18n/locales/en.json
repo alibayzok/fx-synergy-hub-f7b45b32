@@ -75,6 +75,7 @@
     "alert": "Alert",
     "help": "Help",
     "bestAnswer": "Best Answer",
+    "hasBestAnswer": "Has best answer",
     "pin": "Pin",
     "lock": "Lock",
     "noThreads": "No threads yet",
@@ -89,7 +90,18 @@
     "tag": "Tag",
     "createThread": "Create Thread",
     "vipOnly": "VIP Members Only",
-    "upgradeToAccess": "Upgrade to access this content"
+    "upgradeToAccess": "Upgrade to access this content",
+    "messages": "messages",
+    "noMessages": "No messages yet",
+    "startConversation": "Start the conversation!",
+    "typeMessage": "Type your message...",
+    "noReplies": "No replies yet, be the first to reply!",
+    "writeReply": "Write your reply...",
+    "threadLocked": "This thread is locked",
+    "markBest": "Mark as best",
+    "backToThreads": "Back to threads",
+    "chatHint": "Live Chat",
+    "chatHintDesc": "Tap any room to enter and chat with members"
   },
   "markets": {
     "title": "Markets",

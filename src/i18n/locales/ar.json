@@ -75,6 +75,7 @@
     "alert": "تنبيه",
     "help": "مساعدة",
     "bestAnswer": "أفضل إجابة",
+    "hasBestAnswer": "يحتوي على أفضل إجابة",
     "pin": "تثبيت",
     "lock": "قفل",
     "noThreads": "لا توجد مواضيع بعد",
@@ -89,7 +90,18 @@
     "tag": "التصنيف",
     "createThread": "إنشاء الموضوع",
     "vipOnly": "للأعضاء VIP فقط",
-    "upgradeToAccess": "قم بالترقية للوصول إلى هذا المحتوى"
+    "upgradeToAccess": "قم بالترقية للوصول إلى هذا المحتوى",
+    "messages": "رسالة",
+    "noMessages": "لا توجد رسائل بعد",
+    "startConversation": "ابدأ المحادثة الآن!",
+    "typeMessage": "اكتب رسالتك...",
+    "noReplies": "لا توجد ردود بعد، كن أول من يرد!",
+    "writeReply": "اكتب ردك...",
+    "threadLocked": "هذا الموضوع مغلق",
+    "markBest": "أفضل إجابة",
+    "backToThreads": "العودة للمواضيع",
+    "chatHint": "دردشة مباشرة",
+    "chatHintDesc": "اضغط على أي غرفة للدخول والمحادثة مع الأعضاء"
   },
   "markets": {
     "title": "الأسواق",
