@@ -168,7 +168,8 @@
     "adminNotes": "Admin Notes",
     "brokerBenefit1": "Low spreads",
     "brokerBenefit2": "24/7 support",
-    "brokerBenefit3": "Welcome bonus"
+    "brokerBenefit3": "Welcome bonus",
+    "requestUpdated": "Your request has been updated"
   },
   "profile": {
     "title": "Profile",
@@ -274,6 +275,7 @@
     "dashboard": "Overview",
     "trades": "Trades",
     "users": "Users",
+    "requests": "Requests",
     "analytics": "Analytics",
     "settings": "Settings",
     "manageTrades": "Manage Trades",
@@ -293,6 +295,16 @@
     "vipAdded": "VIP membership added",
     "vipRemoved": "VIP membership removed",
     "unnamed": "Unnamed User",
+    "serviceRequests": "Service Requests",
+    "noServiceRequests": "No service requests",
+    "requestDetails": "Request Details",
+    "user": "User",
+    "createdAt": "Created At",
+    "adminReply": "Admin Reply",
+    "adminReplyPlaceholder": "Write your reply to the user...",
+    "updateRequest": "Update Request",
+    "requestUpdated": "Request Updated",
+    "requestUpdatedDesc": "User has been notified",
     "stats": {
       "totalUsers": "Total Users",
       "vipUsers": "VIP Members",
@@ -316,7 +328,8 @@
       "clearAll": "Clear all",
       "newUser": "New User",
       "milestone": "New Milestone",
-      "tradeCrated": "New Trade"
+      "tradeCrated": "New Trade",
+      "serviceRequest": "Service Request"
     }
   }
 }
