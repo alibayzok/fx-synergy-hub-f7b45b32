@@ -12,7 +12,8 @@ import {
   Trash2,
   Edit,
   LayoutDashboard,
-  BarChart3
+  BarChart3,
+  ClipboardList
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -26,6 +27,7 @@ import { UserManagement } from '@/components/admin/UserManagement';
 import { DashboardStats } from '@/components/admin/DashboardStats';
 import { RecentActivity } from '@/components/admin/RecentActivity';
 import { AdminNotifications } from '@/components/admin/AdminNotifications';
+import { ServiceRequestsManagement } from '@/components/admin/ServiceRequestsManagement';
 
 interface Trade {
   id: string;
@@ -134,10 +136,14 @@ const AdminPage = () => {
 
       <div className="p-4">
         <Tabs defaultValue="dashboard" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="dashboard" className="gap-2">
               <LayoutDashboard className="w-4 h-4" />
               <span className="hidden sm:inline">{t('admin.dashboard')}</span>
+            </TabsTrigger>
+            <TabsTrigger value="requests" className="gap-2">
+              <ClipboardList className="w-4 h-4" />
+              <span className="hidden sm:inline">{t('admin.requests')}</span>
             </TabsTrigger>
             <TabsTrigger value="trades" className="gap-2">
               <TrendingUp className="w-4 h-4" />
@@ -160,6 +166,11 @@ const AdminPage = () => {
               </h3>
               <RecentActivity />
             </div>
+          </TabsContent>
+
+          {/* Service Requests Tab */}
+          <TabsContent value="requests">
+            <ServiceRequestsManagement />
           </TabsContent>
 
           {/* Trades Tab */}

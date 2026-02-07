@@ -168,7 +168,8 @@
     "adminNotes": "ملاحظات الإدارة",
     "brokerBenefit1": "سبريد منخفض",
     "brokerBenefit2": "دعم فني على مدار الساعة",
-    "brokerBenefit3": "بونص ترحيبي"
+    "brokerBenefit3": "بونص ترحيبي",
+    "requestUpdated": "تم تحديث طلبك"
   },
   "profile": {
     "title": "الملف الشخصي",
@@ -274,6 +275,7 @@
     "dashboard": "نظرة عامة",
     "trades": "الصفقات",
     "users": "المستخدمون",
+    "requests": "الطلبات",
     "analytics": "التحليلات",
     "settings": "الإعدادات",
     "manageTrades": "إدارة الصفقات",
@@ -293,6 +295,16 @@
     "vipAdded": "تمت إضافة عضوية VIP",
     "vipRemoved": "تمت إزالة عضوية VIP",
     "unnamed": "مستخدم بدون اسم",
+    "serviceRequests": "طلبات الخدمات",
+    "noServiceRequests": "لا توجد طلبات خدمات",
+    "requestDetails": "تفاصيل الطلب",
+    "user": "المستخدم",
+    "createdAt": "تاريخ الإنشاء",
+    "adminReply": "رد الإدارة",
+    "adminReplyPlaceholder": "اكتب ردك للمستخدم...",
+    "updateRequest": "تحديث الطلب",
+    "requestUpdated": "تم تحديث الطلب",
+    "requestUpdatedDesc": "تم إرسال إشعار للمستخدم",
     "stats": {
       "totalUsers": "إجمالي المستخدمين",
       "vipUsers": "أعضاء VIP",
@@ -316,7 +328,8 @@
       "clearAll": "حذف الكل",
       "newUser": "مستخدم جديد",
       "milestone": "إنجاز جديد",
-      "tradeCrated": "صفقة جديدة"
+      "tradeCrated": "صفقة جديدة",
+      "serviceRequest": "طلب خدمة"
     }
   }
 }
