@@ -307,6 +307,54 @@ export type Database = {
         }
         Relationships: []
       }
+      usdt_listings: {
+        Row: {
+          commission: number
+          contact_info: string
+          created_at: string
+          created_by: string
+          id: string
+          is_active: boolean
+          listing_type: Database["public"]["Enums"]["usdt_listing_type"]
+          max_amount: number | null
+          min_amount: number | null
+          notes: string | null
+          payment_methods: string[]
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          commission?: number
+          contact_info: string
+          created_at?: string
+          created_by: string
+          id?: string
+          is_active?: boolean
+          listing_type: Database["public"]["Enums"]["usdt_listing_type"]
+          max_amount?: number | null
+          min_amount?: number | null
+          notes?: string | null
+          payment_methods?: string[]
+          price: number
+          updated_at?: string
+        }
+        Update: {
+          commission?: number
+          contact_info?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean
+          listing_type?: Database["public"]["Enums"]["usdt_listing_type"]
+          max_amount?: number | null
+          min_amount?: number | null
+          notes?: string | null
+          payment_methods?: string[]
+          price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_notifications: {
         Row: {
           created_at: string | null
@@ -441,6 +489,7 @@ export type Database = {
         | "cancelled"
         | "closed_manual"
       trade_visibility: "free" | "vip"
+      usdt_listing_type: "buy" | "sell"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -582,6 +631,7 @@ export const Constants = {
         "closed_manual",
       ],
       trade_visibility: ["free", "vip"],
+      usdt_listing_type: ["buy", "sell"],
     },
   },
 } as const
