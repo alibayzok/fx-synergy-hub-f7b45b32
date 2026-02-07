@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { ArrowRight, ArrowLeft, Send, Heart, CheckCircle, MessageSquare, Trash2 } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Send, Heart, CheckCircle, MessageSquare, Trash2, Pencil, X, Check } from 'lucide-react';
 import { Thread, useReplies, Reply } from '@/hooks/useCommunity';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -29,7 +29,7 @@ const tagColors: Record<string, string> = {
 export const ThreadDetailPanel = ({ thread, onBack, onDelete }: ThreadDetailPanelProps) => {
   const { t, i18n } = useTranslation();
   const { user, isAdmin } = useAuth();
-  const { replies, loading, createReply, toggleLike, markBestAnswer } = useReplies(thread.id);
+  const { replies, loading, createReply, updateReply, deleteReply, toggleLike, markBestAnswer } = useReplies(thread.id);
   const [newReply, setNewReply] = useState('');
   const [sending, setSending] = useState(false);
   const isArabic = i18n.language === 'ar';
@@ -144,6 +144,8 @@ export const ThreadDetailPanel = ({ thread, onBack, onDelete }: ThreadDetailPane
                   currentUserId={user?.id}
                   onLike={() => toggleLike(reply.id, reply.user_liked || false)}
                   onMarkBest={() => markBestAnswer(reply.id)}
+                  onEdit={(content) => updateReply(reply.id, content)}
+                  onDelete={() => deleteReply(reply.id)}
                   formatTime={formatTime}
                 />
               ))}
@@ -191,6 +193,8 @@ interface ReplyCardProps {
   currentUserId?: string;
   onLike: () => void;
   onMarkBest: () => void;
+  onEdit: (content: string) => Promise<boolean>;
+  onDelete: () => Promise<boolean>;
   formatTime: (date: string) => string;
 }
 
@@ -201,11 +205,40 @@ const ReplyCard = ({
   currentUserId,
   onLike,
   onMarkBest,
+  onEdit,
+  onDelete,
   formatTime
 }: ReplyCardProps) => {
   const { t } = useTranslation();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(reply.content);
+  const [saving, setSaving] = useState(false);
+  
   const authorName = reply.author?.display_name || reply.author?.username || 'مستخدم';
   const canMarkBest = (isThreadOwner || isAdmin) && !reply.is_best_answer;
+  const isOwner = reply.user_id === currentUserId;
+  const canModify = isOwner || isAdmin;
+
+  const handleSaveEdit = async () => {
+    if (!editContent.trim() || saving) return;
+    setSaving(true);
+    const success = await onEdit(editContent);
+    if (success) {
+      setIsEditing(false);
+    }
+    setSaving(false);
+  };
+
+  const handleCancelEdit = () => {
+    setEditContent(reply.content);
+    setIsEditing(false);
+  };
+
+  const handleDelete = async () => {
+    if (confirm(t('community.confirmDeleteReply'))) {
+      await onDelete();
+    }
+  };
 
   return (
     <motion.div
@@ -236,9 +269,33 @@ const ReplyCard = ({
               </Badge>
             )}
             <span className="text-xs text-muted-foreground">{formatTime(reply.created_at)}</span>
+            {reply.updated_at !== reply.created_at && (
+              <span className="text-xs text-muted-foreground">({t('community.edited')})</span>
+            )}
           </div>
 
-          <p className="text-muted-foreground text-sm whitespace-pre-wrap">{reply.content}</p>
+          {isEditing ? (
+            <div className="space-y-2">
+              <Textarea
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                className="min-h-[80px]"
+                disabled={saving}
+              />
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleSaveEdit} disabled={saving || !editContent.trim()}>
+                  <Check className="w-4 h-4 me-1" />
+                  {t('common.save')}
+                </Button>
+                <Button size="sm" variant="ghost" onClick={handleCancelEdit} disabled={saving}>
+                  <X className="w-4 h-4 me-1" />
+                  {t('common.cancel')}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-muted-foreground text-sm whitespace-pre-wrap">{reply.content}</p>
+          )}
 
           <div className="flex items-center gap-3 mt-3">
             <button
@@ -261,6 +318,25 @@ const ReplyCard = ({
                 <CheckCircle className="w-4 h-4" />
                 {t('community.markBest')}
               </button>
+            )}
+
+            {canModify && !isEditing && (
+              <>
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+                >
+                  <Pencil className="w-3 h-3" />
+                  {t('common.edit')}
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  {t('common.delete')}
+                </button>
+              </>
             )}
           </div>
         </div>

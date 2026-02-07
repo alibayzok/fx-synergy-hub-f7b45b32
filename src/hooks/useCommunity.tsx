@@ -270,6 +270,49 @@ export const useReplies = (threadId: string) => {
     }
   };
 
+  const updateReply = async (replyId: string, content: string) => {
+    if (!user) return false;
+
+    try {
+      const { error } = await supabase
+        .from('replies')
+        .update({ content, updated_at: new Date().toISOString() })
+        .eq('id', replyId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      toast({ title: 'تم تعديل الرد' });
+      await fetchReplies();
+      return true;
+    } catch (error) {
+      console.error('Error updating reply:', error);
+      toast({ title: 'حدث خطأ', variant: 'destructive' });
+      return false;
+    }
+  };
+
+  const deleteReply = async (replyId: string) => {
+    if (!user) return false;
+
+    try {
+      const { error } = await supabase
+        .from('replies')
+        .delete()
+        .eq('id', replyId);
+
+      if (error) throw error;
+
+      toast({ title: 'تم حذف الرد' });
+      await fetchReplies();
+      return true;
+    } catch (error) {
+      console.error('Error deleting reply:', error);
+      toast({ title: 'حدث خطأ', variant: 'destructive' });
+      return false;
+    }
+  };
+
   const toggleLike = async (replyId: string, isLiked: boolean) => {
     if (!user) return;
 
@@ -344,6 +387,8 @@ export const useReplies = (threadId: string) => {
     loading,
     fetchReplies,
     createReply,
+    updateReply,
+    deleteReply,
     toggleLike,
     markBestAnswer
   };
@@ -424,6 +469,51 @@ export const useRoomChat = (roomId: string) => {
     }
   };
 
+  const updateMessage = async (messageId: string, content: string) => {
+    if (!user || !content.trim()) return false;
+
+    try {
+      const { error } = await supabase
+        .from('room_messages')
+        .update({ content: content.trim() })
+        .eq('id', messageId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setMessages(prev => prev.map(m => 
+        m.id === messageId ? { ...m, content: content.trim() } : m
+      ));
+      toast({ title: 'تم تعديل الرسالة' });
+      return true;
+    } catch (error) {
+      console.error('Error updating message:', error);
+      toast({ title: 'حدث خطأ', variant: 'destructive' });
+      return false;
+    }
+  };
+
+  const deleteMessage = async (messageId: string) => {
+    if (!user) return false;
+
+    try {
+      const { error } = await supabase
+        .from('room_messages')
+        .delete()
+        .eq('id', messageId);
+
+      if (error) throw error;
+
+      setMessages(prev => prev.filter(m => m.id !== messageId));
+      toast({ title: 'تم حذف الرسالة' });
+      return true;
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      toast({ title: 'حدث خطأ', variant: 'destructive' });
+      return false;
+    }
+  };
+
   useEffect(() => {
     if (roomId) {
       fetchMessages();
@@ -463,6 +553,8 @@ export const useRoomChat = (roomId: string) => {
     messages,
     loading,
     sendMessage,
+    updateMessage,
+    deleteMessage,
     fetchMessages
   };
 };

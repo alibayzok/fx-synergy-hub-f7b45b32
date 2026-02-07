@@ -101,7 +101,10 @@
     "markBest": "Mark as best",
     "backToThreads": "Back to threads",
     "chatHint": "Live Chat",
-    "chatHintDesc": "Tap any room to enter and chat with members"
+    "chatHintDesc": "Tap any room to enter and chat with members",
+    "edited": "edited",
+    "confirmDeleteReply": "Are you sure you want to delete this reply?",
+    "confirmDeleteMessage": "Are you sure you want to delete this message?"
   },
   "markets": {
     "title": "Markets",
