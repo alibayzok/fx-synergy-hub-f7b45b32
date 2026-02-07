@@ -106,6 +106,35 @@
     "confirmDeleteReply": "هل أنت متأكد من حذف هذا الرد؟",
     "confirmDeleteMessage": "هل أنت متأكد من حذف هذه الرسالة؟"
   },
+  "social": {
+    "follow": "متابعة",
+    "unfollow": "إلغاء المتابعة",
+    "following": "يتابع",
+    "followers": "متابِعون",
+    "friends": "أصدقاء",
+    "addFriend": "إضافة صديق",
+    "removeFriend": "إزالة صديق",
+    "requestPending": "طلب معلق",
+    "acceptRequest": "قبول الطلب",
+    "reject": "رفض",
+    "message": "مراسلة",
+    "followed": "تمت المتابعة",
+    "unfollowed": "تم إلغاء المتابعة",
+    "friendRequestSent": "تم إرسال طلب الصداقة",
+    "friendRequestAccepted": "تم قبول طلب الصداقة",
+    "friendRequestRejected": "تم رفض طلب الصداقة",
+    "friendRequestCancelled": "تم إلغاء طلب الصداقة",
+    "friendRemoved": "تمت إزالة الصديق"
+  },
+  "messages": {
+    "title": "الرسائل",
+    "noConversations": "لا توجد محادثات",
+    "startFromProfile": "ابدأ محادثة من الملف الشخصي لأي مستخدم",
+    "noMessages": "لا توجد رسائل",
+    "startTyping": "ابدأ بكتابة رسالتك",
+    "group": "مجموعة",
+    "groupCreated": "تم إنشاء المجموعة"
+  },
   "markets": {
     "title": "الأسواق",
     "all": "الكل",
