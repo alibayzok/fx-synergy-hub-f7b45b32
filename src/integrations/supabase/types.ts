@@ -193,6 +193,45 @@ export type Database = {
         }
         Relationships: []
       }
+      service_requests: {
+        Row: {
+          admin_notes: string | null
+          amount: number | null
+          created_at: string
+          id: string
+          network: string | null
+          notes: string | null
+          status: Database["public"]["Enums"]["service_status"]
+          type: Database["public"]["Enums"]["service_type"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount?: number | null
+          created_at?: string
+          id?: string
+          network?: string | null
+          notes?: string | null
+          status?: Database["public"]["Enums"]["service_status"]
+          type: Database["public"]["Enums"]["service_type"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          amount?: number | null
+          created_at?: string
+          id?: string
+          network?: string | null
+          notes?: string | null
+          status?: Database["public"]["Enums"]["service_status"]
+          type?: Database["public"]["Enums"]["service_type"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       threads: {
         Row: {
           content: string
@@ -479,6 +518,18 @@ export type Database = {
       app_role: "admin" | "vip" | "free"
       asset_type: "forex" | "metals" | "crypto"
       entry_type: "market" | "limit" | "stop"
+      service_status:
+        | "pending"
+        | "in_progress"
+        | "approved"
+        | "rejected"
+        | "completed"
+      service_type:
+        | "broker_deposit"
+        | "broker_withdraw"
+        | "usdt_buy"
+        | "usdt_sell"
+        | "broker_account"
       timeframe: "M5" | "M15" | "H1" | "H4" | "D1"
       trade_direction: "buy" | "sell"
       trade_status:
@@ -620,6 +671,20 @@ export const Constants = {
       app_role: ["admin", "vip", "free"],
       asset_type: ["forex", "metals", "crypto"],
       entry_type: ["market", "limit", "stop"],
+      service_status: [
+        "pending",
+        "in_progress",
+        "approved",
+        "rejected",
+        "completed",
+      ],
+      service_type: [
+        "broker_deposit",
+        "broker_withdraw",
+        "usdt_buy",
+        "usdt_sell",
+        "broker_account",
+      ],
       timeframe: ["M5", "M15", "H1", "H4", "D1"],
       trade_direction: ["buy", "sell"],
       trade_status: [
