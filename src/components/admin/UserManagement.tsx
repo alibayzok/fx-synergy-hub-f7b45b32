@@ -32,9 +32,9 @@ export const UserManagement = () => {
   const fetchUsers = async () => {
     setLoading(true);
     
-    // Fetch profiles
+    // Fetch profiles using the admin view (masks phone numbers for privacy)
     const { data: profiles, error: profilesError } = await supabase
-      .from('profiles')
+      .from('profiles_admin_view')
       .select('*')
       .order('created_at', { ascending: false });
 
