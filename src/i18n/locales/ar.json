@@ -176,6 +176,9 @@
   },
   "profile": {
     "title": "الملف الشخصي",
+    "userProfile": "الملف الشخصي",
+    "userNotFound": "لم يتم العثور على المستخدم",
+    "joinedAt": "انضم",
     "settings": "الإعدادات",
     "language": "اللغة",
     "notifications": "الإشعارات",
@@ -257,6 +260,7 @@
     "sort": "ترتيب",
     "more": "المزيد",
     "back": "رجوع",
+    "goBack": "العودة",
     "next": "التالي",
     "previous": "السابق",
     "optional": "اختياري"

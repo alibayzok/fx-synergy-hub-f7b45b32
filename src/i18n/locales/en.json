@@ -176,6 +176,9 @@
   },
   "profile": {
     "title": "Profile",
+    "userProfile": "User Profile",
+    "userNotFound": "User not found",
+    "joinedAt": "Joined",
     "settings": "Settings",
     "language": "Language",
     "notifications": "Notifications",
@@ -257,6 +260,7 @@
     "sort": "Sort",
     "more": "More",
     "back": "Back",
+    "goBack": "Go Back",
     "next": "Next",
     "previous": "Previous",
     "optional": "Optional"
