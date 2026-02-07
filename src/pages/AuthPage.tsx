@@ -2,13 +2,15 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Lock, User, Eye, EyeOff, ArrowLeft, Phone, Globe } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, ArrowLeft, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { countries } from '@/data/countries';
 
 type AuthMode = 'login' | 'register' | 'forgot';
 
@@ -152,18 +154,18 @@ const AuthPage = () => {
                 {/* Country */}
                 <div className="space-y-2">
                   <Label htmlFor="country">{t('auth.country')}</Label>
-                  <div className="relative">
-                    <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground rtl:left-auto rtl:right-3" />
-                    <Input
-                      id="country"
-                      type="text"
-                      value={country}
-                      onChange={(e) => setCountry(e.target.value)}
-                      className="pl-10 rtl:pl-3 rtl:pr-10"
-                      placeholder={t('auth.selectCountry')}
-                      required
-                    />
-                  </div>
+                  <Select value={country} onValueChange={setCountry} required>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder={t('auth.selectCountry')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {countries.map((c) => (
+                        <SelectItem key={c.code} value={c.code}>
+                          {i18n.language === 'ar' ? c.name.ar : c.name.en}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Phone */}

@@ -1,0 +1,35 @@
+export const countries = [
+  // Arab Countries
+  { code: 'SA', name: { ar: 'السعودية', en: 'Saudi Arabia' } },
+  { code: 'AE', name: { ar: 'الإمارات', en: 'United Arab Emirates' } },
+  { code: 'KW', name: { ar: 'الكويت', en: 'Kuwait' } },
+  { code: 'QA', name: { ar: 'قطر', en: 'Qatar' } },
+  { code: 'BH', name: { ar: 'البحرين', en: 'Bahrain' } },
+  { code: 'OM', name: { ar: 'عمان', en: 'Oman' } },
+  { code: 'IQ', name: { ar: 'العراق', en: 'Iraq' } },
+  { code: 'SY', name: { ar: 'سوريا', en: 'Syria' } },
+  { code: 'JO', name: { ar: 'الأردن', en: 'Jordan' } },
+  { code: 'LB', name: { ar: 'لبنان', en: 'Lebanon' } },
+  { code: 'PS', name: { ar: 'فلسطين', en: 'Palestine' } },
+  { code: 'EG', name: { ar: 'مصر', en: 'Egypt' } },
+  { code: 'LY', name: { ar: 'ليبيا', en: 'Libya' } },
+  { code: 'TN', name: { ar: 'تونس', en: 'Tunisia' } },
+  { code: 'DZ', name: { ar: 'الجزائر', en: 'Algeria' } },
+  { code: 'MA', name: { ar: 'المغرب', en: 'Morocco' } },
+  { code: 'SD', name: { ar: 'السودان', en: 'Sudan' } },
+  { code: 'YE', name: { ar: 'اليمن', en: 'Yemen' } },
+  // Other Popular Countries
+  { code: 'TR', name: { ar: 'تركيا', en: 'Turkey' } },
+  { code: 'US', name: { ar: 'الولايات المتحدة', en: 'United States' } },
+  { code: 'GB', name: { ar: 'المملكة المتحدة', en: 'United Kingdom' } },
+  { code: 'DE', name: { ar: 'ألمانيا', en: 'Germany' } },
+  { code: 'FR', name: { ar: 'فرنسا', en: 'France' } },
+  { code: 'CA', name: { ar: 'كندا', en: 'Canada' } },
+  { code: 'AU', name: { ar: 'أستراليا', en: 'Australia' } },
+  { code: 'MY', name: { ar: 'ماليزيا', en: 'Malaysia' } },
+  { code: 'ID', name: { ar: 'إندونيسيا', en: 'Indonesia' } },
+  { code: 'PK', name: { ar: 'باكستان', en: 'Pakistan' } },
+  { code: 'IN', name: { ar: 'الهند', en: 'India' } },
+] as const;
+
+export type CountryCode = typeof countries[number]['code'];
