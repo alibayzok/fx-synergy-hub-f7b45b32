@@ -50,7 +50,11 @@
     "pips": "pips",
     "market": "Market",
     "limit": "Limit",
-    "stop": "Stop"
+    "stop": "Stop",
+    "symbol": "Symbol",
+    "assetType": "Asset Type",
+    "entryType": "Entry Type",
+    "visibility": "Visibility"
   },
   "community": {
     "title": "Community",
@@ -134,7 +138,16 @@
     "otp": "Verification Code",
     "sendOtp": "Send Code",
     "verify": "Verify",
-    "orContinueWith": "Or continue with"
+    "orContinueWith": "Or continue with",
+    "email": "Email",
+    "password": "Password",
+    "displayName": "Display Name",
+    "displayNamePlaceholder": "Your name",
+    "noAccount": "Don't have an account? Register",
+    "hasAccount": "Already have an account? Login",
+    "checkEmail": "Check your email",
+    "verifyEmail": "We sent you a verification link",
+    "loginPrompt": "Sign in to access your profile"
   },
   "notifications": {
     "title": "Notifications",
@@ -161,7 +174,8 @@
     "more": "More",
     "back": "Back",
     "next": "Next",
-    "previous": "Previous"
+    "previous": "Previous",
+    "optional": "Optional"
   },
   "disclaimer": {
     "text": "No guaranteed profits. Educational purposes only."
@@ -174,5 +188,27 @@
     "loss": "Loss",
     "monthly": "Monthly",
     "weekly": "Weekly"
+  },
+  "admin": {
+    "title": "Admin Panel",
+    "trades": "Trades",
+    "users": "Users",
+    "manageTrades": "Manage Trades",
+    "manageUsers": "Manage Users",
+    "newTrade": "New Trade",
+    "editTrade": "Edit Trade",
+    "noTrades": "No trades yet",
+    "noUsers": "No users found",
+    "tradeCreated": "Trade created successfully",
+    "tradeUpdated": "Trade updated successfully",
+    "tradeDeleted": "Trade deleted successfully",
+    "commaSeparated": "comma separated",
+    "reasonPlaceholder": "Why this trade?",
+    "riskPlaceholder": "Risk warning",
+    "addVip": "Add VIP",
+    "removeVip": "Remove VIP",
+    "vipAdded": "VIP membership added",
+    "vipRemoved": "VIP membership removed",
+    "unnamed": "Unnamed User"
   }
 }

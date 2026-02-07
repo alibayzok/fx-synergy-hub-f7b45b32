@@ -50,7 +50,11 @@
     "pips": "نقطة",
     "market": "سوق",
     "limit": "محدد",
-    "stop": "وقف"
+    "stop": "وقف",
+    "symbol": "الرمز",
+    "assetType": "نوع الأصل",
+    "entryType": "نوع الدخول",
+    "visibility": "الرؤية"
   },
   "community": {
     "title": "المجتمع",
@@ -134,7 +138,16 @@
     "otp": "رمز التحقق",
     "sendOtp": "إرسال الرمز",
     "verify": "تحقق",
-    "orContinueWith": "أو تابع باستخدام"
+    "orContinueWith": "أو تابع باستخدام",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "displayName": "الاسم الظاهر",
+    "displayNamePlaceholder": "اسمك",
+    "noAccount": "ليس لديك حساب؟ سجل الآن",
+    "hasAccount": "لديك حساب بالفعل؟ سجل دخول",
+    "checkEmail": "تحقق من بريدك",
+    "verifyEmail": "أرسلنا لك رابط التحقق",
+    "loginPrompt": "سجل دخول للوصول إلى ملفك الشخصي"
   },
   "notifications": {
     "title": "الإشعارات",
@@ -161,7 +174,8 @@
     "more": "المزيد",
     "back": "رجوع",
     "next": "التالي",
-    "previous": "السابق"
+    "previous": "السابق",
+    "optional": "اختياري"
   },
   "disclaimer": {
     "text": "لا توجد أرباح مضمونة. للأغراض التعليمية فقط."
@@ -174,5 +188,27 @@
     "loss": "خسارة",
     "monthly": "شهري",
     "weekly": "أسبوعي"
+  },
+  "admin": {
+    "title": "لوحة التحكم",
+    "trades": "الصفقات",
+    "users": "المستخدمون",
+    "manageTrades": "إدارة الصفقات",
+    "manageUsers": "إدارة المستخدمين",
+    "newTrade": "صفقة جديدة",
+    "editTrade": "تعديل الصفقة",
+    "noTrades": "لا توجد صفقات بعد",
+    "noUsers": "لم يتم العثور على مستخدمين",
+    "tradeCreated": "تم إنشاء الصفقة بنجاح",
+    "tradeUpdated": "تم تحديث الصفقة بنجاح",
+    "tradeDeleted": "تم حذف الصفقة بنجاح",
+    "commaSeparated": "مفصولة بفواصل",
+    "reasonPlaceholder": "لماذا هذه الصفقة؟",
+    "riskPlaceholder": "تحذير المخاطر",
+    "addVip": "إضافة VIP",
+    "removeVip": "إزالة VIP",
+    "vipAdded": "تمت إضافة عضوية VIP",
+    "vipRemoved": "تمت إزالة عضوية VIP",
+    "unnamed": "مستخدم بدون اسم"
   }
 }
