@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Send, ArrowRight, ArrowLeft, Pencil, Trash2, X, Check } from 'lucide-react';
 import { useRoomChat, RoomMessage } from '@/hooks/useCommunity';
@@ -20,12 +21,17 @@ interface RoomChatPanelProps {
 
 export const RoomChatPanel = ({ roomId, roomName, onBack }: RoomChatPanelProps) => {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
   const { messages, loading, sendMessage, updateMessage, deleteMessage } = useRoomChat(roomId);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const isArabic = i18n.language === 'ar';
+
+  const handleUserClick = (userId: string) => {
+    navigate(`/user/${userId}`);
+  };
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -93,6 +99,7 @@ export const RoomChatPanel = ({ roomId, roomName, onBack }: RoomChatPanelProps) 
                 isAdmin={isAdmin}
                 onEdit={(content) => updateMessage(message.id, content)}
                 onDelete={() => deleteMessage(message.id)}
+                onUserClick={handleUserClick}
                 formatTime={formatTime}
                 showAvatar={index === 0 || messages[index - 1].user_id !== message.user_id}
               />
@@ -131,11 +138,12 @@ interface MessageBubbleProps {
   isAdmin: boolean;
   onEdit: (content: string) => Promise<boolean>;
   onDelete: () => Promise<boolean>;
+  onUserClick: (userId: string) => void;
   formatTime: (date: string) => string;
   showAvatar: boolean;
 }
 
-const MessageBubble = ({ message, isOwn, isAdmin, onEdit, onDelete, formatTime, showAvatar }: MessageBubbleProps) => {
+const MessageBubble = ({ message, isOwn, isAdmin, onEdit, onDelete, onUserClick, formatTime, showAvatar }: MessageBubbleProps) => {
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
@@ -182,7 +190,10 @@ const MessageBubble = ({ message, isOwn, isAdmin, onEdit, onDelete, formatTime, 
       className={cn("flex gap-2 group", isOwn ? "flex-row-reverse" : "flex-row")}
     >
       {showAvatar ? (
-        <Avatar className="w-8 h-8 flex-shrink-0">
+        <Avatar 
+          className="w-8 h-8 flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+          onClick={() => onUserClick(message.user_id)}
+        >
           <AvatarImage src={message.author?.avatar_url || undefined} />
           <AvatarFallback className="bg-primary/20 text-primary text-xs">
             {authorName.charAt(0)}
@@ -194,7 +205,12 @@ const MessageBubble = ({ message, isOwn, isAdmin, onEdit, onDelete, formatTime, 
 
       <div className={cn("flex flex-col max-w-[75%]", isOwn ? "items-end" : "items-start")}>
         {showAvatar && (
-          <span className="text-xs text-muted-foreground mb-1">{authorName}</span>
+          <button 
+            onClick={() => onUserClick(message.user_id)}
+            className="text-xs text-muted-foreground mb-1 hover:text-primary transition-colors"
+          >
+            {authorName}
+          </button>
         )}
         
         {isEditing ? (

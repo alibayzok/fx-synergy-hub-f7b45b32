@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, ArrowLeft, Send, Heart, CheckCircle, MessageSquare, Trash2, Pencil, X, Check } from 'lucide-react';
 import { Thread, useReplies, Reply } from '@/hooks/useCommunity';
@@ -28,11 +29,16 @@ const tagColors: Record<string, string> = {
 
 export const ThreadDetailPanel = ({ thread, onBack, onDelete }: ThreadDetailPanelProps) => {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
   const { replies, loading, createReply, updateReply, deleteReply, toggleLike, markBestAnswer } = useReplies(thread.id);
   const [newReply, setNewReply] = useState('');
   const [sending, setSending] = useState(false);
   const isArabic = i18n.language === 'ar';
+
+  const handleUserClick = (userId: string) => {
+    navigate(`/user/${userId}`);
+  };
 
   const formatTime = (dateStr: string) => {
     return formatDistanceToNow(new Date(dateStr), {
@@ -80,7 +86,10 @@ export const ThreadDetailPanel = ({ thread, onBack, onDelete }: ThreadDetailPane
         {/* Thread Content */}
         <div className="p-4 border-b border-border/30">
           <div className="flex items-start gap-3">
-            <Avatar className="w-10 h-10">
+            <Avatar 
+              className="w-10 h-10 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+              onClick={() => handleUserClick(thread.user_id)}
+            >
               <AvatarImage src={thread.author?.avatar_url || undefined} />
               <AvatarFallback className="bg-primary/20 text-primary">
                 {authorName.charAt(0)}
@@ -89,7 +98,12 @@ export const ThreadDetailPanel = ({ thread, onBack, onDelete }: ThreadDetailPane
 
             <div className="flex-1">
               <div className="flex items-center gap-2 flex-wrap mb-2">
-                <span className="font-medium text-foreground">{authorName}</span>
+                <button 
+                  onClick={() => handleUserClick(thread.user_id)}
+                  className="font-medium text-foreground hover:text-primary transition-colors"
+                >
+                  {authorName}
+                </button>
                 <Badge variant="outline" className={cn("text-[10px] px-1.5", tagColors[thread.tag])}>
                   {t(`community.${thread.tag}`)}
                 </Badge>
@@ -146,6 +160,7 @@ export const ThreadDetailPanel = ({ thread, onBack, onDelete }: ThreadDetailPane
                   onMarkBest={() => markBestAnswer(reply.id)}
                   onEdit={(content) => updateReply(reply.id, content)}
                   onDelete={() => deleteReply(reply.id)}
+                  onUserClick={handleUserClick}
                   formatTime={formatTime}
                 />
               ))}
@@ -195,6 +210,7 @@ interface ReplyCardProps {
   onMarkBest: () => void;
   onEdit: (content: string) => Promise<boolean>;
   onDelete: () => Promise<boolean>;
+  onUserClick: (userId: string) => void;
   formatTime: (date: string) => string;
 }
 
@@ -207,6 +223,7 @@ const ReplyCard = ({
   onMarkBest,
   onEdit,
   onDelete,
+  onUserClick,
   formatTime
 }: ReplyCardProps) => {
   const { t } = useTranslation();
@@ -252,7 +269,10 @@ const ReplyCard = ({
       )}
     >
       <div className="flex items-start gap-3">
-        <Avatar className="w-8 h-8">
+        <Avatar 
+          className="w-8 h-8 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+          onClick={() => onUserClick(reply.user_id)}
+        >
           <AvatarImage src={reply.author?.avatar_url || undefined} />
           <AvatarFallback className="bg-primary/20 text-primary text-xs">
             {authorName.charAt(0)}
@@ -261,7 +281,12 @@ const ReplyCard = ({
 
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <span className="font-medium text-sm text-foreground">{authorName}</span>
+            <button 
+              onClick={() => onUserClick(reply.user_id)}
+              className="font-medium text-sm text-foreground hover:text-primary transition-colors"
+            >
+              {authorName}
+            </button>
             {reply.is_best_answer && (
               <Badge className="bg-profit/20 text-profit border-profit/30 text-[10px] px-1.5">
                 <CheckCircle className="w-3 h-3 me-1" />
