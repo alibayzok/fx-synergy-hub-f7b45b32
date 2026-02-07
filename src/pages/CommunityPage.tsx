@@ -1,15 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { Plus, MessageSquare, LogIn } from 'lucide-react';
+import { Plus, MessageSquare, LogIn, MessageCircle } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { RoomCard } from '@/components/community/RoomCard';
+import { RoomChatPanel } from '@/components/community/RoomChatPanel';
+import { ThreadDetailPanel } from '@/components/community/ThreadDetailPanel';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { useCommunity, Thread } from '@/hooks/useCommunity';
+import { formatDistanceToNow } from 'date-fns';
+import { ar, enUS } from 'date-fns/locale';
 import {
   Dialog,
   DialogContent,
@@ -27,8 +32,9 @@ import {
 } from '@/components/ui/select';
 
 type Tab = 'rooms' | 'threads';
+type ViewMode = 'list' | 'chat' | 'thread';
 
-// Static rooms data - could be moved to database later
+// Static rooms data
 const roomsData = [
   {
     id: 'room-general',
@@ -87,27 +93,15 @@ const roomsData = [
   },
 ];
 
-interface Thread {
-  id: string;
-  room_id: string;
-  created_at: string;
-  created_by: { username: string; display_name: string };
-  title: string;
-  content: string;
-  tag: 'question' | 'analysis' | 'alert' | 'help';
-  replies_count: number;
-  is_pinned: boolean;
-  is_locked: boolean;
-  has_best_answer: boolean;
-}
-
 const CommunityPage = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<Tab>('rooms');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [selectedRoom, setSelectedRoom] = useState<typeof roomsData[0] | null>(null);
+  const [selectedThread, setSelectedThread] = useState<Thread | null>(null);
   const [showNewThreadDialog, setShowNewThreadDialog] = useState(false);
-  const [threads, setThreads] = useState<Thread[]>([]);
   const [newThread, setNewThread] = useState<{
     title: string;
     content: string;
@@ -121,6 +115,7 @@ const CommunityPage = () => {
   });
 
   const { user, isVip, isAdmin, loading: authLoading } = useAuth();
+  const { threads, loading: threadsLoading, fetchThreads, createThread, deleteThread } = useCommunity();
   const isArabic = i18n.language === 'ar';
   const isVipUser = isVip || isAdmin;
 
@@ -131,8 +126,22 @@ const CommunityPage = () => {
     help: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
   };
 
-  const handleRoomClick = (roomId: string, isLocked: boolean) => {
-    if (isLocked) {
+  // Fetch threads on mount
+  useEffect(() => {
+    if (user) {
+      fetchThreads();
+    }
+  }, [user, fetchThreads]);
+
+  const formatTime = (dateStr: string) => {
+    return formatDistanceToNow(new Date(dateStr), {
+      addSuffix: true,
+      locale: isArabic ? ar : enUS
+    });
+  };
+
+  const handleRoomClick = (room: typeof roomsData[0]) => {
+    if (room.is_vip && !isVipUser) {
       toast({
         title: t('community.vipOnly'),
         description: t('community.upgradeToAccess'),
@@ -140,11 +149,22 @@ const CommunityPage = () => {
       });
       return;
     }
-    // Navigate to room or show threads for this room
-    setActiveTab('threads');
+    setSelectedRoom(room);
+    setViewMode('chat');
   };
 
-  const handleCreateThread = () => {
+  const handleThreadClick = (thread: Thread) => {
+    setSelectedThread(thread);
+    setViewMode('thread');
+  };
+
+  const handleBackToList = () => {
+    setViewMode('list');
+    setSelectedRoom(null);
+    setSelectedThread(null);
+  };
+
+  const handleCreateThread = async () => {
     if (!user) {
       navigate('/auth');
       return;
@@ -159,27 +179,25 @@ const CommunityPage = () => {
       return;
     }
 
-    const thread: Thread = {
-      id: `thread-${Date.now()}`,
+    const result = await createThread({
       room_id: newThread.room_id,
-      created_at: new Date().toISOString(),
-      created_by: {
-        username: user.email?.split('@')[0] || 'user',
-        display_name: user.user_metadata?.display_name || user.email?.split('@')[0] || 'User'
-      },
       title: newThread.title,
       content: newThread.content,
-      tag: newThread.tag,
-      replies_count: 0,
-      is_pinned: false,
-      is_locked: false,
-      has_best_answer: false
-    };
+      tag: newThread.tag
+    });
 
-    setThreads(prev => [thread, ...prev]);
-    setNewThread({ title: '', content: '', tag: 'question', room_id: 'room-general' });
-    setShowNewThreadDialog(false);
-    toast({ title: t('community.threadCreated') });
+    if (result) {
+      setNewThread({ title: '', content: '', tag: 'question', room_id: 'room-general' });
+      setShowNewThreadDialog(false);
+      setActiveTab('threads');
+    }
+  };
+
+  const handleDeleteThread = async () => {
+    if (selectedThread) {
+      await deleteThread(selectedThread.id);
+      handleBackToList();
+    }
   };
 
   // Show login prompt if not authenticated
@@ -205,6 +223,32 @@ const CommunityPage = () => {
             {t('auth.login')}
           </Button>
         </div>
+      </AppLayout>
+    );
+  }
+
+  // Show chat panel
+  if (viewMode === 'chat' && selectedRoom) {
+    return (
+      <AppLayout>
+        <RoomChatPanel
+          roomId={selectedRoom.id}
+          roomName={isArabic ? selectedRoom.name_ar : selectedRoom.name_en}
+          onBack={handleBackToList}
+        />
+      </AppLayout>
+    );
+  }
+
+  // Show thread detail
+  if (viewMode === 'thread' && selectedThread) {
+    return (
+      <AppLayout>
+        <ThreadDetailPanel
+          thread={selectedThread}
+          onBack={handleBackToList}
+          onDelete={handleDeleteThread}
+        />
       </AppLayout>
     );
   }
@@ -253,63 +297,85 @@ const CommunityPage = () => {
                 <RoomCard 
                   room={room} 
                   isLocked={room.is_vip && !isVipUser}
-                  onClick={() => handleRoomClick(room.id, room.is_vip && !isVipUser)}
+                  onClick={() => handleRoomClick(room)}
                 />
               </motion.div>
             ))}
+
+            {/* Chat hint */}
+            <div className="mt-6 p-4 rounded-xl bg-primary/5 border border-primary/20">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/20">
+                  <MessageCircle className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h4 className="font-medium text-foreground">{t('community.chatHint')}</h4>
+                  <p className="text-sm text-muted-foreground">{t('community.chatHintDesc')}</p>
+                </div>
+              </div>
+            </div>
           </div>
         ) : (
           <div className="space-y-3">
-            {threads.length > 0 ? (
-              threads.map((thread, index) => (
-                <motion.div
-                  key={thread.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="p-4 rounded-xl bg-card/50 border border-border/30"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                      <span className="text-primary font-semibold text-sm">
-                        {thread.created_by.display_name.charAt(0)}
-                      </span>
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="font-medium text-sm text-foreground">
-                          {thread.created_by.display_name}
+            {threadsLoading ? (
+              <div className="flex justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+              </div>
+            ) : threads.length > 0 ? (
+              threads.map((thread, index) => {
+                const authorName = thread.author?.display_name || thread.author?.username || 'مستخدم';
+                return (
+                  <motion.button
+                    key={thread.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    onClick={() => handleThreadClick(thread)}
+                    className="w-full text-start p-4 rounded-xl bg-card/50 border border-border/30 hover:bg-card transition-colors"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                        <span className="text-primary font-semibold text-sm">
+                          {authorName.charAt(0)}
                         </span>
-                        <Badge 
-                          variant="outline" 
-                          className={cn("text-[10px] px-1.5 py-0", tagColors[thread.tag])}
-                        >
-                          {t(`community.${thread.tag}`)}
-                        </Badge>
-                        {thread.is_pinned && (
-                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                            📌
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <span className="font-medium text-sm text-foreground">
+                            {authorName}
+                          </span>
+                          <Badge 
+                            variant="outline" 
+                            className={cn("text-[10px] px-1.5 py-0", tagColors[thread.tag])}
+                          >
+                            {t(`community.${thread.tag}`)}
                           </Badge>
-                        )}
-                      </div>
-                      
-                      <h4 className="font-semibold text-foreground mb-1">{thread.title}</h4>
-                      <p className="text-sm text-muted-foreground line-clamp-2">{thread.content}</p>
-                      
-                      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <MessageSquare className="w-3 h-3" />
-                          {thread.replies_count} {t('community.replies')}
-                        </span>
-                        {thread.has_best_answer && (
-                          <span className="text-profit">✓ {t('community.bestAnswer')}</span>
-                        )}
+                          {thread.is_pinned && (
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                              📌
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        <h4 className="font-semibold text-foreground mb-1">{thread.title}</h4>
+                        <p className="text-sm text-muted-foreground line-clamp-2">{thread.content}</p>
+                        
+                        <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <MessageSquare className="w-3 h-3" />
+                            {thread.replies_count} {t('community.replies')}
+                          </span>
+                          <span>{formatTime(thread.created_at)}</span>
+                          {thread.has_best_answer && (
+                            <span className="text-profit">✓ {t('community.bestAnswer')}</span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))
+                  </motion.button>
+                );
+              })
             ) : (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <MessageSquare className="w-12 h-12 text-muted-foreground/30 mb-3" />

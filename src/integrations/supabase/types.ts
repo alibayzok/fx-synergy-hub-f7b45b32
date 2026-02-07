@@ -89,6 +89,155 @@ export type Database = {
         }
         Relationships: []
       }
+      replies: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          is_best_answer: boolean | null
+          likes_count: number | null
+          parent_id: string | null
+          thread_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          is_best_answer?: boolean | null
+          likes_count?: number | null
+          parent_id?: string | null
+          thread_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_best_answer?: boolean | null
+          likes_count?: number | null
+          parent_id?: string | null
+          thread_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "replies_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "replies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "replies_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reply_likes: {
+        Row: {
+          created_at: string | null
+          id: string
+          reply_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          reply_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          reply_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reply_likes_reply_id_fkey"
+            columns: ["reply_id"]
+            isOneToOne: false
+            referencedRelation: "replies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      room_messages: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          room_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          room_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          room_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      threads: {
+        Row: {
+          content: string
+          created_at: string | null
+          has_best_answer: boolean | null
+          id: string
+          is_locked: boolean | null
+          is_pinned: boolean | null
+          replies_count: number | null
+          room_id: string
+          tag: string
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          has_best_answer?: boolean | null
+          id?: string
+          is_locked?: boolean | null
+          is_pinned?: boolean | null
+          replies_count?: number | null
+          room_id: string
+          tag: string
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          has_best_answer?: boolean | null
+          id?: string
+          is_locked?: boolean | null
+          is_pinned?: boolean | null
+          replies_count?: number | null
+          room_id?: string
+          tag?: string
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       trades: {
         Row: {
           alternative_scenario: string | null
@@ -155,6 +304,39 @@ export type Database = {
           tp_prices?: number[]
           updated_at?: string
           visibility?: Database["public"]["Enums"]["trade_visibility"]
+        }
+        Relationships: []
+      }
+      user_notifications: {
+        Row: {
+          created_at: string | null
+          data: Json | null
+          id: string
+          message: string
+          read: boolean | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          data?: Json | null
+          id?: string
+          message: string
+          read?: boolean | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          data?: Json | null
+          id?: string
+          message?: string
+          read?: boolean | null
+          title?: string
+          type?: string
+          user_id?: string
         }
         Relationships: []
       }
