@@ -14,16 +14,164 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          language: string | null
+          updated_at: string
+          user_id: string
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          language?: string | null
+          updated_at?: string
+          user_id: string
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          language?: string | null
+          updated_at?: string
+          user_id?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
+      trades: {
+        Row: {
+          alternative_scenario: string | null
+          asset_type: Database["public"]["Enums"]["asset_type"]
+          attachments: string[] | null
+          created_at: string
+          created_by: string | null
+          direction: Database["public"]["Enums"]["trade_direction"]
+          entry_price: number
+          entry_type: Database["public"]["Enums"]["entry_type"]
+          followers_count: number | null
+          id: string
+          last_update_note: string | null
+          reason: string
+          risk_note: string | null
+          sl_price: number
+          status: Database["public"]["Enums"]["trade_status"]
+          symbol: string
+          timeframe: Database["public"]["Enums"]["timeframe"]
+          tp_prices: number[]
+          updated_at: string
+          visibility: Database["public"]["Enums"]["trade_visibility"]
+        }
+        Insert: {
+          alternative_scenario?: string | null
+          asset_type: Database["public"]["Enums"]["asset_type"]
+          attachments?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          direction: Database["public"]["Enums"]["trade_direction"]
+          entry_price: number
+          entry_type?: Database["public"]["Enums"]["entry_type"]
+          followers_count?: number | null
+          id?: string
+          last_update_note?: string | null
+          reason: string
+          risk_note?: string | null
+          sl_price: number
+          status?: Database["public"]["Enums"]["trade_status"]
+          symbol: string
+          timeframe?: Database["public"]["Enums"]["timeframe"]
+          tp_prices?: number[]
+          updated_at?: string
+          visibility?: Database["public"]["Enums"]["trade_visibility"]
+        }
+        Update: {
+          alternative_scenario?: string | null
+          asset_type?: Database["public"]["Enums"]["asset_type"]
+          attachments?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          direction?: Database["public"]["Enums"]["trade_direction"]
+          entry_price?: number
+          entry_type?: Database["public"]["Enums"]["entry_type"]
+          followers_count?: number | null
+          id?: string
+          last_update_note?: string | null
+          reason?: string
+          risk_note?: string | null
+          sl_price?: number
+          status?: Database["public"]["Enums"]["trade_status"]
+          symbol?: string
+          timeframe?: Database["public"]["Enums"]["timeframe"]
+          tp_prices?: number[]
+          updated_at?: string
+          visibility?: Database["public"]["Enums"]["trade_visibility"]
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      can_access_trade: {
+        Args: {
+          trade_visibility: Database["public"]["Enums"]["trade_visibility"]
+        }
+        Returns: boolean
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin: { Args: never; Returns: boolean }
+      is_vip: { Args: never; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "vip" | "free"
+      asset_type: "forex" | "metals" | "crypto"
+      entry_type: "market" | "limit" | "stop"
+      timeframe: "M5" | "M15" | "H1" | "H4" | "D1"
+      trade_direction: "buy" | "sell"
+      trade_status:
+        | "pending"
+        | "running"
+        | "tp_hit"
+        | "sl_hit"
+        | "cancelled"
+        | "closed_manual"
+      trade_visibility: "free" | "vip"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +298,21 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "vip", "free"],
+      asset_type: ["forex", "metals", "crypto"],
+      entry_type: ["market", "limit", "stop"],
+      timeframe: ["M5", "M15", "H1", "H4", "D1"],
+      trade_direction: ["buy", "sell"],
+      trade_status: [
+        "pending",
+        "running",
+        "tp_hit",
+        "sl_hit",
+        "cancelled",
+        "closed_manual",
+      ],
+      trade_visibility: ["free", "vip"],
+    },
   },
 } as const
