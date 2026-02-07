@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -18,9 +18,16 @@ type AuthMode = 'login' | 'register' | 'forgot';
 const AuthPage = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { signIn, signUp, resetPassword } = useAuth();
+  const { signIn, signUp, resetPassword, user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const isRTL = i18n.language === 'ar';
+
+  // Redirect if user is already authenticated
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate('/', { replace: true });
+    }
+  }, [user, authLoading, navigate]);
 
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
