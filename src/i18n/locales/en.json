@@ -147,7 +147,20 @@
     "hasAccount": "Already have an account? Login",
     "checkEmail": "Check your email",
     "verifyEmail": "We sent you a verification link",
-    "loginPrompt": "Sign in to access your profile"
+    "loginPrompt": "Sign in to access your profile",
+    "forgotPassword": "Forgot password?",
+    "sendResetLink": "Send Reset Link",
+    "resetEmailSent": "We sent you a password reset link",
+    "backToLogin": "Back to login",
+    "setNewPassword": "Set a new password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm Password",
+    "updatePassword": "Update Password",
+    "passwordMismatch": "Passwords do not match",
+    "passwordTooShort": "Password must be at least 6 characters",
+    "passwordUpdated": "Password updated successfully",
+    "passwordUpdatedDesc": "You can now login with your new password",
+    "redirecting": "Redirecting..."
   },
   "notifications": {
     "title": "Notifications",

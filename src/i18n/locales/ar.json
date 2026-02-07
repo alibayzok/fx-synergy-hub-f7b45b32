@@ -147,7 +147,20 @@
     "hasAccount": "لديك حساب بالفعل؟ سجل دخول",
     "checkEmail": "تحقق من بريدك",
     "verifyEmail": "أرسلنا لك رابط التحقق",
-    "loginPrompt": "سجل دخول للوصول إلى ملفك الشخصي"
+    "loginPrompt": "سجل دخول للوصول إلى ملفك الشخصي",
+    "forgotPassword": "نسيت كلمة المرور؟",
+    "sendResetLink": "إرسال رابط الاستعادة",
+    "resetEmailSent": "أرسلنا لك رابط إعادة تعيين كلمة المرور",
+    "backToLogin": "العودة لتسجيل الدخول",
+    "setNewPassword": "تعيين كلمة مرور جديدة",
+    "newPassword": "كلمة المرور الجديدة",
+    "confirmPassword": "تأكيد كلمة المرور",
+    "updatePassword": "تحديث كلمة المرور",
+    "passwordMismatch": "كلمات المرور غير متطابقة",
+    "passwordTooShort": "كلمة المرور يجب أن تكون 6 أحرف على الأقل",
+    "passwordUpdated": "تم تحديث كلمة المرور بنجاح",
+    "passwordUpdatedDesc": "يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة",
+    "redirecting": "جاري التحويل..."
   },
   "notifications": {
     "title": "الإشعارات",
