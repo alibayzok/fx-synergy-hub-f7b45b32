@@ -1,18 +1,20 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { Clock, CheckCircle, XCircle, AlertCircle, LogIn, Send } from 'lucide-react';
+import { Clock, CheckCircle, XCircle, AlertCircle, LogIn, Send, Briefcase, UserPlus } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { ServiceCard } from '@/components/services/ServiceCard';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import {
   Select,
@@ -23,21 +25,10 @@ import {
 } from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { useServiceRequests, ServiceStatus, ServiceType } from '@/hooks/useServiceRequests';
 import { useToast } from '@/hooks/use-toast';
 
 type Tab = 'services' | 'requests';
-type ServiceStatus = 'pending' | 'in_progress' | 'approved' | 'rejected' | 'completed';
-type ServiceType = 'broker_deposit' | 'broker_withdraw' | 'usdt_buy' | 'usdt_sell';
-
-interface ServiceRequest {
-  id: string;
-  type: ServiceType;
-  amount: number;
-  network?: string;
-  status: ServiceStatus;
-  created_at: string;
-  updated_at: string;
-}
 
 const statusConfig: Record<ServiceStatus, { icon: typeof Clock; color: string }> = {
   pending: { icon: Clock, color: 'text-yellow-400' },
@@ -51,15 +42,18 @@ const ServicesPage = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { requests, loading, createRequest } = useServiceRequests();
   const [activeTab, setActiveTab] = useState<Tab>('services');
   const [showServiceDialog, setShowServiceDialog] = useState(false);
+  const [showBrokerAccountDialog, setShowBrokerAccountDialog] = useState(false);
   const [selectedService, setSelectedService] = useState<'broker' | 'usdt' | null>(null);
-  const [requests, setRequests] = useState<ServiceRequest[]>([]);
+  const [submitting, setSubmitting] = useState(false);
   
   const [formData, setFormData] = useState({
     type: '' as ServiceType | '',
     amount: '',
-    network: 'TRC20'
+    network: 'TRC20',
+    notes: ''
   });
 
   const { user, loading: authLoading } = useAuth();
@@ -78,8 +72,16 @@ const ServicesPage = () => {
     setShowServiceDialog(true);
   };
 
-  const handleSubmitRequest = () => {
-    if (!formData.type || !formData.amount) {
+  const handleBrokerAccountClick = () => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+    setShowBrokerAccountDialog(true);
+  };
+
+  const handleSubmitRequest = async () => {
+    if (!formData.type || (formData.type !== 'broker_account' && !formData.amount)) {
       toast({
         title: t('common.error'),
         description: t('services.fillAllFields'),
@@ -88,21 +90,37 @@ const ServicesPage = () => {
       return;
     }
 
-    const newRequest: ServiceRequest = {
-      id: `req-${Date.now()}`,
+    setSubmitting(true);
+    const result = await createRequest({
       type: formData.type as ServiceType,
-      amount: parseFloat(formData.amount),
+      amount: formData.amount ? parseFloat(formData.amount) : undefined,
       network: formData.type.includes('usdt') ? formData.network : undefined,
-      status: 'pending',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
+      notes: formData.notes || undefined,
+    });
 
-    setRequests(prev => [newRequest, ...prev]);
-    setShowServiceDialog(false);
-    setFormData({ type: '', amount: '', network: 'TRC20' });
-    toast({ title: t('services.requestSubmitted') });
-    setActiveTab('requests');
+    setSubmitting(false);
+
+    if (result) {
+      setShowServiceDialog(false);
+      setFormData({ type: '', amount: '', network: 'TRC20', notes: '' });
+      setActiveTab('requests');
+    }
+  };
+
+  const handleSubmitBrokerAccount = async () => {
+    setSubmitting(true);
+    const result = await createRequest({
+      type: 'broker_account',
+      notes: formData.notes || undefined,
+    });
+
+    setSubmitting(false);
+
+    if (result) {
+      setShowBrokerAccountDialog(false);
+      setFormData({ type: '', amount: '', network: 'TRC20', notes: '' });
+      setActiveTab('requests');
+    }
   };
 
   // Show login prompt if not authenticated
@@ -167,16 +185,34 @@ const ServicesPage = () => {
       <div className="px-4 py-4">
         {activeTab === 'services' ? (
           <div className="space-y-4">
+            {/* Open Trading Account Card */}
+            <motion.button
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleBrokerAccountClick}
+              className="w-full flex items-center gap-4 p-4 rounded-xl border text-start transition-all bg-gradient-to-r from-amber-500/20 to-orange-500/10 border-amber-500/30 hover:opacity-90"
+            >
+              <div className="flex-shrink-0 p-3 rounded-lg bg-card/50">
+                <UserPlus className="w-6 h-6 text-amber-400" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-semibold text-foreground mb-0.5">{t('services.openBrokerAccount')}</h4>
+                <p className="text-sm text-muted-foreground">{t('services.openBrokerAccountDesc')}</p>
+              </div>
+            </motion.button>
+
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
             >
               <ServiceCard type="broker" onClick={() => handleServiceClick('broker')} />
             </motion.div>
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
+              transition={{ delay: 0.2 }}
             >
               <ServiceCard type="usdt" onClick={() => handleServiceClick('usdt')} />
             </motion.div>
@@ -185,7 +221,7 @@ const ServicesPage = () => {
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
+              transition={{ delay: 0.3 }}
               className="p-4 rounded-xl bg-muted/30 border border-border/30"
             >
               <h3 className="font-semibold text-foreground mb-2">
@@ -206,7 +242,7 @@ const ServicesPage = () => {
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
+              transition={{ delay: 0.4 }}
               className="p-4 rounded-xl bg-muted/30 border border-border/30"
             >
               <h3 className="font-semibold text-foreground mb-2">
@@ -230,7 +266,11 @@ const ServicesPage = () => {
           </div>
         ) : (
           <div className="space-y-3">
-            {requests.length > 0 ? (
+            {loading ? (
+              <div className="flex justify-center py-12">
+                <Clock className="w-8 h-8 text-muted-foreground animate-spin" />
+              </div>
+            ) : requests.length > 0 ? (
               requests.map((request, index) => {
                 const config = statusConfig[request.status];
                 const Icon = config.icon;
@@ -248,12 +288,19 @@ const ServicesPage = () => {
                         <Badge variant="outline" className="mb-2">
                           {t(`services.${request.type}`)}
                         </Badge>
-                        <p className="text-sm text-muted-foreground">
-                          {t('services.amount')}: <span className="trading-number font-medium text-foreground">${request.amount}</span>
-                        </p>
+                        {request.amount && (
+                          <p className="text-sm text-muted-foreground">
+                            {t('services.amount')}: <span className="trading-number font-medium text-foreground">${request.amount}</span>
+                          </p>
+                        )}
                         {request.network && (
                           <p className="text-sm text-muted-foreground">
                             {t('services.network')}: <span className="text-foreground">{request.network}</span>
+                          </p>
+                        )}
+                        {request.admin_notes && (
+                          <p className="text-sm text-muted-foreground mt-2">
+                            {t('services.adminNotes')}: <span className="text-foreground">{request.admin_notes}</span>
                           </p>
                         )}
                       </div>
@@ -346,9 +393,69 @@ const ServicesPage = () => {
               </div>
             )}
 
-            <Button onClick={handleSubmitRequest} className="w-full gap-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{t('services.notes')}</label>
+              <Textarea
+                value={formData.notes}
+                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                placeholder={t('services.notesPlaceholder')}
+                rows={3}
+              />
+            </div>
+
+            <Button onClick={handleSubmitRequest} className="w-full gap-2" disabled={submitting}>
               <Send className="w-4 h-4" />
-              {t('services.submitRequest')}
+              {submitting ? t('common.loading') : t('services.submitRequest')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Broker Account Dialog */}
+      <Dialog open={showBrokerAccountDialog} onOpenChange={setShowBrokerAccountDialog}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>{t('services.openBrokerAccount')}</DialogTitle>
+            <DialogDescription>{t('services.openBrokerAccountDesc')}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="p-4 rounded-lg bg-muted/30 border border-border/30">
+              <div className="flex items-center gap-3 mb-3">
+                <Briefcase className="w-8 h-8 text-amber-400" />
+                <div>
+                  <h4 className="font-semibold">OneRoyal</h4>
+                  <p className="text-sm text-muted-foreground">Official Partner</p>
+                </div>
+              </div>
+              <ul className="space-y-1 text-sm text-muted-foreground">
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-profit" />
+                  {t('services.brokerBenefit1')}
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-profit" />
+                  {t('services.brokerBenefit2')}
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-profit" />
+                  {t('services.brokerBenefit3')}
+                </li>
+              </ul>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{t('services.notes')}</label>
+              <Textarea
+                value={formData.notes}
+                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                placeholder={t('services.brokerNotesPlaceholder')}
+                rows={3}
+              />
+            </div>
+
+            <Button onClick={handleSubmitBrokerAccount} className="w-full gap-2" disabled={submitting}>
+              <Send className="w-4 h-4" />
+              {submitting ? t('common.loading') : t('services.submitRequest')}
             </Button>
           </div>
         </DialogContent>
