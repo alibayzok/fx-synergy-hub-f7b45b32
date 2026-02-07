@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Lock, User, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, ArrowLeft, Phone, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,7 +22,10 @@ const AuthPage = () => {
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [country, setCountry] = useState('');
+  const [phone, setPhone] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -43,7 +46,7 @@ const AuthPage = () => {
           navigate('/');
         }
       } else if (mode === 'register') {
-        const { error } = await signUp(email, password, displayName);
+        const { error } = await signUp(email, password, { firstName, lastName, country, phone });
         if (error) {
           toast({
             title: t('common.error'),
@@ -111,20 +114,75 @@ const AuthPage = () => {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'register' && (
-              <div className="space-y-2">
-                <Label htmlFor="displayName">{t('auth.displayName')}</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground rtl:left-auto rtl:right-3" />
-                  <Input
-                    id="displayName"
-                    type="text"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    className="pl-10 rtl:pl-3 rtl:pr-10"
-                    placeholder={t('auth.displayNamePlaceholder')}
-                  />
+              <>
+                {/* First Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">{t('auth.firstName')}</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground rtl:left-auto rtl:right-3" />
+                    <Input
+                      id="firstName"
+                      type="text"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      className="pl-10 rtl:pl-3 rtl:pr-10"
+                      placeholder={t('auth.firstNamePlaceholder')}
+                      required
+                    />
+                  </div>
                 </div>
-              </div>
+
+                {/* Last Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">{t('auth.lastName')}</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground rtl:left-auto rtl:right-3" />
+                    <Input
+                      id="lastName"
+                      type="text"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      className="pl-10 rtl:pl-3 rtl:pr-10"
+                      placeholder={t('auth.lastNamePlaceholder')}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Country */}
+                <div className="space-y-2">
+                  <Label htmlFor="country">{t('auth.country')}</Label>
+                  <div className="relative">
+                    <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground rtl:left-auto rtl:right-3" />
+                    <Input
+                      id="country"
+                      type="text"
+                      value={country}
+                      onChange={(e) => setCountry(e.target.value)}
+                      className="pl-10 rtl:pl-3 rtl:pr-10"
+                      placeholder={t('auth.selectCountry')}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Phone */}
+                <div className="space-y-2">
+                  <Label htmlFor="phone">{t('auth.phone')}</Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground rtl:left-auto rtl:right-3" />
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="pl-10 rtl:pl-3 rtl:pr-10"
+                      placeholder={t('auth.phonePlaceholder')}
+                      required
+                    />
+                  </div>
+                </div>
+              </>
             )}
 
             <div className="space-y-2">

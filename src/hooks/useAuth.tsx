@@ -12,7 +12,7 @@ interface AuthContextType {
   isAdmin: boolean;
   isVip: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, displayName?: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, userData?: { firstName?: string; lastName?: string; country?: string; phone?: string }) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshRoles: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
@@ -95,14 +95,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error: error as Error | null };
   };
 
-  const signUp = async (email: string, password: string, displayName?: string) => {
+  const signUp = async (email: string, password: string, userData?: { firstName?: string; lastName?: string; country?: string; phone?: string }) => {
+    const displayName = userData?.firstName && userData?.lastName 
+      ? `${userData.firstName} ${userData.lastName}` 
+      : email.split('@')[0];
+    
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: window.location.origin,
         data: {
-          display_name: displayName || email.split('@')[0]
+          display_name: displayName,
+          first_name: userData?.firstName,
+          last_name: userData?.lastName,
+          country: userData?.country,
+          phone: userData?.phone
         }
       }
     });
