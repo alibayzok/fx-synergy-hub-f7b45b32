@@ -249,6 +249,15 @@
       "newTrade": "صفقة جديدة",
       "newUser": "مستخدم جديد",
       "noActivity": "لا يوجد نشاط حديث"
+    },
+    "notifications": {
+      "title": "الإشعارات",
+      "empty": "لا توجد إشعارات",
+      "markAllRead": "قراءة الكل",
+      "clearAll": "حذف الكل",
+      "newUser": "مستخدم جديد",
+      "milestone": "إنجاز جديد",
+      "tradeCrated": "صفقة جديدة"
     }
   }
 }

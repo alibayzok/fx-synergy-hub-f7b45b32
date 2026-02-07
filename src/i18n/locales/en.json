@@ -249,6 +249,15 @@
       "newTrade": "New Trade",
       "newUser": "New User",
       "noActivity": "No recent activity"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "empty": "No notifications",
+      "markAllRead": "Mark all read",
+      "clearAll": "Clear all",
+      "newUser": "New User",
+      "milestone": "New Milestone",
+      "tradeCrated": "New Trade"
     }
   }
 }

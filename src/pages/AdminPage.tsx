@@ -25,6 +25,7 @@ import { TradeFormDialog } from '@/components/admin/TradeFormDialog';
 import { UserManagement } from '@/components/admin/UserManagement';
 import { DashboardStats } from '@/components/admin/DashboardStats';
 import { RecentActivity } from '@/components/admin/RecentActivity';
+import { AdminNotifications } from '@/components/admin/AdminNotifications';
 
 interface Trade {
   id: string;
@@ -127,6 +128,7 @@ const AdminPage = () => {
               <h1 className="text-xl font-bold text-foreground">{t('admin.title')}</h1>
             </div>
           </div>
+          <AdminNotifications />
         </div>
       </header>
 
