@@ -150,7 +150,7 @@
     "loginPrompt": "Sign in to access your profile",
     "forgotPassword": "Forgot password?",
     "sendResetLink": "Send Reset Link",
-    "resetEmailSent": "We sent you a password reset link",
+    "resetEmailSent": "If this email is registered, you'll receive a reset link. If you don't receive it within a few minutes, check the email or create a new account.",
     "backToLogin": "Back to login",
     "setNewPassword": "Set a new password",
     "newPassword": "New Password",
