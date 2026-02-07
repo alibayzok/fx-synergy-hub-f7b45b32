@@ -168,7 +168,9 @@
     "passwordTooShort": "كلمة المرور يجب أن تكون 6 أحرف على الأقل",
     "passwordUpdated": "تم تحديث كلمة المرور بنجاح",
     "passwordUpdatedDesc": "يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة",
-    "redirecting": "جاري التحويل..."
+    "redirecting": "جاري التحويل...",
+    "signInWithGoogle": "تسجيل الدخول بـ Google",
+    "googleSignInError": "حدث خطأ أثناء تسجيل الدخول بـ Google"
   },
   "notifications": {
     "title": "الإشعارات",

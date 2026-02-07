@@ -168,7 +168,9 @@
     "passwordTooShort": "Password must be at least 6 characters",
     "passwordUpdated": "Password updated successfully",
     "passwordUpdatedDesc": "You can now login with your new password",
-    "redirecting": "Redirecting..."
+    "redirecting": "Redirecting...",
+    "signInWithGoogle": "Sign in with Google",
+    "googleSignInError": "An error occurred while signing in with Google"
   },
   "notifications": {
     "title": "Notifications",
