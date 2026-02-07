@@ -274,11 +274,11 @@ export const useReplies = (threadId: string) => {
     if (!user) return false;
 
     try {
+      // RLS handles permission check - admins can update any reply, users only their own
       const { error } = await supabase
         .from('replies')
         .update({ content, updated_at: new Date().toISOString() })
-        .eq('id', replyId)
-        .eq('user_id', user.id);
+        .eq('id', replyId);
 
       if (error) throw error;
 
@@ -473,11 +473,11 @@ export const useRoomChat = (roomId: string) => {
     if (!user || !content.trim()) return false;
 
     try {
+      // RLS handles permission check - admins can update any message, users only their own
       const { error } = await supabase
         .from('room_messages')
         .update({ content: content.trim() })
-        .eq('id', messageId)
-        .eq('user_id', user.id);
+        .eq('id', messageId);
 
       if (error) throw error;
 
