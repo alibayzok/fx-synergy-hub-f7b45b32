@@ -119,7 +119,7 @@ export const useCommunity = () => {
         .from('threads')
         .insert({
           ...data,
-          user_id: user.id
+          user_id: user.id,
         })
         .select()
         .single();
@@ -127,7 +127,8 @@ export const useCommunity = () => {
       if (error) throw error;
 
       toast({ title: 'تم إنشاء الموضوع بنجاح' });
-      await fetchThreads(); // Fetch all threads, not just for this room
+      // Refresh the room that the thread belongs to (so it appears in the correct room filter)
+      await fetchThreads(data.room_id);
       return thread;
     } catch (error) {
       console.error('Error creating thread:', error);
