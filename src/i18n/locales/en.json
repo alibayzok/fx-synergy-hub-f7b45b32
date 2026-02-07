@@ -116,6 +116,7 @@
     "removeFriend": "Remove Friend",
     "requestPending": "Request Pending",
     "acceptRequest": "Accept Request",
+    "accept": "Accept",
     "reject": "Reject",
     "message": "Message",
     "followed": "Followed",
