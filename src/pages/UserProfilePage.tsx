@@ -2,7 +2,10 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, ArrowLeft, Crown, Shield, Calendar, MessageSquare } from 'lucide-react';
+import { 
+  ArrowRight, ArrowLeft, Crown, Shield, Calendar, MessageSquare,
+  UserPlus, UserMinus, Users, Check, X, Loader2, Mail
+} from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +13,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useSocial } from '@/hooks/useSocial';
+import { useConversations } from '@/hooks/useMessaging';
 import { countries } from '@/data/countries';
 import { formatDistanceToNow } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
@@ -38,7 +43,23 @@ const UserProfilePage = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({ threads: 0, replies: 0 });
+  const [communityStats, setCommunityStats] = useState({ threads: 0, replies: 0 });
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  
+  const { 
+    relationship, 
+    stats: socialStats, 
+    loading: socialLoading,
+    followUser,
+    unfollowUser,
+    sendFriendRequest,
+    acceptFriendRequest,
+    rejectFriendRequest,
+    cancelFriendRequest,
+    removeFriend
+  } = useSocial(userId);
+
+  const { startDirectConversation } = useConversations();
   
   const isArabic = i18n.language === 'ar';
   const BackArrow = isArabic ? ArrowRight : ArrowLeft;
@@ -71,13 +92,13 @@ const UserProfilePage = () => {
         
         setUserRole(roleData);
 
-        // Fetch stats
+        // Fetch community stats
         const [{ count: threadsCount }, { count: repliesCount }] = await Promise.all([
           supabase.from('threads').select('*', { count: 'exact', head: true }).eq('user_id', userId),
           supabase.from('replies').select('*', { count: 'exact', head: true }).eq('user_id', userId)
         ]);
 
-        setStats({
+        setCommunityStats({
           threads: threadsCount || 0,
           replies: repliesCount || 0
         });
@@ -99,9 +120,58 @@ const UserProfilePage = () => {
     }
   }, [user, userId, navigate]);
 
+  const handleFollow = async () => {
+    setActionLoading('follow');
+    if (relationship.isFollowing) {
+      await unfollowUser();
+    } else {
+      await followUser();
+    }
+    setActionLoading(null);
+  };
+
+  const handleFriendAction = async () => {
+    setActionLoading('friend');
+    
+    switch (relationship.friendStatus) {
+      case 'none':
+      case 'rejected':
+        await sendFriendRequest();
+        break;
+      case 'pending_sent':
+        await cancelFriendRequest();
+        break;
+      case 'pending_received':
+        await acceptFriendRequest();
+        break;
+      case 'accepted':
+        await removeFriend();
+        break;
+    }
+    
+    setActionLoading(null);
+  };
+
+  const handleRejectFriend = async () => {
+    setActionLoading('reject');
+    await rejectFriendRequest();
+    setActionLoading(null);
+  };
+
+  const handleMessage = async () => {
+    if (!userId) return;
+    setActionLoading('message');
+    const convId = await startDirectConversation(userId);
+    setActionLoading(null);
+    if (convId) {
+      navigate(`/messages?conv=${convId}`);
+    }
+  };
+
   const displayName = profile?.display_name || profile?.username || t('community.anonymous');
   const isAdmin = userRole?.role === 'admin';
   const isVip = userRole?.role === 'vip';
+  const isOwnProfile = user?.id === userId;
 
   const formatDate = (dateStr: string) => {
     return formatDistanceToNow(new Date(dateStr), {
@@ -113,6 +183,30 @@ const UserProfilePage = () => {
   const countryName = profile?.country
     ? countries.find(c => c.code === profile.country)?.name[isArabic ? 'ar' : 'en'] || profile.country
     : null;
+
+  const getFriendButtonText = () => {
+    switch (relationship.friendStatus) {
+      case 'pending_sent':
+        return t('social.requestPending');
+      case 'pending_received':
+        return t('social.acceptRequest');
+      case 'accepted':
+        return t('social.friends');
+      default:
+        return t('social.addFriend');
+    }
+  };
+
+  const getFriendButtonVariant = (): 'default' | 'outline' | 'secondary' => {
+    switch (relationship.friendStatus) {
+      case 'accepted':
+        return 'secondary';
+      case 'pending_sent':
+        return 'outline';
+      default:
+        return 'default';
+    }
+  };
 
   return (
     <AppLayout>
@@ -194,30 +288,150 @@ const UserProfilePage = () => {
                 <p className="text-sm text-muted-foreground mb-2">{countryName}</p>
               )}
 
-              <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
+              <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground mb-4">
                 <Calendar className="w-3 h-3" />
                 <span>{t('profile.joinedAt')} {formatDate(profile.created_at)}</span>
               </div>
+
+              {/* Action Buttons */}
+              {user && !isOwnProfile && (
+                <div className="flex flex-wrap justify-center gap-2 mt-4">
+                  {/* Follow Button */}
+                  <Button
+                    variant={relationship.isFollowing ? "outline" : "default"}
+                    size="sm"
+                    onClick={handleFollow}
+                    disabled={actionLoading === 'follow' || socialLoading}
+                  >
+                    {actionLoading === 'follow' ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : relationship.isFollowing ? (
+                      <>
+                        <UserMinus className="w-4 h-4 me-1" />
+                        {t('social.unfollow')}
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="w-4 h-4 me-1" />
+                        {t('social.follow')}
+                      </>
+                    )}
+                  </Button>
+
+                  {/* Friend Button */}
+                  <Button
+                    variant={getFriendButtonVariant()}
+                    size="sm"
+                    onClick={handleFriendAction}
+                    disabled={actionLoading === 'friend' || socialLoading}
+                  >
+                    {actionLoading === 'friend' ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : relationship.friendStatus === 'accepted' ? (
+                      <>
+                        <Users className="w-4 h-4 me-1" />
+                        {getFriendButtonText()}
+                      </>
+                    ) : relationship.friendStatus === 'pending_received' ? (
+                      <>
+                        <Check className="w-4 h-4 me-1" />
+                        {getFriendButtonText()}
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="w-4 h-4 me-1" />
+                        {getFriendButtonText()}
+                      </>
+                    )}
+                  </Button>
+
+                  {/* Reject Button (only for pending received) */}
+                  {relationship.friendStatus === 'pending_received' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRejectFriend}
+                      disabled={actionLoading === 'reject'}
+                    >
+                      {actionLoading === 'reject' ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <X className="w-4 h-4 me-1" />
+                          {t('social.reject')}
+                        </>
+                      )}
+                    </Button>
+                  )}
+
+                  {/* Message Button */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleMessage}
+                    disabled={actionLoading === 'message'}
+                  >
+                    {actionLoading === 'message' ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <>
+                        <Mail className="w-4 h-4 me-1" />
+                        {t('social.message')}
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
             </motion.div>
 
-            {/* Stats */}
+            {/* Social Stats */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
+              className="grid grid-cols-3 gap-3"
+            >
+              <div className="p-3 rounded-xl bg-card/50 border border-border/30 text-center">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <Users className="w-4 h-4 text-primary" />
+                  <span className="text-xl font-bold text-foreground">{socialStats.followers}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">{t('social.followers')}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-card/50 border border-border/30 text-center">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <Users className="w-4 h-4 text-primary" />
+                  <span className="text-xl font-bold text-foreground">{socialStats.following}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">{t('social.following')}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-card/50 border border-border/30 text-center">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <Users className="w-4 h-4 text-primary" />
+                  <span className="text-xl font-bold text-foreground">{socialStats.friends}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">{t('social.friends')}</p>
+              </div>
+            </motion.div>
+
+            {/* Community Stats */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
               className="grid grid-cols-2 gap-4"
             >
               <div className="p-4 rounded-xl bg-card/50 border border-border/30 text-center">
                 <div className="flex items-center justify-center gap-2 mb-1">
                   <MessageSquare className="w-4 h-4 text-primary" />
-                  <span className="text-2xl font-bold text-foreground">{stats.threads}</span>
+                  <span className="text-2xl font-bold text-foreground">{communityStats.threads}</span>
                 </div>
                 <p className="text-xs text-muted-foreground">{t('community.threads')}</p>
               </div>
               <div className="p-4 rounded-xl bg-card/50 border border-border/30 text-center">
                 <div className="flex items-center justify-center gap-2 mb-1">
                   <MessageSquare className="w-4 h-4 text-primary" />
-                  <span className="text-2xl font-bold text-foreground">{stats.replies}</span>
+                  <span className="text-2xl font-bold text-foreground">{communityStats.replies}</span>
                 </div>
                 <p className="text-xs text-muted-foreground">{t('community.replies')}</p>
               </div>

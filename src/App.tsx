@@ -11,6 +11,7 @@ import MarketsPage from "./pages/MarketsPage";
 import ServicesPage from "./pages/ServicesPage";
 import ProfilePage from "./pages/ProfilePage";
 import UserProfilePage from "./pages/UserProfilePage";
+import MessagesPage from "./pages/MessagesPage";
 import AuthPage from "./pages/AuthPage";
 import AdminPage from "./pages/AdminPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/services" element={<ServicesPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/user/:userId" element={<UserProfilePage />} />
+            <Route path="/messages" element={<MessagesPage />} />
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
