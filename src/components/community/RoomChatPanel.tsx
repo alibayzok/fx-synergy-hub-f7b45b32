@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { Send, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Send, ArrowRight, ArrowLeft, Pencil, Trash2, X, Check } from 'lucide-react';
 import { useRoomChat, RoomMessage } from '@/hooks/useCommunity';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -20,8 +20,8 @@ interface RoomChatPanelProps {
 
 export const RoomChatPanel = ({ roomId, roomName, onBack }: RoomChatPanelProps) => {
   const { t, i18n } = useTranslation();
-  const { user } = useAuth();
-  const { messages, loading, sendMessage } = useRoomChat(roomId);
+  const { user, isAdmin } = useAuth();
+  const { messages, loading, sendMessage, updateMessage, deleteMessage } = useRoomChat(roomId);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -90,6 +90,9 @@ export const RoomChatPanel = ({ roomId, roomName, onBack }: RoomChatPanelProps) 
                 key={message.id}
                 message={message}
                 isOwn={message.user_id === user?.id}
+                isAdmin={isAdmin}
+                onEdit={(content) => updateMessage(message.id, content)}
+                onDelete={() => deleteMessage(message.id)}
                 formatTime={formatTime}
                 showAvatar={index === 0 || messages[index - 1].user_id !== message.user_id}
               />
@@ -125,18 +128,58 @@ export const RoomChatPanel = ({ roomId, roomName, onBack }: RoomChatPanelProps) 
 interface MessageBubbleProps {
   message: RoomMessage;
   isOwn: boolean;
+  isAdmin: boolean;
+  onEdit: (content: string) => Promise<boolean>;
+  onDelete: () => Promise<boolean>;
   formatTime: (date: string) => string;
   showAvatar: boolean;
 }
 
-const MessageBubble = ({ message, isOwn, formatTime, showAvatar }: MessageBubbleProps) => {
+const MessageBubble = ({ message, isOwn, isAdmin, onEdit, onDelete, formatTime, showAvatar }: MessageBubbleProps) => {
+  const { t } = useTranslation();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(message.content);
+  const [saving, setSaving] = useState(false);
+  
   const authorName = message.author?.display_name || message.author?.username || 'مستخدم';
+  const canModify = isOwn || isAdmin;
+
+  const handleSaveEdit = async () => {
+    if (!editContent.trim() || saving) return;
+    setSaving(true);
+    const success = await onEdit(editContent);
+    if (success) {
+      setIsEditing(false);
+    }
+    setSaving(false);
+  };
+
+  const handleCancelEdit = () => {
+    setEditContent(message.content);
+    setIsEditing(false);
+  };
+
+  const handleDelete = async () => {
+    if (confirm(t('community.confirmDeleteMessage'))) {
+      await onDelete();
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSaveEdit();
+    }
+    if (e.key === 'Escape') {
+      handleCancelEdit();
+    }
+  };
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className={cn("flex gap-2", isOwn ? "flex-row-reverse" : "flex-row")}
+      className={cn("flex gap-2 group", isOwn ? "flex-row-reverse" : "flex-row")}
     >
       {showAvatar ? (
         <Avatar className="w-8 h-8 flex-shrink-0">
@@ -153,16 +196,50 @@ const MessageBubble = ({ message, isOwn, formatTime, showAvatar }: MessageBubble
         {showAvatar && (
           <span className="text-xs text-muted-foreground mb-1">{authorName}</span>
         )}
-        <div
-          className={cn(
-            "px-3 py-2 rounded-2xl",
-            isOwn
-              ? "bg-primary text-primary-foreground rounded-br-sm"
-              : "bg-muted text-foreground rounded-bl-sm"
-          )}
-        >
-          <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
-        </div>
+        
+        {isEditing ? (
+          <div className="flex items-center gap-2 w-full">
+            <Input
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="flex-1"
+              disabled={saving}
+              autoFocus
+            />
+            <Button size="icon" variant="ghost" onClick={handleSaveEdit} disabled={saving || !editContent.trim()}>
+              <Check className="w-4 h-4 text-profit" />
+            </Button>
+            <Button size="icon" variant="ghost" onClick={handleCancelEdit} disabled={saving}>
+              <X className="w-4 h-4 text-destructive" />
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1">
+            <div
+              className={cn(
+                "px-3 py-2 rounded-2xl",
+                isOwn
+                  ? "bg-primary text-primary-foreground rounded-br-sm"
+                  : "bg-muted text-foreground rounded-bl-sm"
+              )}
+            >
+              <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+            </div>
+            
+            {canModify && (
+              <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setIsEditing(true)}>
+                  <Pencil className="w-3 h-3 text-muted-foreground hover:text-primary" />
+                </Button>
+                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={handleDelete}>
+                  <Trash2 className="w-3 h-3 text-muted-foreground hover:text-destructive" />
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+        
         <span className="text-[10px] text-muted-foreground mt-1">
           {formatTime(message.created_at)}
         </span>

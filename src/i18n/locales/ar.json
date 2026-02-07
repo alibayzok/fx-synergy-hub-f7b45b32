@@ -101,7 +101,10 @@
     "markBest": "أفضل إجابة",
     "backToThreads": "العودة للمواضيع",
     "chatHint": "دردشة مباشرة",
-    "chatHintDesc": "اضغط على أي غرفة للدخول والمحادثة مع الأعضاء"
+    "chatHintDesc": "اضغط على أي غرفة للدخول والمحادثة مع الأعضاء",
+    "edited": "معدّل",
+    "confirmDeleteReply": "هل أنت متأكد من حذف هذا الرد؟",
+    "confirmDeleteMessage": "هل أنت متأكد من حذف هذه الرسالة؟"
   },
   "markets": {
     "title": "الأسواق",
