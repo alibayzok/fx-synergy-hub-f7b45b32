@@ -102,6 +102,7 @@ const CommunityPage = () => {
   const [selectedRoom, setSelectedRoom] = useState<typeof roomsData[0] | null>(null);
   const [selectedThread, setSelectedThread] = useState<Thread | null>(null);
   const [showNewThreadDialog, setShowNewThreadDialog] = useState(false);
+  const [threadRoomFilter, setThreadRoomFilter] = useState<string>('room-general');
   const [newThread, setNewThread] = useState<{
     title: string;
     content: string;
@@ -111,7 +112,7 @@ const CommunityPage = () => {
     title: '',
     content: '',
     tag: 'question',
-    room_id: 'room-general'
+    room_id: 'room-general',
   });
 
   const { user, isVip, isAdmin, loading: authLoading } = useAuth();
@@ -126,12 +127,13 @@ const CommunityPage = () => {
     help: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
   };
 
-  // Fetch threads on mount
+  // Fetch threads when user is authenticated and tab/filter changes
   useEffect(() => {
-    if (user) {
-      fetchThreads();
-    }
-  }, [user, fetchThreads]);
+    if (!user) return;
+    if (activeTab !== 'threads') return;
+
+    fetchThreads(threadRoomFilter === 'all' ? undefined : threadRoomFilter);
+  }, [user, activeTab, threadRoomFilter, fetchThreads]);
 
   const formatTime = (dateStr: string) => {
     return formatDistanceToNow(new Date(dateStr), {
@@ -187,6 +189,7 @@ const CommunityPage = () => {
     });
 
     if (result) {
+      setThreadRoomFilter(newThread.room_id);
       setNewThread({ title: '', content: '', tag: 'question', room_id: 'room-general' });
       setShowNewThreadDialog(false);
       setActiveTab('threads');
@@ -317,6 +320,23 @@ const CommunityPage = () => {
           </div>
         ) : (
           <div className="space-y-3">
+            <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-card/40 border border-border/30">
+              <span className="text-sm font-medium text-foreground">{isArabic ? 'الغرفة' : 'Room'}</span>
+              <Select value={threadRoomFilter} onValueChange={setThreadRoomFilter}>
+                <SelectTrigger className="w-[220px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{isArabic ? 'كل الغرف' : 'All rooms'}</SelectItem>
+                  {roomsData.filter(r => !r.is_vip || isVipUser).map(room => (
+                    <SelectItem key={room.id} value={room.id}>
+                      {isArabic ? room.name_ar : room.name_en}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {threadsLoading ? (
               <div className="flex justify-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
