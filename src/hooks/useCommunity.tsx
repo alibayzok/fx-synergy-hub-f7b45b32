@@ -127,7 +127,7 @@ export const useCommunity = () => {
       if (error) throw error;
 
       toast({ title: 'تم إنشاء الموضوع بنجاح' });
-      await fetchThreads(data.room_id);
+      await fetchThreads(); // Fetch all threads, not just for this room
       return thread;
     } catch (error) {
       console.error('Error creating thread:', error);
