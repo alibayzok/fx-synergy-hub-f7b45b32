@@ -691,6 +691,18 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      is_conversation_admin: {
+        Args: { check_user_id?: string; conv_id: string }
+        Returns: boolean
+      }
+      is_conversation_creator: {
+        Args: { check_user_id?: string; conv_id: string }
+        Returns: boolean
+      }
+      is_conversation_participant: {
+        Args: { check_user_id?: string; conv_id: string }
+        Returns: boolean
+      }
       is_vip: { Args: never; Returns: boolean }
       mask_phone_number: { Args: { phone: string }; Returns: string }
     }
