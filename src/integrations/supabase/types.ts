@@ -181,7 +181,51 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      profiles_admin_view: {
+        Row: {
+          avatar_url: string | null
+          country: string | null
+          created_at: string | null
+          display_name: string | null
+          first_name: string | null
+          id: string | null
+          language: string | null
+          last_name: string | null
+          phone: string | null
+          updated_at: string | null
+          user_id: string | null
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          country?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          first_name?: string | null
+          id?: string | null
+          language?: string | null
+          last_name?: string | null
+          phone?: never
+          updated_at?: string | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          country?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          first_name?: string | null
+          id?: string | null
+          language?: string | null
+          last_name?: string | null
+          phone?: never
+          updated_at?: string | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       can_access_trade: {
@@ -199,6 +243,7 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_vip: { Args: never; Returns: boolean }
+      mask_phone_number: { Args: { phone: string }; Returns: string }
     }
     Enums: {
       app_role: "admin" | "vip" | "free"
