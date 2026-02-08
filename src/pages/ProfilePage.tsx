@@ -167,7 +167,7 @@ const ProfilePage = () => {
   }
 
   return (
-    <AppLayout>
+    <AppLayout showNotifications={false}>
       {/* Header */}
       <header className="sticky top-0 z-40 glass-card border-b border-border/30">
         <div className="flex items-center justify-between px-4 py-3">
