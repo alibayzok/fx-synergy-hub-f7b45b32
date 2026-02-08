@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Dialog,
@@ -34,8 +34,10 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { useAnalyses } from '@/hooks/useAnalyses';
 import { useMarketData } from '@/hooks/useMarketData';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { Check, ChevronsUpDown, TrendingUp, TrendingDown, FileText } from 'lucide-react';
+import { Check, ChevronsUpDown, TrendingUp, TrendingDown, FileText, ImagePlus, X, Loader2 } from 'lucide-react';
 
 interface Analysis {
   id: string;
@@ -60,8 +62,11 @@ export const AnalysisFormDialog = ({ open, onOpenChange, analysis, onSuccess }: 
   const { user } = useAuth();
   const { createAnalysis, updateAnalysis } = useAnalyses();
   const { symbols } = useMarketData(true, 5000);
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [symbolOpen, setSymbolOpen] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -112,6 +117,82 @@ export const AnalysisFormDialog = ({ open, onOpenChange, analysis, onSuccess }: 
       asset_type: marketSymbol?.asset_type || prev.asset_type
     }));
     setSymbolOpen(false);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+    const newAttachments: string[] = [];
+
+    for (const file of Array.from(files)) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: 'خطأ',
+          description: 'يُسمح فقط بملفات الصور',
+          variant: 'destructive'
+        });
+        continue;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'خطأ',
+          description: 'حجم الملف يجب أن يكون أقل من 5 ميجابايت',
+          variant: 'destructive'
+        });
+        continue;
+      }
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `analyses/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('analysis-attachments')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        toast({
+          title: 'خطأ في الرفع',
+          description: uploadError.message,
+          variant: 'destructive'
+        });
+        continue;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('analysis-attachments')
+        .getPublicUrl(filePath);
+
+      newAttachments.push(publicUrl);
+    }
+
+    if (newAttachments.length > 0) {
+      setFormData(prev => ({
+        ...prev,
+        attachments: [...prev.attachments, ...newAttachments]
+      }));
+      toast({
+        title: 'تم الرفع',
+        description: `تم رفع ${newAttachments.length} صورة بنجاح`
+      });
+    }
+
+    setUploading(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const removeAttachment = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      attachments: prev.attachments.filter((_, i) => i !== index)
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -320,6 +401,62 @@ export const AnalysisFormDialog = ({ open, onOpenChange, analysis, onSuccess }: 
             </div>
           </div>
 
+          {/* Chart Image Upload */}
+          <div className="space-y-2">
+            <Label>صور الشارت</Label>
+            <div className="border-2 border-dashed border-border/50 rounded-xl p-4 text-center hover:border-primary/50 transition-colors">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleFileUpload}
+                className="hidden"
+                id="chart-upload"
+              />
+              <label htmlFor="chart-upload" className="cursor-pointer">
+                {uploading ? (
+                  <div className="flex flex-col items-center gap-2">
+                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                    <span className="text-sm text-muted-foreground">جاري الرفع...</span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-2">
+                    <ImagePlus className="w-8 h-8 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">
+                      اضغط لإضافة صور الشارت
+                    </span>
+                    <span className="text-xs text-muted-foreground/70">
+                      PNG, JPG حتى 5MB
+                    </span>
+                  </div>
+                )}
+              </label>
+            </div>
+
+            {/* Uploaded Images Preview */}
+            {formData.attachments.length > 0 && (
+              <div className="grid grid-cols-3 gap-2 mt-3">
+                {formData.attachments.map((url, index) => (
+                  <div key={index} className="relative group aspect-video rounded-lg overflow-hidden bg-muted">
+                    <img
+                      src={url}
+                      alt={`Chart ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeAttachment(index)}
+                      className="absolute top-1 right-1 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Content */}
           <div className="space-y-2">
             <Label>محتوى التحليل</Label>
@@ -327,7 +464,7 @@ export const AnalysisFormDialog = ({ open, onOpenChange, analysis, onSuccess }: 
               value={formData.content}
               onChange={(e) => setFormData({ ...formData, content: e.target.value })}
               placeholder="اكتب تحليلك التفصيلي هنا..."
-              className="min-h-[200px]"
+              className="min-h-[150px]"
               required
             />
           </div>
@@ -336,7 +473,7 @@ export const AnalysisFormDialog = ({ open, onOpenChange, analysis, onSuccess }: 
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {t('common.cancel')}
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading || uploading}>
               {loading ? t('common.loading') : (analysis ? t('common.save') : 'نشر التحليل')}
             </Button>
           </div>
