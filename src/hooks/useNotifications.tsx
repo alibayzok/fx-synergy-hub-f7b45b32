@@ -1,6 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
+import { playNotificationSound, initNotificationSound } from '@/lib/notification-sound';
+import { 
+  showBackgroundNotification, 
+  registerServiceWorker,
+  requestNotificationPermission,
+  isPushSupported 
+} from '@/lib/push-notifications';
 
 export interface UserNotification {
   id: string;
@@ -18,6 +26,18 @@ export const useNotifications = () => {
   const [notifications, setNotifications] = useState<UserNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [pushPermission, setPushPermission] = useState<NotificationPermission | 'unsupported'>('default');
+
+  // Initialize notification sound and service worker on mount
+  useEffect(() => {
+    initNotificationSound();
+    
+    // Register service worker for push notifications
+    if (isPushSupported()) {
+      registerServiceWorker();
+      setPushPermission(Notification.permission);
+    }
+  }, []);
 
   const fetchNotifications = useCallback(async () => {
     if (!user) return;
@@ -113,10 +133,29 @@ export const useNotifications = () => {
           table: 'user_notifications',
           filter: `user_id=eq.${user.id}`
         },
-        (payload) => {
+        async (payload) => {
           const newNotification = payload.new as UserNotification;
           setNotifications(prev => [newNotification, ...prev]);
           setUnreadCount(prev => prev + 1);
+
+          // Play notification sound
+          await playNotificationSound();
+
+          // Show toast notification inside the app
+          toast(newNotification.title, {
+            description: newNotification.message,
+            duration: 5000,
+          });
+
+          // Show push notification if app is in background
+          await showBackgroundNotification({
+            title: newNotification.title,
+            body: newNotification.message,
+            data: {
+              ...newNotification.data,
+              notificationId: newNotification.id,
+            },
+          });
         }
       )
       .subscribe();
@@ -126,14 +165,23 @@ export const useNotifications = () => {
     };
   }, [user]);
 
+  // Request push notification permission
+  const requestPushPermission = useCallback(async () => {
+    const permission = await requestNotificationPermission();
+    setPushPermission(permission);
+    return permission;
+  }, []);
+
   return {
     notifications,
     unreadCount,
     loading,
+    pushPermission,
     fetchNotifications,
     markAsRead,
     markAllAsRead,
     deleteNotification,
+    requestPushPermission,
     refetch: fetchNotifications
   };
 };

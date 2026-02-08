@@ -25,6 +25,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
+import { playNotificationSound, initNotificationSound } from '@/lib/notification-sound';
+import { showBackgroundNotification } from '@/lib/push-notifications';
 
 interface Notification {
   id: string;
@@ -63,6 +65,11 @@ export const AdminNotifications = () => {
   }, [isAdmin]);
 
   useEffect(() => {
+    // Initialize sound
+    initNotificationSound();
+  }, []);
+
+  useEffect(() => {
     if (!isAdmin) return;
 
     fetchNotifications();
@@ -77,17 +84,27 @@ export const AdminNotifications = () => {
           schema: 'public',
           table: 'admin_notifications'
         },
-        (payload) => {
+        async (payload) => {
           const newNotification = payload.new as Notification;
           
           // Add to list
           setNotifications(prev => [newNotification, ...prev]);
           setUnreadCount(prev => prev + 1);
 
+          // Play notification sound
+          await playNotificationSound();
+
           // Show toast
           toast({
             title: newNotification.title,
             description: newNotification.message,
+          });
+
+          // Show push notification if app is in background
+          await showBackgroundNotification({
+            title: newNotification.title,
+            body: newNotification.message,
+            data: { type: 'admin', url: '/admin' },
           });
         }
       )

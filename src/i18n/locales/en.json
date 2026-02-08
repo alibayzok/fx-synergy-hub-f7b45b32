@@ -285,7 +285,18 @@
     "mention": "Mention",
     "reply": "New Reply",
     "enabled": "Notifications enabled",
-    "disabled": "Notifications disabled"
+    "disabled": "Notifications disabled",
+    "settings": "Notification Settings",
+    "settingsDescription": "Control how you receive notifications",
+    "soundEnabled": "Sound Notifications",
+    "volume": "Volume",
+    "testSound": "Test",
+    "pushEnabled": "Push Notifications",
+    "notSupported": "Not supported",
+    "requestPermission": "Enable Notifications",
+    "permissionGranted": "Notifications enabled",
+    "permissionDenied": "Notification permission denied",
+    "permissionDeniedHelp": "To enable notifications, go to browser settings and allow notifications for this site"
   },
   "common": {
     "loading": "Loading...",

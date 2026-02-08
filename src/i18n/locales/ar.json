@@ -285,7 +285,18 @@
     "mention": "إشارة",
     "reply": "رد جديد",
     "enabled": "تم تفعيل الإشعارات",
-    "disabled": "تم إيقاف الإشعارات"
+    "disabled": "تم إيقاف الإشعارات",
+    "settings": "إعدادات الإشعارات",
+    "settingsDescription": "تحكم في كيفية تلقي الإشعارات",
+    "soundEnabled": "الإشعارات الصوتية",
+    "volume": "مستوى الصوت",
+    "testSound": "تجربة",
+    "pushEnabled": "إشعارات الهاتف",
+    "notSupported": "غير مدعوم",
+    "requestPermission": "السماح بالإشعارات",
+    "permissionGranted": "تم السماح بالإشعارات",
+    "permissionDenied": "تم رفض إذن الإشعارات",
+    "permissionDeniedHelp": "لتفعيل الإشعارات، اذهب إلى إعدادات المتصفح وسمح للموقع بإرسال الإشعارات"
   },
   "common": {
     "loading": "جاري التحميل...",
