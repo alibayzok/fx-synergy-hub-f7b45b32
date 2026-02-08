@@ -274,10 +274,11 @@ const CommunityPage = () => {
   return (
     <AppLayout>
       {/* Header */}
-      <header className="sticky top-0 z-40 glass-card border-b border-border/30">
+      <header className="sticky top-0 z-30 glass-card border-b border-border/30">
         <div className="flex items-center justify-between px-4 py-3">
           <h1 className="text-xl font-bold text-foreground">{t('community.title')}</h1>
-          <Button size="sm" className="h-9 gap-2" onClick={() => setShowNewThreadDialog(true)}>
+          {/* زر موضوع جديد - مع مسافة من الأزرار العائمة */}
+          <Button size="sm" className="h-9 gap-2 me-24" onClick={() => setShowNewThreadDialog(true)}>
             <Plus className="w-4 h-4" />
             {t('community.newThread')}
           </Button>
