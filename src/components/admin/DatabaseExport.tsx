@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { 
@@ -8,7 +8,8 @@ import {
   FileCode,
   Loader2,
   CheckCircle,
-  Table
+  Table,
+  RefreshCw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -446,6 +447,8 @@ CREATE POLICY "Only admins can delete trades" ON public.trades FOR DELETE USING 
 -- Add more RLS policies as needed...
 `;
 
+const AUTO_REFRESH_INTERVAL = 30000; // 30 seconds
+
 export const DatabaseExport = () => {
   const { t } = useTranslation();
   const { toast } = useToast();
@@ -453,19 +456,47 @@ export const DatabaseExport = () => {
   const [exportType, setExportType] = useState<'schema' | 'data' | 'full' | null>(null);
   const [progress, setProgress] = useState(0);
   const [tableStats, setTableStats] = useState<Record<string, number>>({});
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const fetchTableCounts = async () => {
+  const fetchTableCounts = useCallback(async (showToast = false) => {
+    setIsRefreshing(true);
     const stats: Record<string, number> = {};
     
-    for (const table of TABLES) {
-      const { count } = await supabase
-        .from(table)
-        .select('*', { count: 'exact', head: true });
-      stats[table] = count || 0;
+    try {
+      for (const table of TABLES) {
+        const { count } = await supabase
+          .from(table)
+          .select('*', { count: 'exact', head: true });
+        stats[table] = count || 0;
+      }
+      
+      setTableStats(stats);
+      setLastUpdated(new Date());
+      
+      if (showToast) {
+        toast({
+          title: t('admin.export.dataRefreshed'),
+          description: t('admin.export.dataRefreshedDesc')
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching table counts:', error);
+    } finally {
+      setIsRefreshing(false);
     }
+  }, [t, toast]);
+
+  // Auto-refresh on mount and periodically
+  useEffect(() => {
+    fetchTableCounts();
     
-    setTableStats(stats);
-  };
+    const interval = setInterval(() => {
+      fetchTableCounts();
+    }, AUTO_REFRESH_INTERVAL);
+    
+    return () => clearInterval(interval);
+  }, [fetchTableCounts]);
 
   const downloadFile = (content: string, filename: string, type: string) => {
     const blob = new Blob([content], { type });
@@ -716,16 +747,25 @@ export const DatabaseExport = () => {
       <Card className="border-border/30">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Table className="w-5 h-5 text-muted-foreground" />
-              {t('admin.export.tablesOverview')}
-            </CardTitle>
+            <div>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Table className="w-5 h-5 text-muted-foreground" />
+                {t('admin.export.tablesOverview')}
+              </CardTitle>
+              {lastUpdated && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {t('admin.export.lastUpdated')}: {lastUpdated.toLocaleTimeString()}
+                </p>
+              )}
+            </div>
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={fetchTableCounts}
+              onClick={() => fetchTableCounts(true)}
+              disabled={isRefreshing}
               className="gap-2"
             >
+              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
               {t('admin.export.refresh')}
             </Button>
           </div>
@@ -742,6 +782,8 @@ export const DatabaseExport = () => {
                   <Badge variant="secondary" className="ml-2">
                     {tableStats[table]}
                   </Badge>
+                ) : isRefreshing ? (
+                  <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
                 ) : (
                   <Badge variant="outline" className="ml-2">
                     -
