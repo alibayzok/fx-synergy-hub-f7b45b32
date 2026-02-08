@@ -226,7 +226,7 @@ export const useConversations = () => {
         .from('conversation_participants')
         .insert([
           { conversation_id: newConv.id, user_id: user.id, is_admin: true },
-          { conversation_id: newConv.id, user_id: targetUserId }
+          { conversation_id: newConv.id, user_id: targetUserId, is_admin: false }
         ]);
 
       if (partError) throw partError;
