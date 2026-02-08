@@ -793,24 +793,27 @@ export type Database = {
       user_privacy_settings: {
         Row: {
           created_at: string
+          friends_visibility: Database["public"]["Enums"]["privacy_setting"]
           id: string
-          messaging_privacy: Database["public"]["Enums"]["messaging_privacy"]
+          messaging_privacy: Database["public"]["Enums"]["privacy_setting"]
           show_online_status: boolean
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          friends_visibility?: Database["public"]["Enums"]["privacy_setting"]
           id?: string
-          messaging_privacy?: Database["public"]["Enums"]["messaging_privacy"]
+          messaging_privacy?: Database["public"]["Enums"]["privacy_setting"]
           show_online_status?: boolean
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          friends_visibility?: Database["public"]["Enums"]["privacy_setting"]
           id?: string
-          messaging_privacy?: Database["public"]["Enums"]["messaging_privacy"]
+          messaging_privacy?: Database["public"]["Enums"]["privacy_setting"]
           show_online_status?: boolean
           updated_at?: string
           user_id?: string
@@ -927,11 +930,7 @@ export type Database = {
       conversation_type: "direct" | "group"
       entry_type: "market" | "limit" | "stop"
       friend_request_status: "pending" | "accepted" | "rejected"
-      messaging_privacy:
-        | "everyone"
-        | "friends_only"
-        | "followers_only"
-        | "nobody"
+      privacy_setting: "everyone" | "friends_only" | "followers_only" | "nobody"
       service_status:
         | "pending"
         | "in_progress"
@@ -1087,12 +1086,7 @@ export const Constants = {
       conversation_type: ["direct", "group"],
       entry_type: ["market", "limit", "stop"],
       friend_request_status: ["pending", "accepted", "rejected"],
-      messaging_privacy: [
-        "everyone",
-        "friends_only",
-        "followers_only",
-        "nobody",
-      ],
+      privacy_setting: ["everyone", "friends_only", "followers_only", "nobody"],
       service_status: [
         "pending",
         "in_progress",
