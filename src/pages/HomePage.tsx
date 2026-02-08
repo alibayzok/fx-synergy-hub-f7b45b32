@@ -57,8 +57,8 @@ const HomePage = () => {
       case 'askQuestion':
         navigate('/community');
         break;
-      case 'createAlert':
-        navigate('/markets');
+      case 'viewAnalyses':
+        navigate('/analyses');
         break;
       case 'publishTrade':
         navigate('/admin');
