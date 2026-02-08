@@ -138,7 +138,22 @@
     "friendRequestAccepted": "تم قبول طلب الصداقة",
     "friendRequestRejected": "تم رفض طلب الصداقة",
     "friendRequestCancelled": "تم إلغاء طلب الصداقة",
-    "friendRemoved": "تمت إزالة الصديق"
+    "friendRemoved": "تمت إزالة الصديق",
+    "friendRequests": "طلبات الصداقة",
+    "pendingReceived": "طلبات مستلمة",
+    "pendingSent": "طلبات مرسلة",
+    "noRequests": "لا توجد طلبات صداقة",
+    "noFriends": "لا يوجد أصدقاء بعد",
+    "friendSince": "صديق منذ",
+    "privacy": {
+      "title": "إعدادات الخصوصية",
+      "whoCanSeeFriends": "من يمكنه رؤية أصدقائي",
+      "whoCanMessage": "من يمكنه مراسلتي",
+      "everyone": "الجميع",
+      "friendsOnly": "الأصدقاء فقط",
+      "followersOnly": "المتابعون فقط",
+      "nobody": "لا أحد"
+    }
   },
   "messages": {
     "title": "الرسائل",

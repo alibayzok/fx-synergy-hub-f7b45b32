@@ -42,6 +42,7 @@ import { useTrades } from '@/hooks/useTrades';
 import { countries } from '@/data/countries';
 import { useToast } from '@/hooks/use-toast';
 import { NotificationSettings } from '@/components/notifications/NotificationSettings';
+import { FriendsSection } from '@/components/profile/FriendsSection';
 
 const ProfilePage = () => {
   const { t, i18n } = useTranslation();
@@ -291,11 +292,14 @@ const ProfilePage = () => {
           })}
         </motion.div>
 
+        {/* Friends Section */}
+        <FriendsSection />
+
         {/* Logout */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+          transition={{ delay: 0.25 }}
         >
           <Button 
             variant="outline" 

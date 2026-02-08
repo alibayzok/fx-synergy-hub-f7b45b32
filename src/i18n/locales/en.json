@@ -138,7 +138,22 @@
     "friendRequestAccepted": "Friend request accepted",
     "friendRequestRejected": "Friend request rejected",
     "friendRequestCancelled": "Friend request cancelled",
-    "friendRemoved": "Friend removed"
+    "friendRemoved": "Friend removed",
+    "friendRequests": "Friend Requests",
+    "pendingReceived": "Received Requests",
+    "pendingSent": "Sent Requests",
+    "noRequests": "No friend requests",
+    "noFriends": "No friends yet",
+    "friendSince": "Friend since",
+    "privacy": {
+      "title": "Privacy Settings",
+      "whoCanSeeFriends": "Who can see my friends",
+      "whoCanMessage": "Who can message me",
+      "everyone": "Everyone",
+      "friendsOnly": "Friends only",
+      "followersOnly": "Followers only",
+      "nobody": "Nobody"
+    }
   },
   "messages": {
     "title": "Messages",
