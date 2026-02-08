@@ -54,7 +54,17 @@
     "symbol": "Symbol",
     "assetType": "Asset Type",
     "entryType": "Entry Type",
-    "visibility": "Visibility"
+    "visibility": "Visibility",
+    "details": "Details",
+    "comments": "Comments",
+    "noComments": "No comments yet, be the first to comment!",
+    "writeComment": "Write your comment...",
+    "commentAdded": "Your comment was posted",
+    "followSuccess": "Successfully followed",
+    "unfollowSuccess": "Successfully unfollowed",
+    "shareCopied": "Trade details copied",
+    "share": "Share",
+    "copyLink": "Copy Link"
   },
   "community": {
     "title": "Community",
