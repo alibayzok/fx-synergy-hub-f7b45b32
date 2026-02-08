@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { BarChart3, Clock, Eye, Heart, TrendingUp, TrendingDown, Lock, Filter } from 'lucide-react';
+import { BarChart3, Clock, Eye, Heart, Lock, Image as ImageIcon } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAnalyses } from '@/hooks/useAnalyses';
@@ -19,6 +20,7 @@ const AnalysesPage = () => {
   const { isVip } = useAuth();
   const [activeFilter, setActiveFilter] = useState<string>('all');
   const [likedAnalyses, setLikedAnalyses] = useState<Set<string>>(new Set());
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const locale = i18n.language === 'ar' ? ar : enUS;
 
@@ -159,6 +161,28 @@ const AnalysesPage = () => {
                         </div>
                       </div>
 
+                      {/* Chart Images */}
+                      {!isLocked && analysis.attachments && analysis.attachments.length > 0 && (
+                        <div className="grid grid-cols-2 gap-2">
+                          {analysis.attachments.map((url, imgIndex) => (
+                            <div 
+                              key={imgIndex} 
+                              className="relative aspect-video rounded-lg overflow-hidden bg-muted cursor-pointer group"
+                              onClick={() => setSelectedImage(url)}
+                            >
+                              <img
+                                src={url}
+                                alt={`Chart ${imgIndex + 1}`}
+                                className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                              />
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                <ImageIcon className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
                       {/* Content */}
                       <div className={`relative ${isLocked ? 'max-h-20 overflow-hidden' : ''}`}>
                         <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
@@ -210,6 +234,19 @@ const AnalysesPage = () => {
             })
           )}
         </div>
+
+        {/* Image Lightbox Dialog */}
+        <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
+          <DialogContent className="max-w-4xl p-2 bg-black/90 border-none">
+            {selectedImage && (
+              <img
+                src={selectedImage}
+                alt="Chart"
+                className="w-full h-auto max-h-[85vh] object-contain rounded-lg"
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </AppLayout>
   );
