@@ -9,7 +9,8 @@
     "community": "Community",
     "markets": "Markets",
     "services": "Services",
-    "profile": "Profile"
+    "profile": "Profile",
+    "aiAssistant": "AI"
   },
   "home": {
     "latestTrades": "Latest Trades",
