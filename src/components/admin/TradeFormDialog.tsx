@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Dialog,
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -17,9 +18,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { useMarketData } from '@/hooks/useMarketData';
+import { cn } from '@/lib/utils';
+import { Check, ChevronsUpDown, TrendingUp, TrendingDown, ArrowRight } from 'lucide-react';
 
 interface Trade {
   id: string;
@@ -49,23 +66,32 @@ export const TradeFormDialog = ({ open, onOpenChange, trade, onSuccess }: TradeF
   const { t } = useTranslation();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { symbols } = useMarketData(true, 3000);
+  
   const [loading, setLoading] = useState(false);
+  const [symbolOpen, setSymbolOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     symbol: '',
-    asset_type: 'forex' as const,
-    direction: 'buy' as const,
-    entry_type: 'market' as const,
+    asset_type: 'forex' as 'forex' | 'metals' | 'crypto',
+    direction: 'buy' as 'buy' | 'sell',
+    entry_type: 'market' as 'market' | 'limit' | 'stop',
     entry_price: '',
     sl_price: '',
     tp_prices: '',
-    timeframe: 'H1' as const,
-    status: 'pending' as const,
-    visibility: 'free' as const,
+    timeframe: 'H1' as 'M5' | 'M15' | 'H1' | 'H4' | 'D1',
+    status: 'pending' as 'pending' | 'running' | 'tp_hit' | 'sl_hit' | 'cancelled' | 'closed_manual',
+    visibility: 'free' as 'free' | 'vip',
     reason: '',
     risk_note: '',
     alternative_scenario: ''
   });
+
+  // Get current market price for selected symbol
+  const currentMarketPrice = useMemo(() => {
+    if (!formData.symbol) return null;
+    return symbols.find(s => s.symbol === formData.symbol.toUpperCase());
+  }, [formData.symbol, symbols]);
 
   useEffect(() => {
     if (trade) {
@@ -102,6 +128,30 @@ export const TradeFormDialog = ({ open, onOpenChange, trade, onSuccess }: TradeF
       });
     }
   }, [trade, open]);
+
+  // Auto-set entry price when symbol is selected and entry type is market
+  const handleSymbolSelect = (symbol: string) => {
+    const marketSymbol = symbols.find(s => s.symbol === symbol);
+    setFormData(prev => ({
+      ...prev,
+      symbol,
+      asset_type: marketSymbol?.asset_type || prev.asset_type,
+      entry_price: prev.entry_type === 'market' && marketSymbol 
+        ? String(marketSymbol.price) 
+        : prev.entry_price
+    }));
+    setSymbolOpen(false);
+  };
+
+  // Use current price as entry for market orders
+  const handleUseCurrentPrice = () => {
+    if (currentMarketPrice) {
+      setFormData(prev => ({
+        ...prev,
+        entry_price: String(currentMarketPrice.price)
+      }));
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -168,33 +218,146 @@ export const TradeFormDialog = ({ open, onOpenChange, trade, onSuccess }: TradeF
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label>{t('trades.symbol')}</Label>
-              <Input
-                value={formData.symbol}
-                onChange={(e) => setFormData({ ...formData, symbol: e.target.value })}
-                placeholder="XAUUSD"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>{t('trades.assetType')}</Label>
-              <Select
-                value={formData.asset_type}
-                onValueChange={(v: any) => setFormData({ ...formData, asset_type: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="forex">{t('markets.forex')}</SelectItem>
-                  <SelectItem value="metals">{t('markets.metals')}</SelectItem>
-                  <SelectItem value="crypto">{t('markets.crypto')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Symbol Selector with Live Prices */}
+          <div className="space-y-2">
+            <Label>{t('trades.symbol')}</Label>
+            <Popover open={symbolOpen} onOpenChange={setSymbolOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={symbolOpen}
+                  className="w-full justify-between"
+                >
+                  {formData.symbol || "اختر الرمز..."}
+                  <ChevronsUpDown className="ms-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-full p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="ابحث عن رمز..." />
+                  <CommandList>
+                    <CommandEmpty>لم يتم العثور على رموز</CommandEmpty>
+                    <CommandGroup heading="الفوركس">
+                      {symbols.filter(s => s.asset_type === 'forex').map((symbol) => (
+                        <CommandItem
+                          key={symbol.symbol}
+                          value={symbol.symbol}
+                          onSelect={() => handleSymbolSelect(symbol.symbol)}
+                          className="flex items-center justify-between"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Check
+                              className={cn(
+                                "h-4 w-4",
+                                formData.symbol === symbol.symbol ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            <span className="font-medium">{symbol.symbol}</span>
+                            <span className="text-xs text-muted-foreground">{symbol.name}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="trading-number font-medium">{symbol.price}</span>
+                            {symbol.change >= 0 ? (
+                              <TrendingUp className="w-3 h-3 text-profit" />
+                            ) : (
+                              <TrendingDown className="w-3 h-3 text-loss" />
+                            )}
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                    <CommandGroup heading="المعادن">
+                      {symbols.filter(s => s.asset_type === 'metals').map((symbol) => (
+                        <CommandItem
+                          key={symbol.symbol}
+                          value={symbol.symbol}
+                          onSelect={() => handleSymbolSelect(symbol.symbol)}
+                          className="flex items-center justify-between"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Check
+                              className={cn(
+                                "h-4 w-4",
+                                formData.symbol === symbol.symbol ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            <span className="font-medium">{symbol.symbol}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="trading-number font-medium">{symbol.price}</span>
+                            {symbol.change >= 0 ? (
+                              <TrendingUp className="w-3 h-3 text-profit" />
+                            ) : (
+                              <TrendingDown className="w-3 h-3 text-loss" />
+                            )}
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                    <CommandGroup heading="العملات الرقمية">
+                      {symbols.filter(s => s.asset_type === 'crypto').map((symbol) => (
+                        <CommandItem
+                          key={symbol.symbol}
+                          value={symbol.symbol}
+                          onSelect={() => handleSymbolSelect(symbol.symbol)}
+                          className="flex items-center justify-between"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Check
+                              className={cn(
+                                "h-4 w-4",
+                                formData.symbol === symbol.symbol ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            <span className="font-medium">{symbol.symbol}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="trading-number font-medium">{symbol.price.toLocaleString('en-US')}</span>
+                            {symbol.change >= 0 ? (
+                              <TrendingUp className="w-3 h-3 text-profit" />
+                            ) : (
+                              <TrendingDown className="w-3 h-3 text-loss" />
+                            )}
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
+
+          {/* Live Price Display */}
+          {currentMarketPrice && (
+            <div className="p-3 rounded-xl bg-muted/50 border border-border/50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">السعر الحالي</p>
+                  <p className="text-xl font-bold trading-number">{currentMarketPrice.price}</p>
+                </div>
+                <div className="text-end">
+                  <Badge 
+                    variant="outline" 
+                    className={cn(
+                      "mb-1",
+                      currentMarketPrice.change >= 0 
+                        ? "text-profit border-profit/30 bg-profit/10" 
+                        : "text-loss border-loss/30 bg-loss/10"
+                    )}
+                  >
+                    {currentMarketPrice.change >= 0 ? '+' : ''}{currentMarketPrice.change_percent}%
+                  </Badge>
+                  <div className="text-xs text-muted-foreground">
+                    <span className="text-profit trading-number">H: {currentMarketPrice.high}</span>
+                    <span className="mx-1">|</span>
+                    <span className="text-loss trading-number">L: {currentMarketPrice.low}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
@@ -203,12 +366,24 @@ export const TradeFormDialog = ({ open, onOpenChange, trade, onSuccess }: TradeF
                 value={formData.direction}
                 onValueChange={(v: any) => setFormData({ ...formData, direction: v })}
               >
-                <SelectTrigger>
+                <SelectTrigger className={cn(
+                  formData.direction === 'buy' ? 'border-profit/50 bg-profit/10' : 'border-loss/50 bg-loss/10'
+                )}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="buy">{t('trades.buy')}</SelectItem>
-                  <SelectItem value="sell">{t('trades.sell')}</SelectItem>
+                  <SelectItem value="buy">
+                    <span className="flex items-center gap-2 text-profit font-medium">
+                      <TrendingUp className="w-4 h-4" />
+                      {t('trades.buy')}
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="sell">
+                    <span className="flex items-center gap-2 text-loss font-medium">
+                      <TrendingDown className="w-4 h-4" />
+                      {t('trades.sell')}
+                    </span>
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -232,7 +407,21 @@ export const TradeFormDialog = ({ open, onOpenChange, trade, onSuccess }: TradeF
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label>{t('trades.entry')}</Label>
+              <div className="flex items-center justify-between">
+                <Label>{t('trades.entry')}</Label>
+                {currentMarketPrice && formData.entry_type === 'market' && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 text-xs text-primary"
+                    onClick={handleUseCurrentPrice}
+                  >
+                    استخدم الحالي
+                    <ArrowRight className="w-3 h-3 ms-1" />
+                  </Button>
+                )}
+              </div>
               <Input
                 type="number"
                 step="any"
@@ -252,7 +441,7 @@ export const TradeFormDialog = ({ open, onOpenChange, trade, onSuccess }: TradeF
                 onChange={(e) => setFormData({ ...formData, sl_price: e.target.value })}
                 placeholder="2340.00"
                 required
-                className="trading-number"
+                className="trading-number text-loss"
               />
             </div>
           </div>
@@ -263,7 +452,7 @@ export const TradeFormDialog = ({ open, onOpenChange, trade, onSuccess }: TradeF
               value={formData.tp_prices}
               onChange={(e) => setFormData({ ...formData, tp_prices: e.target.value })}
               placeholder="2360.00, 2370.00, 2380.00"
-              className="trading-number"
+              className="trading-number text-profit"
             />
           </div>
 
