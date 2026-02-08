@@ -367,6 +367,27 @@
       "milestone": "New Milestone",
       "tradeCrated": "New Trade",
       "serviceRequest": "Service Request"
+    },
+    "export": {
+      "tab": "Export",
+      "schemaTitle": "Database Schema",
+      "schemaDesc": "Export table definitions, enums, and functions",
+      "dataTitle": "Table Data",
+      "dataDesc": "Export all data as JSON",
+      "fullTitle": "Full Backup",
+      "fullDesc": "Export schema and data together",
+      "downloadSql": "Download SQL",
+      "downloadJson": "Download JSON",
+      "downloadFull": "Download All",
+      "exporting": "Exporting",
+      "tablesOverview": "Tables Overview",
+      "refresh": "Refresh",
+      "schemaExported": "Schema Exported",
+      "schemaExportedDesc": "SQL file downloaded successfully",
+      "dataExported": "Data Exported",
+      "dataExportedDesc": "JSON file downloaded successfully",
+      "fullExported": "Full Export Complete",
+      "fullExportedDesc": "Full backup downloaded successfully"
     }
   }
 }
