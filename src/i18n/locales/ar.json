@@ -54,7 +54,17 @@
     "symbol": "الرمز",
     "assetType": "نوع الأصل",
     "entryType": "نوع الدخول",
-    "visibility": "الرؤية"
+    "visibility": "الرؤية",
+    "details": "التفاصيل",
+    "comments": "التعليقات",
+    "noComments": "لا توجد تعليقات بعد، كن أول من يعلق!",
+    "writeComment": "اكتب تعليقك...",
+    "commentAdded": "تم نشر تعليقك",
+    "followSuccess": "تمت المتابعة بنجاح",
+    "unfollowSuccess": "تم إلغاء المتابعة",
+    "shareCopied": "تم نسخ تفاصيل الصفقة",
+    "share": "مشاركة",
+    "copyLink": "نسخ الرابط"
   },
   "community": {
     "title": "المجتمع",

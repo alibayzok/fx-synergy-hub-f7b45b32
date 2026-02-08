@@ -157,7 +157,7 @@ const HomePage = () => {
                     created_by: trade.created_by || 'admin',
                     followers_count: trade.followers_count || 0
                   }}
-                  onDiscussion={() => navigate('/community')}
+                  onClick={() => navigate('/trades')}
                 />
               ))
             ) : (

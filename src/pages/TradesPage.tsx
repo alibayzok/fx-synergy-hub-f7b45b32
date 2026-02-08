@@ -4,12 +4,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Filter, Crown, LogIn } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { TradeCard } from '@/components/trades/TradeCard';
+import { TradeStats } from '@/components/trades/TradeStats';
+import { TradeDetailSheet } from '@/components/trades/TradeDetailSheet';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useTrades } from '@/hooks/useTrades';
 import { useNavigate } from 'react-router-dom';
+import { Trade } from '@/types';
 
 type FilterTab = 'all' | 'running' | 'pending' | 'closed';
 type VisibilityFilter = 'all' | 'free' | 'vip';
@@ -19,6 +22,8 @@ const TradesPage = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
   const [visibilityFilter, setVisibilityFilter] = useState<VisibilityFilter>('all');
+  const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const { user, isVip, isAdmin, loading: authLoading } = useAuth();
   const { trades, loading: tradesLoading, filterTrades, getStats } = useTrades();
@@ -34,11 +39,16 @@ const TradesPage = () => {
     { key: 'closed', count: stats.closedCount },
   ];
 
+  const handleTradeClick = (trade: Trade) => {
+    setSelectedTrade(trade);
+    setSheetOpen(true);
+  };
+
   // Show login prompt if not authenticated
   if (!authLoading && !user) {
     return (
       <AppLayout>
-        <header className="sticky top-0 z-40 glass-card border-b border-border/30">
+        <header className="sticky top-0 z-30 glass-card border-b border-border/30">
           <div className="px-4 py-3">
             <h1 className="text-xl font-bold text-foreground">{t('trades.title')}</h1>
           </div>
@@ -64,13 +74,16 @@ const TradesPage = () => {
   return (
     <AppLayout>
       {/* Header */}
-      <header className="sticky top-0 z-40 glass-card border-b border-border/30">
+      <header className="sticky top-0 z-30 glass-card border-b border-border/30">
         <div className="flex items-center justify-between px-4 py-3">
           <h1 className="text-xl font-bold text-foreground">{t('trades.title')}</h1>
-          <Button variant="ghost" size="sm" className="h-9 gap-2">
+          <Button variant="ghost" size="sm" className="h-9 gap-2 me-20">
             <Filter className="w-4 h-4" />
           </Button>
         </div>
+
+        {/* Stats Section */}
+        <TradeStats stats={stats} />
 
         {/* Filter Tabs */}
         <div className="flex gap-1 px-4 pb-3 overflow-x-auto scrollbar-hide">
@@ -87,7 +100,7 @@ const TradesPage = () => {
             >
               {t(`trades.${tab.key}`)}
               <span className={cn(
-                "text-xs px-1.5 py-0.5 rounded-full",
+                "text-xs px-1.5 py-0.5 rounded-full trading-number",
                 activeTab === tab.key ? "bg-primary-foreground/20" : "bg-background/50"
               )}>
                 {tab.count}
@@ -124,9 +137,9 @@ const TradesPage = () => {
       <div className="px-4 py-4 space-y-3">
         {tradesLoading ? (
           <>
-            <Skeleton className="h-48 w-full rounded-xl" />
-            <Skeleton className="h-48 w-full rounded-xl" />
-            <Skeleton className="h-48 w-full rounded-xl" />
+            <Skeleton className="h-40 w-full rounded-2xl" />
+            <Skeleton className="h-40 w-full rounded-2xl" />
+            <Skeleton className="h-40 w-full rounded-2xl" />
           </>
         ) : (
           <AnimatePresence mode="popLayout">
@@ -137,13 +150,20 @@ const TradesPage = () => {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  transition={{ delay: index * 0.05 }}
+                  transition={{ delay: index * 0.03 }}
                 >
-                  <TradeCard trade={{
-                    ...trade,
-                    created_by: trade.created_by || 'admin',
-                    followers_count: trade.followers_count || 0
-                  }} />
+                  <TradeCard 
+                    trade={{
+                      ...trade,
+                      created_by: trade.created_by || 'admin',
+                      followers_count: trade.followers_count || 0
+                    }}
+                    onClick={() => handleTradeClick({
+                      ...trade,
+                      created_by: trade.created_by || 'admin',
+                      followers_count: trade.followers_count || 0
+                    })}
+                  />
                 </motion.div>
               ))
             ) : (
@@ -158,6 +178,13 @@ const TradesPage = () => {
           </AnimatePresence>
         )}
       </div>
+
+      {/* Trade Detail Sheet */}
+      <TradeDetailSheet
+        trade={selectedTrade}
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+      />
     </AppLayout>
   );
 };
