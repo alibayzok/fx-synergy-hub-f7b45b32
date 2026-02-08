@@ -13,7 +13,8 @@ import {
   Edit,
   LayoutDashboard,
   BarChart3,
-  ClipboardList
+  ClipboardList,
+  Database
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +29,7 @@ import { DashboardStats } from '@/components/admin/DashboardStats';
 import { RecentActivity } from '@/components/admin/RecentActivity';
 import { AdminNotifications } from '@/components/admin/AdminNotifications';
 import { ServiceRequestsManagement } from '@/components/admin/ServiceRequestsManagement';
+import { DatabaseExport } from '@/components/admin/DatabaseExport';
 
 interface Trade {
   id: string;
@@ -136,7 +138,7 @@ const AdminPage = () => {
 
       <div className="p-4">
         <Tabs defaultValue="dashboard" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="dashboard" className="gap-2">
               <LayoutDashboard className="w-4 h-4" />
               <span className="hidden sm:inline">{t('admin.dashboard')}</span>
@@ -152,6 +154,10 @@ const AdminPage = () => {
             <TabsTrigger value="users" className="gap-2">
               <Users className="w-4 h-4" />
               <span className="hidden sm:inline">{t('admin.users')}</span>
+            </TabsTrigger>
+            <TabsTrigger value="export" className="gap-2">
+              <Database className="w-4 h-4" />
+              <span className="hidden sm:inline">{t('admin.export.tab')}</span>
             </TabsTrigger>
           </TabsList>
 
@@ -254,6 +260,11 @@ const AdminPage = () => {
           {/* Users Tab */}
           <TabsContent value="users">
             <UserManagement />
+          </TabsContent>
+
+          {/* Export Tab */}
+          <TabsContent value="export">
+            <DatabaseExport />
           </TabsContent>
         </Tabs>
       </div>

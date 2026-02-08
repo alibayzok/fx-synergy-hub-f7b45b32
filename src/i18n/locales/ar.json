@@ -367,6 +367,27 @@
       "milestone": "إنجاز جديد",
       "tradeCrated": "صفقة جديدة",
       "serviceRequest": "طلب خدمة"
+    },
+    "export": {
+      "tab": "التصدير",
+      "schemaTitle": "هيكل قاعدة البيانات",
+      "schemaDesc": "تصدير تعريفات الجداول والـ Enums والدوال",
+      "dataTitle": "بيانات الجداول",
+      "dataDesc": "تصدير جميع البيانات بصيغة JSON",
+      "fullTitle": "نسخة احتياطية كاملة",
+      "fullDesc": "تصدير الهيكل والبيانات معاً",
+      "downloadSql": "تحميل SQL",
+      "downloadJson": "تحميل JSON",
+      "downloadFull": "تحميل الكل",
+      "exporting": "جاري التصدير",
+      "tablesOverview": "نظرة على الجداول",
+      "refresh": "تحديث",
+      "schemaExported": "تم تصدير الهيكل",
+      "schemaExportedDesc": "تم تحميل ملف SQL بنجاح",
+      "dataExported": "تم تصدير البيانات",
+      "dataExportedDesc": "تم تحميل ملف JSON بنجاح",
+      "fullExported": "تم التصدير الكامل",
+      "fullExportedDesc": "تم تحميل النسخة الاحتياطية الكاملة"
     }
   }
 }
