@@ -41,6 +41,7 @@ import { useMarketData } from '@/hooks/useMarketData';
 import { useTrades } from '@/hooks/useTrades';
 import { countries } from '@/data/countries';
 import { useToast } from '@/hooks/use-toast';
+import { NotificationSettings } from '@/components/notifications/NotificationSettings';
 
 const ProfilePage = () => {
   const { t, i18n } = useTranslation();
@@ -55,7 +56,7 @@ const ProfilePage = () => {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showWatchlistDialog, setShowWatchlistDialog] = useState(false);
   const [showFollowedDialog, setShowFollowedDialog] = useState(false);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   
   const [editData, setEditData] = useState({
     display_name: '',
@@ -96,18 +97,9 @@ const ProfilePage = () => {
     }
   };
 
-  const toggleNotifications = () => {
-    setNotificationsEnabled(!notificationsEnabled);
-    toast({
-      title: notificationsEnabled 
-        ? t('notifications.disabled') 
-        : t('notifications.enabled')
-    });
-  };
-
   const menuItems = [
     { icon: Globe, label: 'profile.language', onClick: () => setShowLanguageDialog(true), value: i18n.language === 'ar' ? 'العربية' : 'English' },
-    { icon: Bell, label: 'profile.notifications', onClick: toggleNotifications, value: notificationsEnabled ? '✓' : '✗' },
+    { icon: Bell, label: 'profile.notifications', onClick: () => setShowNotificationSettings(true) },
     { icon: Star, label: 'profile.watchlist', onClick: () => setShowWatchlistDialog(true), count: watchlist.length },
     { icon: TrendingUp, label: 'profile.followedTrades', onClick: () => setShowFollowedDialog(true), count: trades.length },
   ];
@@ -486,6 +478,13 @@ const ProfilePage = () => {
               {t('home.viewAll')}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Notification Settings Dialog */}
+      <Dialog open={showNotificationSettings} onOpenChange={setShowNotificationSettings}>
+        <DialogContent className="sm:max-w-[400px]">
+          <NotificationSettings />
         </DialogContent>
       </Dialog>
     </AppLayout>
