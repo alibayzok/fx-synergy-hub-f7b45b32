@@ -15,6 +15,7 @@ import MessagesPage from "./pages/MessagesPage";
 import AuthPage from "./pages/AuthPage";
 import AdminPage from "./pages/AdminPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import AnalysesPage from "./pages/AnalysesPage";
 import NotFound from "./pages/NotFound";
 import "./i18n";
 
@@ -39,6 +40,7 @@ const App = () => (
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/analyses" element={<AnalysesPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
