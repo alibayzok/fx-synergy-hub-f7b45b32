@@ -44,6 +44,83 @@ export type Database = {
         }
         Relationships: []
       }
+      analyses: {
+        Row: {
+          asset_type: Database["public"]["Enums"]["asset_type"] | null
+          attachments: string[] | null
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          likes_count: number | null
+          symbol: string | null
+          timeframe: Database["public"]["Enums"]["timeframe"] | null
+          title: string
+          updated_at: string
+          views_count: number | null
+          visibility: Database["public"]["Enums"]["trade_visibility"]
+        }
+        Insert: {
+          asset_type?: Database["public"]["Enums"]["asset_type"] | null
+          attachments?: string[] | null
+          content: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          likes_count?: number | null
+          symbol?: string | null
+          timeframe?: Database["public"]["Enums"]["timeframe"] | null
+          title: string
+          updated_at?: string
+          views_count?: number | null
+          visibility?: Database["public"]["Enums"]["trade_visibility"]
+        }
+        Update: {
+          asset_type?: Database["public"]["Enums"]["asset_type"] | null
+          attachments?: string[] | null
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          likes_count?: number | null
+          symbol?: string | null
+          timeframe?: Database["public"]["Enums"]["timeframe"] | null
+          title?: string
+          updated_at?: string
+          views_count?: number | null
+          visibility?: Database["public"]["Enums"]["trade_visibility"]
+        }
+        Relationships: []
+      }
+      analysis_likes: {
+        Row: {
+          analysis_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          analysis_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          analysis_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_likes_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "analyses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversation_participants: {
         Row: {
           conversation_id: string

@@ -14,7 +14,8 @@ import {
   LayoutDashboard,
   BarChart3,
   ClipboardList,
-  Database
+  Database,
+  FileText
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +31,7 @@ import { RecentActivity } from '@/components/admin/RecentActivity';
 import { AdminNotifications } from '@/components/admin/AdminNotifications';
 import { ServiceRequestsManagement } from '@/components/admin/ServiceRequestsManagement';
 import { DatabaseExport } from '@/components/admin/DatabaseExport';
+import { AnalysesManagement } from '@/components/admin/AnalysesManagement';
 
 interface Trade {
   id: string;
@@ -138,24 +140,28 @@ const AdminPage = () => {
 
       <div className="p-4">
         <Tabs defaultValue="dashboard" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="dashboard" className="gap-2">
+          <TabsList className="grid w-full grid-cols-6">
+            <TabsTrigger value="dashboard" className="gap-1 text-xs sm:text-sm">
               <LayoutDashboard className="w-4 h-4" />
               <span className="hidden sm:inline">{t('admin.dashboard')}</span>
             </TabsTrigger>
-            <TabsTrigger value="requests" className="gap-2">
+            <TabsTrigger value="requests" className="gap-1 text-xs sm:text-sm">
               <ClipboardList className="w-4 h-4" />
               <span className="hidden sm:inline">{t('admin.requests')}</span>
             </TabsTrigger>
-            <TabsTrigger value="trades" className="gap-2">
+            <TabsTrigger value="trades" className="gap-1 text-xs sm:text-sm">
               <TrendingUp className="w-4 h-4" />
               <span className="hidden sm:inline">{t('admin.trades')}</span>
             </TabsTrigger>
-            <TabsTrigger value="users" className="gap-2">
+            <TabsTrigger value="analyses" className="gap-1 text-xs sm:text-sm">
+              <FileText className="w-4 h-4" />
+              <span className="hidden sm:inline">التحليلات</span>
+            </TabsTrigger>
+            <TabsTrigger value="users" className="gap-1 text-xs sm:text-sm">
               <Users className="w-4 h-4" />
               <span className="hidden sm:inline">{t('admin.users')}</span>
             </TabsTrigger>
-            <TabsTrigger value="export" className="gap-2">
+            <TabsTrigger value="export" className="gap-1 text-xs sm:text-sm">
               <Database className="w-4 h-4" />
               <span className="hidden sm:inline">{t('admin.export.tab')}</span>
             </TabsTrigger>
@@ -255,6 +261,11 @@ const AdminPage = () => {
                 ))}
               </div>
             )}
+          </TabsContent>
+
+          {/* Analyses Tab */}
+          <TabsContent value="analyses">
+            <AnalysesManagement />
           </TabsContent>
 
           {/* Users Tab */}
