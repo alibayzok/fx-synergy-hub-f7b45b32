@@ -45,9 +45,11 @@ export const NotificationsPanel = () => {
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'reply':
+      case 'trade_comment':
         return MessageSquare;
       case 'trade':
       case 'trade_update':
+      case 'new_trade':
         return TrendingUp;
       case 'alert':
         return AlertCircle;
@@ -102,10 +104,10 @@ export const NotificationsPanel = () => {
     const data = notification.data as Record<string, string>;
     if (notification.type === 'reply' && data?.thread_id) {
       navigate('/community');
-    } else if (notification.type === 'trade' && data?.trade_id) {
+    } else if ((notification.type === 'trade' || notification.type === 'new_trade' || notification.type === 'trade_comment') && data?.trade_id) {
       navigate('/trades');
     } else if (notification.type === 'message' && data?.conversation_id) {
-      navigate('/messages');
+      navigate(`/messages?conv=${data.conversation_id}`);
     } else if ((notification.type === 'friend_request' || notification.type === 'friend_accepted') && data?.sender_id) {
       navigate(`/user/${data.sender_id}`);
     } else if (notification.type === 'friend_accepted' && data?.friend_id) {
