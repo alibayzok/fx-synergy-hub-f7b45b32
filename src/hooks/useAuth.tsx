@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { AUTH_CONFIG } from '@/config/environment';
 
 type AppRole = 'admin' | 'vip' | 'free';
 
@@ -125,11 +126,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const resetPassword = async (email: string) => {
     // IMPORTANT: Preview URLs (lovableproject.com) require a Lovable session token,
     // so password reset links opened from email on mobile may redirect to lovable.dev login.
-    // Use the published URL for email redirects.
-    const publishedBaseUrl = 'https://fx-synergy-hub.lovable.app';
-
+    // Use the published URL from centralized config for email redirects.
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${publishedBaseUrl}/reset-password`,
+      redirectTo: AUTH_CONFIG.resetPasswordRedirect,
     });
     return { error: error as Error | null };
   };
