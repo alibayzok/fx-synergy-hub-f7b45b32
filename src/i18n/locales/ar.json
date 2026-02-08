@@ -356,6 +356,14 @@
     "settings": "الإعدادات",
     "manageTrades": "إدارة الصفقات",
     "manageUsers": "إدارة المستخدمين",
+    "searchUsers": "البحث عن مستخدم بالاسم...",
+    "changeRole": "تغيير الصلاحية",
+    "roleUpdated": "تم تحديث صلاحية المستخدم",
+    "roles": {
+      "admin": "مدير",
+      "vip": "VIP",
+      "free": "مجاني"
+    },
     "newTrade": "صفقة جديدة",
     "editTrade": "تعديل الصفقة",
     "noTrades": "لا توجد صفقات بعد",

@@ -356,6 +356,14 @@
     "settings": "Settings",
     "manageTrades": "Manage Trades",
     "manageUsers": "Manage Users",
+    "searchUsers": "Search users by name...",
+    "changeRole": "Change Role",
+    "roleUpdated": "User role updated",
+    "roles": {
+      "admin": "Admin",
+      "vip": "VIP",
+      "free": "Free"
+    },
     "newTrade": "New Trade",
     "editTrade": "Edit Trade",
     "noTrades": "No trades yet",
