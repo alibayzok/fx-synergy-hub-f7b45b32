@@ -2,12 +2,12 @@ import { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageSquare } from 'lucide-react';
 import { BottomNav } from './BottomNav';
+import { FloatingAIButton } from './FloatingAIButton';
 import { NotificationsPanel } from '@/components/notifications/NotificationsPanel';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { useConversations } from '@/hooks/useMessaging';
-
 interface AppLayoutProps {
   children: ReactNode;
   showNotifications?: boolean;
@@ -49,6 +49,7 @@ export const AppLayout = ({ children, showNotifications = true }: AppLayoutProps
       <main className="pb-20">
         {children}
       </main>
+      <FloatingAIButton />
       <BottomNav />
     </div>
   );
