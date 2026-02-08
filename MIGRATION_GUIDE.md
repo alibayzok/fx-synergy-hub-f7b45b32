@@ -251,6 +251,35 @@ netlify deploy --prod
 
 ---
 
+## 🔐 الخطوة 9: إعداد Google OAuth
+
+### 9.1 إنشاء OAuth في Google Cloud
+1. اذهب إلى [Google Cloud Console](https://console.cloud.google.com)
+2. أنشئ مشروع جديد أو اختر مشروعاً موجوداً
+3. فعّل **Google+ API**
+4. اذهب إلى **APIs & Services → Credentials**
+5. اضغط **Create Credentials → OAuth Client ID**
+6. اختر **Web application**
+
+### 9.2 إعداد Redirect URIs
+أضف هذه الروابط في **Authorized redirect URIs**:
+```
+https://YOUR_PROJECT_ID.supabase.co/auth/v1/callback
+```
+
+### 9.3 إعداد Supabase
+1. في Supabase Dashboard: **Authentication → Providers → Google**
+2. فعّل Google Provider
+3. الصق **Client ID** و **Client Secret**
+
+### 9.4 تحديث الكود
+عدّل ملف `src/lib/auth-helpers.ts`:
+```typescript
+const USE_LOVABLE_AUTH = false;  // غيّر من true إلى false
+```
+
+---
+
 ## 🆘 حل المشاكل الشائعة
 
 ### "Cannot connect to Supabase"
@@ -264,6 +293,11 @@ netlify deploy --prod
 ### "APK لا يعمل"
 - تأكد من حذف قسم `server` من `capacitor.config.ts`
 - أعد بناء المشروع: `npm run build && npx cap sync`
+
+### "Google Sign-In لا يعمل بعد الترحيل"
+- تأكد من تغيير `USE_LOVABLE_AUTH = false` في `auth-helpers.ts`
+- تأكد من إعداد Google OAuth في Supabase Dashboard
+- تحقق من صحة Redirect URI
 
 ---
 

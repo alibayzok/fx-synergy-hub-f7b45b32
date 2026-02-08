@@ -11,7 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { countries } from '@/data/countries';
-import { lovable } from '@/integrations/lovable/index';
+import { signInWithGoogle } from '@/lib/auth-helpers';
 
 type AuthMode = 'login' | 'register' | 'forgot';
 
@@ -43,8 +43,8 @@ const AuthPage = () => {
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     try {
-      const { error } = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+      const { error } = await signInWithGoogle({
+        redirectTo: window.location.origin,
       });
       if (error) {
         toast({
