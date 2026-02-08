@@ -1,15 +1,15 @@
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Home, TrendingUp, Bot, BarChart3, User } from 'lucide-react';
+import { Home, TrendingUp, Users, BarChart3, Briefcase } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { key: 'home', path: '/', icon: Home },
   { key: 'trades', path: '/trades', icon: TrendingUp },
-  { key: 'aiAssistant', path: '/ai-chat', icon: Bot },
+  { key: 'community', path: '/community', icon: Users },
   { key: 'markets', path: '/markets', icon: BarChart3 },
-  { key: 'profile', path: '/profile', icon: User },
+  { key: 'services', path: '/services', icon: Briefcase },
 ];
 
 export const BottomNav = () => {
