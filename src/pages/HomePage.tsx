@@ -54,8 +54,8 @@ const HomePage = () => {
 
   const handleQuickAction = (action: string) => {
     switch (action) {
-      case 'askQuestion':
-        navigate('/community');
+      case 'aiAssistant':
+        navigate('/ai-chat');
         break;
       case 'viewAnalyses':
         navigate('/analyses');

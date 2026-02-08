@@ -1,10 +1,10 @@
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { MessageCircleQuestion, Bell, TrendingUp, BarChart3 } from 'lucide-react';
+import { Bot, TrendingUp, BarChart3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const actions = [
-  { key: 'askQuestion', icon: MessageCircleQuestion, gradient: 'from-blue-500 to-cyan-500' },
+  { key: 'aiAssistant', icon: Bot, gradient: 'from-blue-500 to-cyan-500' },
   { key: 'viewAnalyses', icon: BarChart3, gradient: 'from-purple-500 to-pink-500' },
   { key: 'publishTrade', icon: TrendingUp, gradient: 'from-emerald-500 to-teal-500', adminOnly: true },
 ];

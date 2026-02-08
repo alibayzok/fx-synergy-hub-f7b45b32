@@ -16,6 +16,7 @@
     "breakingNews": "Breaking News",
     "todayPerformance": "Today's Performance",
     "quickActions": "Quick Actions",
+    "aiAssistant": "AI Assistant",
     "askQuestion": "Ask Question",
     "createAlert": "Create Alert",
     "publishTrade": "Publish Trade",
@@ -400,5 +401,19 @@
       "fullExported": "Full Export Complete",
       "fullExportedDesc": "Full backup downloaded successfully"
     }
+  },
+  "ai": {
+    "title": "AI Assistant",
+    "subtitle": "Powered by AI",
+    "welcome": "Welcome!",
+    "welcomeDesc": "I'm your AI assistant. Ask me anything about trading or the platform",
+    "placeholder": "Type your message...",
+    "disclaimer": "AI assistant may make mistakes. Verify important information.",
+    "suggestion1": "What is technical analysis?",
+    "suggestion2": "How do I manage risk in trading?",
+    "suggestion3": "What's the difference between forex and crypto?",
+    "error": "An error occurred, please try again",
+    "rateLimitError": "Rate limit exceeded, please wait a moment",
+    "paymentError": "Please add credits to continue"
   }
 }
