@@ -1,126 +1,150 @@
 
-# خطة تحويل المشروع إلى تطبيق أندرويد أصلي (APK)
+# خطة تصدير قاعدة البيانات (الهيكل + البيانات)
 
 ## نظرة عامة
 
-سنستخدم **Capacitor** لتحويل تطبيق ASSASSIN FX الحالي إلى تطبيق أندرويد أصلي يمكن تثبيته على الهاتف ونشره على Google Play Store.
+سأنشئ نظام تصدير شامل يتيح للمسؤول تحميل:
+1. **Schema SQL** - هيكل قاعدة البيانات الكامل
+2. **البيانات JSON** - جميع البيانات من كل الجداول
+3. **ملف موحد** - يحتوي على كل شيء
 
 ---
 
-## المرحلة الأولى: تثبيت Capacitor
+## الجداول المتوفرة للتصدير
 
-### الحزم المطلوبة:
+| الجدول | الوصف |
+|--------|-------|
+| `profiles` | بيانات المستخدمين |
+| `user_roles` | أدوار المستخدمين |
+| `trades` | الصفقات |
+| `threads` | المواضيع |
+| `replies` | الردود |
+| `reply_likes` | إعجابات الردود |
+| `room_messages` | رسائل الغرف |
+| `conversations` | المحادثات |
+| `conversation_participants` | المشاركين |
+| `direct_messages` | الرسائل المباشرة |
+| `follows` | المتابعات |
+| `friend_requests` | طلبات الصداقة |
+| `service_requests` | طلبات الخدمات |
+| `usdt_listings` | قوائم USDT |
+| `admin_notifications` | إشعارات المسؤول |
+| `user_notifications` | إشعارات المستخدمين |
+| `user_privacy_settings` | إعدادات الخصوصية |
+
+---
+
+## المرحلة الأولى: إنشاء مكون التصدير
+
+سأنشئ مكون `DatabaseExport.tsx` في مجلد `src/components/admin/` يحتوي على:
+
+### الوظائف الرئيسية:
+- **تصدير Schema SQL** - ملف SQL يحتوي على تعريف الجداول والـ Enums والـ Functions
+- **تصدير البيانات JSON** - ملف JSON يحتوي على بيانات جميع الجداول
+- **تصدير كامل** - ملف واحد يحتوي على الهيكل والبيانات
+
+### واجهة المستخدم:
+- أزرار لكل نوع تصدير
+- شريط تقدم أثناء التحميل
+- إحصائيات عن عدد السجلات في كل جدول
+
+---
+
+## المرحلة الثانية: دمج المكون في صفحة Admin
+
+سأضيف تبويب جديد "التصدير" في صفحة الإدارة:
+
 ```text
-@capacitor/core
-@capacitor/cli (devDependency)
-@capacitor/android
+┌─────────────────────────────────────────────────────────────┐
+│  [نظرة عامة]  [الطلبات]  [الصفقات]  [المستخدمون]  [التصدير] │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## المرحلة الثانية: إعداد ملف التكوين
+## المرحلة الثالثة: تحديث ملفات الترجمة
 
-سأنشئ ملف `capacitor.config.ts` بالإعدادات التالية:
-
-| الإعداد | القيمة |
-|---------|--------|
-| appId | `app.lovable.ebc9336e82be4f7fb9ee83ee20c32755` |
-| appName | `ASSASSIN FX` |
-| webDir | `dist` |
-| Server URL | للتطوير مع Hot Reload |
+سأضيف النصوص العربية والإنجليزية للميزة الجديدة
 
 ---
 
-## المرحلة الثالثة: خطوات البناء على جهازك
+## الملفات التي سأنشئها/أعدلها
 
-بعد أن أجهز الملفات، ستحتاج لتنفيذ هذه الخطوات على جهازك:
-
-### 1. تحميل المشروع
-```bash
-# انقل المشروع إلى GitHub عبر زر "Export to GitHub"
-git clone <YOUR_REPO_URL>
-cd <PROJECT_FOLDER>
-```
-
-### 2. تثبيت الحزم
-```bash
-npm install
-```
-
-### 3. إضافة منصة أندرويد
-```bash
-npx cap add android
-```
-
-### 4. بناء المشروع
-```bash
-npm run build
-npx cap sync
-```
-
-### 5. فتح Android Studio
-```bash
-npx cap open android
-```
-
-### 6. بناء APK
-- من Android Studio: **Build → Build Bundle(s) / APK(s) → Build APK(s)**
-
----
-
-## المتطلبات على جهازك
-
-| المتطلب | الوصف |
-|---------|-------|
-| Node.js | نسخة 18 أو أحدث |
-| Android Studio | آخر إصدار مع Android SDK |
-| Java JDK | نسخة 17 أو أحدث |
-
----
-
-## الملفات التي سأنشئها
-
-1. **capacitor.config.ts** - إعدادات Capacitor
-2. تحديث **package.json** - إضافة حزم Capacitor
-
----
-
-## ملاحظات مهمة
-
-- **Hot Reload**: أثناء التطوير، سيتصل التطبيق مباشرة بسيرفر Lovable للتحديث الفوري
-- **للنشر النهائي**: يجب إزالة إعداد `server.url` من `capacitor.config.ts` ليعمل التطبيق بشكل مستقل
-- **التوقيع**: للنشر على Google Play، ستحتاج لتوقيع التطبيق بشهادة خاصة
+| الملف | العملية |
+|-------|---------|
+| `src/components/admin/DatabaseExport.tsx` | إنشاء جديد |
+| `src/pages/AdminPage.tsx` | تعديل - إضافة تبويب التصدير |
+| `src/i18n/locales/ar.json` | تعديل - إضافة الترجمة |
+| `src/i18n/locales/en.json` | تعديل - إضافة الترجمة |
 
 ---
 
 ## قسم تقني
 
-### capacitor.config.ts
-```typescript
-import type { CapacitorConfig } from '@capacitor/cli';
+### DatabaseExport.tsx - الهيكل الرئيسي
 
-const config: CapacitorConfig = {
-  appId: 'app.lovable.ebc9336e82be4f7fb9ee83ee20c32755',
-  appName: 'ASSASSIN FX',
-  webDir: 'dist',
-  server: {
-    url: 'https://ebc9336e-82be-4f7f-b9ee-83ee20c32755.lovableproject.com?forceHideBadge=true',
-    cleartext: true
+```typescript
+const TABLES = [
+  'profiles', 'user_roles', 'trades', 'threads', 'replies',
+  'reply_likes', 'room_messages', 'conversations', 
+  'conversation_participants', 'direct_messages', 'follows',
+  'friend_requests', 'service_requests', 'usdt_listings',
+  'admin_notifications', 'user_notifications', 'user_privacy_settings'
+];
+
+// تصدير البيانات كـ JSON
+const exportData = async () => {
+  const allData = {};
+  for (const table of TABLES) {
+    const { data } = await supabase.from(table).select('*');
+    allData[table] = data || [];
   }
+  // تحميل كملف JSON
 };
 
-export default config;
+// تصدير الـ Schema
+const exportSchema = () => {
+  // إنشاء ملف SQL من ملفات migrations
+  // يشمل: CREATE TABLE, Enums, Functions, RLS Policies
+};
 ```
 
-### تحديثات package.json
+### Schema SQL المُصدَّر سيتضمن:
+
+1. **Enums** - جميع أنواع البيانات المخصصة:
+   - `app_role`, `asset_type`, `trade_direction`, `trade_status`, etc.
+
+2. **Tables** - تعريفات الجداول مع الأعمدة والقيود
+
+3. **Functions** - جميع الدوال:
+   - `is_admin()`, `is_vip()`, `has_role()`, `can_access_trade()`, etc.
+
+4. **RLS Policies** - سياسات الأمان لكل جدول
+
+5. **Triggers** - المشغلات التلقائية
+
+---
+
+## صيغة ملف التصدير الكامل
+
 ```json
 {
-  "dependencies": {
-    "@capacitor/core": "^7.0.0",
-    "@capacitor/android": "^7.0.0"
+  "exportedAt": "2026-02-08T...",
+  "projectName": "ASSASSIN FX",
+  "schema": {
+    "enums": [...],
+    "tables": [...],
+    "functions": [...],
+    "policies": [...]
   },
-  "devDependencies": {
-    "@capacitor/cli": "^7.0.0"
+  "data": {
+    "profiles": [...],
+    "trades": [...],
+    ...
+  },
+  "metadata": {
+    "totalRecords": 1234,
+    "tablesCount": 17
   }
 }
 ```
