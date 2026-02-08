@@ -296,29 +296,41 @@ const ChatView = ({ conversationId, onBack }: ChatViewProps) => {
     <div className="flex flex-col h-full">
       {/* Chat Header */}
       <div className="p-4 border-b border-border/30 flex items-center gap-3">
-        <button
-          onClick={() => otherParticipant && navigate(`/user/${otherParticipant.user_id}`)}
-          className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+        <Avatar 
+          className="w-10 h-10 cursor-pointer hover:opacity-80 transition-opacity"
+          onClick={() => {
+            if (otherParticipant?.user_id) {
+              navigate(`/user/${otherParticipant.user_id}`);
+            }
+          }}
         >
-          <Avatar className="w-10 h-10">
-            <AvatarImage src={otherParticipant?.profile?.avatar_url || undefined} />
-            <AvatarFallback className="bg-primary/20 text-primary">
-              {conversation?.type === 'group' ? (
-                <Users className="w-4 h-4" />
-              ) : (
-                (conversationName || '?').charAt(0)
-              )}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <h2 className="font-semibold text-foreground">{conversationName}</h2>
-            {conversation?.type === 'group' && (
-              <p className="text-xs text-muted-foreground">
-                {(conversation as any).participants?.length || 0} {t('community.members')}
-              </p>
+          <AvatarImage src={otherParticipant?.profile?.avatar_url || undefined} />
+          <AvatarFallback className="bg-primary/20 text-primary">
+            {conversation?.type === 'group' ? (
+              <Users className="w-4 h-4" />
+            ) : (
+              (conversationName || '?').charAt(0)
             )}
-          </div>
-        </button>
+          </AvatarFallback>
+        </Avatar>
+        <div 
+          className={cn(
+            "flex-1",
+            otherParticipant?.user_id && "cursor-pointer hover:opacity-80 transition-opacity"
+          )}
+          onClick={() => {
+            if (otherParticipant?.user_id) {
+              navigate(`/user/${otherParticipant.user_id}`);
+            }
+          }}
+        >
+          <h2 className="font-semibold text-foreground">{conversationName}</h2>
+          {conversation?.type === 'group' && (
+            <p className="text-xs text-muted-foreground">
+              {(conversation as any).participants?.length || 0} {t('community.members')}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Messages */}
