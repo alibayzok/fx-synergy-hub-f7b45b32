@@ -1,150 +1,137 @@
 
-# خطة تصدير قاعدة البيانات (الهيكل + البيانات)
 
-## نظرة عامة
+# خطة تجهيز المشروع للفصل الكامل
 
-سأنشئ نظام تصدير شامل يتيح للمسؤول تحميل:
-1. **Schema SQL** - هيكل قاعدة البيانات الكامل
-2. **البيانات JSON** - جميع البيانات من كل الجداول
-3. **ملف موحد** - يحتوي على كل شيء
+## الوضع الحالي
 
----
+المشروع مُهيأ بشكل جيد للترحيل، لكن هناك بعض التحسينات التي ستسهل عملية الفصل لاحقاً:
 
-## الجداول المتوفرة للتصدير
-
-| الجدول | الوصف |
-|--------|-------|
-| `profiles` | بيانات المستخدمين |
-| `user_roles` | أدوار المستخدمين |
-| `trades` | الصفقات |
-| `threads` | المواضيع |
-| `replies` | الردود |
-| `reply_likes` | إعجابات الردود |
-| `room_messages` | رسائل الغرف |
-| `conversations` | المحادثات |
-| `conversation_participants` | المشاركين |
-| `direct_messages` | الرسائل المباشرة |
-| `follows` | المتابعات |
-| `friend_requests` | طلبات الصداقة |
-| `service_requests` | طلبات الخدمات |
-| `usdt_listings` | قوائم USDT |
-| `admin_notifications` | إشعارات المسؤول |
-| `user_notifications` | إشعارات المستخدمين |
-| `user_privacy_settings` | إعدادات الخصوصية |
+| العنصر | الحالة الحالية |
+|--------|---------------|
+| إعدادات Supabase | تُقرأ من متغيرات البيئة ✅ |
+| ملفات الـ Migrations | متوفرة (18 ملف SQL) ✅ |
+| نظام تصدير البيانات | موجود في `/admin` ✅ |
+| ملف Types | يُولَّد تلقائياً ✅ |
+| Capacitor Config | يحتاج تعديل للإنتاج ⚠️ |
+| رابط Reset Password | مرتبط بـ Lovable URL ⚠️ |
+| توثيق الترحيل | غير موجود ❌ |
 
 ---
 
-## المرحلة الأولى: إنشاء مكون التصدير
+## ما سأفعله
 
-سأنشئ مكون `DatabaseExport.tsx` في مجلد `src/components/admin/` يحتوي على:
+### 1. إنشاء ملف تكوين مركزي للبيئة
 
-### الوظائف الرئيسية:
-- **تصدير Schema SQL** - ملف SQL يحتوي على تعريف الجداول والـ Enums والـ Functions
-- **تصدير البيانات JSON** - ملف JSON يحتوي على بيانات جميع الجداول
-- **تصدير كامل** - ملف واحد يحتوي على الهيكل والبيانات
-
-### واجهة المستخدم:
-- أزرار لكل نوع تصدير
-- شريط تقدم أثناء التحميل
-- إحصائيات عن عدد السجلات في كل جدول
-
----
-
-## المرحلة الثانية: دمج المكون في صفحة Admin
-
-سأضيف تبويب جديد "التصدير" في صفحة الإدارة:
+سأنشئ ملف `src/config/environment.ts` يجمع كل الإعدادات المتغيرة في مكان واحد:
 
 ```text
-┌─────────────────────────────────────────────────────────────┐
-│  [نظرة عامة]  [الطلبات]  [الصفقات]  [المستخدمون]  [التصدير] │
-└─────────────────────────────────────────────────────────────┘
+src/config/
+└── environment.ts    ← جميع الإعدادات القابلة للتغيير
 ```
 
+هذا يسهل عليك تعديل جميع الروابط والإعدادات من مكان واحد عند الترحيل.
+
+### 2. إنشاء دليل ترحيل شامل
+
+سأنشئ ملف `MIGRATION_GUIDE.md` يحتوي على:
+- خطوات الترحيل التفصيلية
+- قائمة الملفات التي تحتاج تعديل
+- أوامر SQL المطلوبة
+- إعدادات Capacitor للإنتاج
+
+### 3. إنشاء سكريبت تصدير موحد
+
+سأنشئ ملف `scripts/export-schema.sql` يحتوي على:
+- جميع الـ Enums
+- جميع الجداول مع العلاقات
+- جميع الـ Functions
+- جميع سياسات RLS
+- جميع الـ Triggers
+
 ---
 
-## المرحلة الثالثة: تحديث ملفات الترجمة
+## الملفات التي سأنشئها
 
-سأضيف النصوص العربية والإنجليزية للميزة الجديدة
+| الملف | الوصف |
+|-------|-------|
+| `src/config/environment.ts` | تكوين مركزي للبيئة |
+| `MIGRATION_GUIDE.md` | دليل الترحيل الشامل |
+| `scripts/export-schema.sql` | Schema كامل جاهز للتنفيذ |
 
 ---
 
-## الملفات التي سأنشئها/أعدلها
+## الملفات التي سأعدلها
 
-| الملف | العملية |
+| الملف | التعديل |
 |-------|---------|
-| `src/components/admin/DatabaseExport.tsx` | إنشاء جديد |
-| `src/pages/AdminPage.tsx` | تعديل - إضافة تبويب التصدير |
-| `src/i18n/locales/ar.json` | تعديل - إضافة الترجمة |
-| `src/i18n/locales/en.json` | تعديل - إضافة الترجمة |
+| `src/hooks/useAuth.tsx` | استخدام التكوين المركزي |
+| `capacitor.config.ts` | إضافة تعليقات للإنتاج |
 
 ---
 
 ## قسم تقني
 
-### DatabaseExport.tsx - الهيكل الرئيسي
+### src/config/environment.ts
 
 ```typescript
-const TABLES = [
-  'profiles', 'user_roles', 'trades', 'threads', 'replies',
-  'reply_likes', 'room_messages', 'conversations', 
-  'conversation_participants', 'direct_messages', 'follows',
-  'friend_requests', 'service_requests', 'usdt_listings',
-  'admin_notifications', 'user_notifications', 'user_privacy_settings'
-];
-
-// تصدير البيانات كـ JSON
-const exportData = async () => {
-  const allData = {};
-  for (const table of TABLES) {
-    const { data } = await supabase.from(table).select('*');
-    allData[table] = data || [];
-  }
-  // تحميل كملف JSON
-};
-
-// تصدير الـ Schema
-const exportSchema = () => {
-  // إنشاء ملف SQL من ملفات migrations
-  // يشمل: CREATE TABLE, Enums, Functions, RLS Policies
+// التكوين المركزي - عدّل هذه القيم عند الترحيل
+export const ENV_CONFIG = {
+  // روابط Supabase
+  supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
+  supabaseAnonKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+  
+  // روابط التطبيق
+  appUrl: 'https://fx-synergy-hub.lovable.app',
+  previewUrl: 'https://ebc9336e-82be-4f7f-b9ee-83ee20c32755.lovableproject.com',
+  
+  // إعدادات Capacitor
+  appId: 'app.lovable.ebc9336e82be4f7fb9ee83ee20c32755',
+  appName: 'ASSASSIN FX',
 };
 ```
 
-### Schema SQL المُصدَّر سيتضمن:
+### MIGRATION_GUIDE.md - المحتوى الرئيسي
 
-1. **Enums** - جميع أنواع البيانات المخصصة:
-   - `app_role`, `asset_type`, `trade_direction`, `trade_status`, etc.
+```markdown
+# دليل ترحيل ASSASSIN FX
 
-2. **Tables** - تعريفات الجداول مع الأعمدة والقيود
+## الخطوة 1: تصدير الكود
+1. اربط المشروع بـ GitHub من Settings → GitHub
+2. استنسخ المستودع محلياً
 
-3. **Functions** - جميع الدوال:
-   - `is_admin()`, `is_vip()`, `has_role()`, `can_access_trade()`, etc.
+## الخطوة 2: إنشاء مشروع Supabase جديد
+1. أنشئ مشروع على supabase.com
+2. انسخ Project URL و anon key
 
-4. **RLS Policies** - سياسات الأمان لكل جدول
+## الخطوة 3: تنفيذ Schema
+نفّذ محتوى `scripts/export-schema.sql` في SQL Editor
 
-5. **Triggers** - المشغلات التلقائية
+## الخطوة 4: تحديث الإعدادات
+عدّل ملف `.env` المحلي:
+VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=your_anon_key
+
+## الخطوة 5: بناء APK
+npm install && npm run build
+npx cap sync android
+```
+
+### scripts/export-schema.sql
+
+سيحتوي على Schema كامل مستخرج من جميع ملفات الـ migrations مرتبة حسب الاعتماديات:
+1. Enums أولاً
+2. Tables ثانياً
+3. Functions ثالثاً
+4. Triggers والسياسات أخيراً
 
 ---
 
-## صيغة ملف التصدير الكامل
+## النتيجة النهائية
 
-```json
-{
-  "exportedAt": "2026-02-08T...",
-  "projectName": "ASSASSIN FX",
-  "schema": {
-    "enums": [...],
-    "tables": [...],
-    "functions": [...],
-    "policies": [...]
-  },
-  "data": {
-    "profiles": [...],
-    "trades": [...],
-    ...
-  },
-  "metadata": {
-    "totalRecords": 1234,
-    "tablesCount": 17
-  }
-}
-```
+بعد تنفيذ هذه الخطة، ستحصل على:
+
+1. **ملف تكوين مركزي** - تعديل واحد بدلاً من البحث في عدة ملفات
+2. **دليل ترحيل واضح** - خطوات مفصلة للفصل الكامل
+3. **Schema SQL جاهز** - نفّذه مباشرة في Supabase الخاص بك
+4. **هيكل قابل للنقل** - المشروع يعمل بشكل مستقل تماماً
+
