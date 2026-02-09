@@ -78,7 +78,7 @@ export const useUserPosts = (userId?: string) => {
       // Get profiles for post authors
       const userIds = [...new Set(postsData.map(p => p.user_id))];
       const { data: profiles } = await supabase
-        .from('profiles')
+        .from('profiles_public')
         .select('user_id, display_name, username, avatar_url')
         .in('user_id', userIds);
 
@@ -297,7 +297,7 @@ export const usePostComments = (postId: string) => {
       // Get profiles for comment authors
       const userIds = [...new Set(commentsData.map(c => c.user_id))];
       const { data: profiles } = await supabase
-        .from('profiles')
+        .from('profiles_public')
         .select('user_id, display_name, username, avatar_url')
         .in('user_id', userIds);
 
