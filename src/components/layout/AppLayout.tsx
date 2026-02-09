@@ -37,28 +37,25 @@ export const AppLayout = ({ children, showNotifications = true }: AppLayoutProps
 
   return (
     <div className="min-h-screen bg-background transition-colors duration-300">
-      {/* Header Actions */}
+      {/* Header Actions - Single Row */}
       {showNotifications && user && (
-        <div className="fixed top-3 start-3 end-3 z-50 flex items-center justify-between">
-          {/* Right side - Profile */}
-          <div className="flex items-center gap-1 bg-background/80 backdrop-blur-md rounded-full px-1.5 py-1 border border-border/20 shadow-lg">
+        <div className="fixed top-3 start-3 end-3 z-50 flex items-center justify-center">
+          <div className="flex items-center gap-2 bg-background/80 backdrop-blur-md rounded-full px-3 py-1.5 border border-border/20 shadow-lg">
+            {/* Profile */}
             <Button
               variant="ghost"
               size="icon"
-              className="relative h-8 w-8 rounded-full hover:bg-accent/50 transition-colors p-0 overflow-hidden"
+              className="relative h-9 w-9 rounded-full hover:bg-accent/50 transition-colors p-0 overflow-hidden"
               onClick={() => navigate('/profile')}
             >
-              <Avatar className="h-7 w-7">
+              <Avatar className="h-8 w-8">
                 <AvatarImage src={profile?.avatar_url || undefined} alt="Profile" />
-                <AvatarFallback className="bg-primary/20 text-primary text-[10px] font-medium">
+                <AvatarFallback className="bg-primary/20 text-primary text-xs font-medium">
                   {getInitials()}
                 </AvatarFallback>
               </Avatar>
             </Button>
-          </div>
 
-          {/* Left side - Actions */}
-          <div className="flex items-center gap-0.5 bg-background/80 backdrop-blur-md rounded-full px-1 py-1 border border-border/20 shadow-lg">
             {/* Admin Signup Notifications */}
             <AdminSignupNotifications />
 
@@ -72,14 +69,14 @@ export const AppLayout = ({ children, showNotifications = true }: AppLayoutProps
             <Button
               variant="ghost"
               size="icon"
-              className="relative h-8 w-8 rounded-full hover:bg-accent/50 transition-colors"
+              className="relative h-9 w-9 rounded-full hover:bg-accent/50 transition-colors"
               onClick={() => navigate('/messages')}
             >
-              <MessageSquare className="h-4 w-4 text-muted-foreground" />
+              <MessageSquare className="h-5 w-5 text-muted-foreground" />
               {unreadTotal > 0 && (
                 <Badge 
                   variant="destructive" 
-                  className="absolute -top-0.5 -end-0.5 h-3.5 min-w-3.5 px-0.5 flex items-center justify-center text-[8px] font-bold rounded-full"
+                  className="absolute -top-0.5 -end-0.5 h-4 min-w-4 px-1 flex items-center justify-center text-[9px] font-bold rounded-full"
                 >
                   {unreadTotal > 9 ? '9+' : unreadTotal}
                 </Badge>

@@ -1,40 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { Plus, MessageSquare, LogIn, MessageCircle } from 'lucide-react';
+import { LogIn, MessageCircle } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { RoomCard, LegacyRoomCard } from '@/components/community/RoomCard';
 import { RoomChatPanel } from '@/components/community/RoomChatPanel';
 import { RoomModerationPanel } from '@/components/community/RoomModerationPanel';
 import { UsdtRoomPanel } from '@/components/community/UsdtRoomPanel';
-import { ThreadDetailPanel } from '@/components/community/ThreadDetailPanel';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import { useCommunity, Thread } from '@/hooks/useCommunity';
-import { formatDistanceToNow } from 'date-fns';
-import { ar, enUS } from 'date-fns/locale';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 
-type Tab = 'rooms' | 'threads';
-type ViewMode = 'list' | 'chat' | 'thread' | 'usdt' | 'moderation';
+type ViewMode = 'list' | 'chat' | 'usdt' | 'moderation';
 
 // Static rooms data
 const roomsData = [
@@ -99,50 +78,12 @@ const CommunityPage = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<Tab>('rooms');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedRoom, setSelectedRoom] = useState<typeof roomsData[0] | null>(null);
-  const [selectedThread, setSelectedThread] = useState<Thread | null>(null);
-  const [showNewThreadDialog, setShowNewThreadDialog] = useState(false);
-  const [threadRoomFilter, setThreadRoomFilter] = useState<string>('general');
-  const [newThread, setNewThread] = useState<{
-    title: string;
-    content: string;
-    tag: 'question' | 'analysis' | 'alert' | 'help';
-    room_id: string;
-  }>({
-    title: '',
-    content: '',
-    tag: 'question',
-    room_id: 'general',
-  });
 
   const { user, isVip, isAdmin, loading: authLoading } = useAuth();
-  const { threads, loading: threadsLoading, fetchThreads, createThread, deleteThread } = useCommunity();
   const isArabic = i18n.language === 'ar';
   const isVipUser = isVip || isAdmin;
-
-  const tagColors: Record<string, string> = {
-    question: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-    analysis: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
-    alert: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
-    help: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
-  };
-
-  // Fetch threads when user is authenticated and tab/filter changes
-  useEffect(() => {
-    if (!user) return;
-    if (activeTab !== 'threads') return;
-
-    fetchThreads(threadRoomFilter === 'all' ? undefined : threadRoomFilter);
-  }, [user, activeTab, threadRoomFilter, fetchThreads]);
-
-  const formatTime = (dateStr: string) => {
-    return formatDistanceToNow(new Date(dateStr), {
-      addSuffix: true,
-      locale: isArabic ? ar : enUS
-    });
-  };
 
   const handleRoomClick = (room: typeof roomsData[0]) => {
     if (room.is_vip && !isVipUser) {
@@ -154,7 +95,6 @@ const CommunityPage = () => {
       return;
     }
     setSelectedRoom(room);
-    // For USDT room, use special panel
     if (room.id === 'usdt') {
       setViewMode('usdt');
     } else {
@@ -162,52 +102,9 @@ const CommunityPage = () => {
     }
   };
 
-  const handleThreadClick = (thread: Thread) => {
-    setSelectedThread(thread);
-    setViewMode('thread');
-  };
-
   const handleBackToList = () => {
     setViewMode('list');
     setSelectedRoom(null);
-    setSelectedThread(null);
-  };
-
-  const handleCreateThread = async () => {
-    if (!user) {
-      navigate('/auth');
-      return;
-    }
-    
-    if (!newThread.title.trim() || !newThread.content.trim()) {
-      toast({
-        title: t('common.error'),
-        description: t('community.fillAllFields'),
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    const result = await createThread({
-      room_id: newThread.room_id,
-      title: newThread.title,
-      content: newThread.content,
-      tag: newThread.tag
-    });
-
-    if (result) {
-      setThreadRoomFilter(newThread.room_id);
-      setNewThread({ title: '', content: '', tag: 'question', room_id: 'general' });
-      setShowNewThreadDialog(false);
-      setActiveTab('threads');
-    }
-  };
-
-  const handleDeleteThread = async () => {
-    if (selectedThread) {
-      await deleteThread(selectedThread.id);
-      handleBackToList();
-    }
   };
 
   // Show login prompt if not authenticated
@@ -277,19 +174,6 @@ const CommunityPage = () => {
     );
   }
 
-  // Show thread detail
-  if (viewMode === 'thread' && selectedThread) {
-    return (
-      <AppLayout>
-        <ThreadDetailPanel
-          thread={selectedThread}
-          onBack={handleBackToList}
-          onDelete={handleDeleteThread}
-        />
-      </AppLayout>
-    );
-  }
-
   return (
     <AppLayout>
       {/* Header */}
@@ -297,231 +181,39 @@ const CommunityPage = () => {
         <div className="flex items-center justify-between px-4 py-3">
           <h1 className="text-xl font-bold text-foreground">{t('community.title')}</h1>
         </div>
-
-        {/* Tabs */}
-        <div className="flex gap-1 px-4 pb-3">
-          {(['rooms', 'threads'] as Tab[]).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={cn(
-                "flex-1 py-2 text-sm font-medium rounded-lg transition-colors",
-                activeTab === tab
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
-              )}
-            >
-              {t(`community.${tab}`)}
-            </button>
-          ))}
-        </div>
       </header>
 
       <div className="px-4 py-4">
-        {activeTab === 'rooms' ? (
-          <div className="space-y-3">
-            {roomsData.map((room, index) => (
-              <motion.div
-                key={room.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-              >
-                <LegacyRoomCard 
-                  room={room} 
-                  isLocked={room.is_vip && !isVipUser}
-                  onClick={() => handleRoomClick(room)}
-                />
-              </motion.div>
-            ))}
+        <div className="space-y-3">
+          {roomsData.map((room, index) => (
+            <motion.div
+              key={room.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+            >
+              <LegacyRoomCard 
+                room={room} 
+                isLocked={room.is_vip && !isVipUser}
+                onClick={() => handleRoomClick(room)}
+              />
+            </motion.div>
+          ))}
 
-            {/* Chat hint */}
-            <div className="mt-6 p-4 rounded-xl bg-primary/5 border border-primary/20">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-primary/20">
-                  <MessageCircle className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <h4 className="font-medium text-foreground">{t('community.chatHint')}</h4>
-                  <p className="text-sm text-muted-foreground">{t('community.chatHintDesc')}</p>
-                </div>
+          {/* Chat hint */}
+          <div className="mt-6 p-4 rounded-xl bg-primary/5 border border-primary/20">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/20">
+                <MessageCircle className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h4 className="font-medium text-foreground">{t('community.chatHint')}</h4>
+                <p className="text-sm text-muted-foreground">{t('community.chatHintDesc')}</p>
               </div>
             </div>
           </div>
-        ) : (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-card/40 border border-border/30">
-              <div className="flex items-center gap-2 flex-1">
-                <span className="text-sm font-medium text-foreground">{isArabic ? 'الغرفة' : 'Room'}</span>
-                <Select value={threadRoomFilter} onValueChange={setThreadRoomFilter}>
-                  <SelectTrigger className="w-[160px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{isArabic ? 'كل الغرف' : 'All rooms'}</SelectItem>
-                    {roomsData.filter(r => !r.is_vip || isVipUser).map(room => (
-                      <SelectItem key={room.id} value={room.id}>
-                        {isArabic ? room.name_ar : room.name_en}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button size="sm" className="gap-1.5" onClick={() => setShowNewThreadDialog(true)}>
-                <Plus className="w-4 h-4" />
-                {t('community.newThread')}
-              </Button>
-            </div>
-
-            {threadsLoading ? (
-              <div className="flex justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-              </div>
-            ) : threads.length > 0 ? (
-              threads.map((thread, index) => {
-                const authorName = thread.author?.display_name || thread.author?.username || 'مستخدم';
-                return (
-                  <motion.button
-                    key={thread.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    onClick={() => handleThreadClick(thread)}
-                    className="w-full text-start p-4 rounded-xl bg-card/50 border border-border/30 hover:bg-card transition-colors"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                        <span className="text-primary font-semibold text-sm">
-                          {authorName.charAt(0)}
-                        </span>
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <span className="font-medium text-sm text-foreground">
-                            {authorName}
-                          </span>
-                          <Badge 
-                            variant="outline" 
-                            className={cn("text-[10px] px-1.5 py-0", tagColors[thread.tag])}
-                          >
-                            {t(`community.${thread.tag}`)}
-                          </Badge>
-                          {thread.is_pinned && (
-                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                              📌
-                            </Badge>
-                          )}
-                        </div>
-                        
-                        <h4 className="font-semibold text-foreground mb-1">{thread.title}</h4>
-                        <p className="text-sm text-muted-foreground line-clamp-2">{thread.content}</p>
-                        
-                        <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <MessageSquare className="w-3 h-3" />
-                            {thread.replies_count} {t('community.replies')}
-                          </span>
-                          <span>{formatTime(thread.created_at)}</span>
-                          {thread.has_best_answer && (
-                            <span className="text-profit">✓ {t('community.bestAnswer')}</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </motion.button>
-                );
-              })
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <MessageSquare className="w-12 h-12 text-muted-foreground/30 mb-3" />
-                <p className="text-muted-foreground">{t('community.noThreads')}</p>
-                <Button 
-                  variant="outline" 
-                  className="mt-4"
-                  onClick={() => setShowNewThreadDialog(true)}
-                >
-                  {t('community.createFirst')}
-                </Button>
-              </div>
-            )}
-          </div>
-        )}
+        </div>
       </div>
-
-      {/* New Thread Dialog */}
-      <Dialog open={showNewThreadDialog} onOpenChange={setShowNewThreadDialog}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>{t('community.newThread')}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{t('community.threadTitle')}</label>
-              <Input
-                value={newThread.title}
-                onChange={(e) => setNewThread(prev => ({ ...prev, title: e.target.value }))}
-                placeholder={t('community.titlePlaceholder')}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{t('community.threadContent')}</label>
-              <Textarea
-                value={newThread.content}
-                onChange={(e) => setNewThread(prev => ({ ...prev, content: e.target.value }))}
-                placeholder={t('community.contentPlaceholder')}
-                rows={4}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">{t('community.selectRoom')}</label>
-                <Select
-                  value={newThread.room_id}
-                  onValueChange={(value) => setNewThread(prev => ({ ...prev, room_id: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {roomsData.filter(r => !r.is_vip || isVipUser).map(room => (
-                      <SelectItem key={room.id} value={room.id}>
-                        {isArabic ? room.name_ar : room.name_en}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">{t('community.tag')}</label>
-                <Select
-                  value={newThread.tag}
-                  onValueChange={(value: 'question' | 'analysis' | 'alert' | 'help') => 
-                    setNewThread(prev => ({ ...prev, tag: value }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="question">{t('community.question')}</SelectItem>
-                    <SelectItem value="analysis">{t('community.analysis')}</SelectItem>
-                    <SelectItem value="alert">{t('community.alert')}</SelectItem>
-                    <SelectItem value="help">{t('community.help')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <Button onClick={handleCreateThread} className="w-full">
-              {t('community.createThread')}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </AppLayout>
   );
 };
