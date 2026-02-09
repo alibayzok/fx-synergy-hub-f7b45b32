@@ -119,8 +119,8 @@ export const AdminSignupNotifications = () => {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative h-8 w-8 rounded-full hover:bg-accent/50 transition-colors">
-          <Users className="h-4 w-4 text-muted-foreground" />
+        <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-full hover:bg-accent/50 transition-colors">
+          <Users className="h-5 w-5 text-muted-foreground" />
           {unreadCount > 0 && (
             <motion.div
               initial={{ scale: 0 }}
