@@ -28,40 +28,38 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const GOOGLE_AI_API_KEY = Deno.env.get("GOOGLE_AI_API_KEY");
+    if (!GOOGLE_AI_API_KEY) {
+      throw new Error("GOOGLE_AI_API_KEY is not configured");
     }
 
-    // Prepare content for Gemini vision
-    const imageContent = imageBase64 
+    // Prepare content for Gemini
+    const imagePart = imageBase64 
       ? {
-          type: "image_url" as const,
-          image_url: { url: `data:image/jpeg;base64,${imageBase64}` }
+          inline_data: {
+            mime_type: "image/jpeg",
+            data: imageBase64
+          }
         }
       : {
-          type: "image_url" as const,
-          image_url: { url: imageUrl }
+          file_data: {
+            file_uri: imageUrl,
+            mime_type: "image/jpeg"
+          }
         };
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "system",
-            content: `You are a content moderation AI. Analyze images for inappropriate content.
-            
+    const requestBody = {
+      contents: [
+        {
+          parts: [
+            {
+              text: `You are a content moderation AI. Analyze this image for inappropriate content.
+
 IMPORTANT: You must respond ONLY with a valid JSON object, no other text.
 
 Categories to detect:
 - "porn": Explicit adult/sexual content
-- "sexy": Suggestive or revealing content
+- "sexy": Suggestive or revealing content  
 - "violence": Graphic violence or gore
 - "hate": Hate symbols or offensive imagery
 - "safe": No issues detected
@@ -72,40 +70,53 @@ Response format (JSON only):
   "confidence": 0.0-1.0,
   "description": "brief description"
 }`
-          },
-          {
-            role: "user",
-            content: [
-              { type: "text", text: "Analyze this image for inappropriate content. Respond with JSON only." },
-              imageContent
-            ]
-          }
-        ],
-        max_tokens: 200,
+            },
+            imagePart
+          ]
+        }
+      ],
+      generationConfig: {
         temperature: 0.1,
-      }),
-    });
+        maxOutputTokens: 200,
+      },
+      safetySettings: [
+        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
+      ]
+    };
+
+    // Call Google Gemini API directly
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GOOGLE_AI_API_KEY}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      }
+    );
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Gemini API error:", response.status, errorText);
+      
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded, please try again later" }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Payment required" }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
-      throw new Error(`AI gateway error: ${response.status}`);
+      
+      throw new Error(`Gemini API error: ${response.status}`);
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || "";
+    
+    // Extract text from Gemini response
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
     // Parse the AI response
     let analysis: { category: string; confidence: number; description: string };
