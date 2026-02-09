@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { MessageSquare, User } from 'lucide-react';
 import { BottomNav } from './BottomNav';
 import { FloatingAIButton } from './FloatingAIButton';
+import { ThemeToggle } from './ThemeToggle';
 import { NotificationsPanel } from '@/components/notifications/NotificationsPanel';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
 import { useConversations } from '@/hooks/useMessaging';
 import { useProfile } from '@/hooks/useProfile';
+
 interface AppLayoutProps {
   children: ReactNode;
   showNotifications?: boolean;
@@ -32,7 +34,7 @@ export const AppLayout = ({ children, showNotifications = true }: AppLayoutProps
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background transition-colors duration-300">
       {/* Header Actions */}
       {showNotifications && user && (
         <div className="fixed top-3 end-3 z-50 flex items-center gap-1.5 bg-background/80 backdrop-blur-md rounded-full px-1.5 py-1 border border-border/20 shadow-lg">
@@ -50,6 +52,12 @@ export const AppLayout = ({ children, showNotifications = true }: AppLayoutProps
               </AvatarFallback>
             </Avatar>
           </Button>
+
+          {/* Divider */}
+          <div className="h-5 w-px bg-border/30" />
+
+          {/* Theme Toggle */}
+          <ThemeToggle />
 
           {/* Divider */}
           <div className="h-5 w-px bg-border/30" />

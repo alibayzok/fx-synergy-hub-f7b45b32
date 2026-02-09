@@ -8,7 +8,67 @@
 
 @layer base {
   :root {
-    /* Dark trading theme - default */
+    /* Light trading theme */
+    --background: 40 20% 98%;
+    --foreground: 220 20% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 10%;
+
+    /* Gold/Amber - Trading accent */
+    --primary: 38 92% 40%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 40 15% 92%;
+    --secondary-foreground: 220 15% 20%;
+
+    --muted: 40 10% 94%;
+    --muted-foreground: 220 10% 45%;
+
+    --accent: 38 85% 45%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Trading colors */
+    --profit: 142 70% 35%;
+    --profit-foreground: 0 0% 100%;
+    --loss: 0 72% 45%;
+    --loss-foreground: 0 0% 100%;
+    
+    /* VIP Gold */
+    --vip: 38 100% 45%;
+    --vip-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 40 15% 88%;
+    --input: 40 15% 92%;
+    --ring: 38 92% 40%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 40 15% 96%;
+    --sidebar-foreground: 220 15% 20%;
+    --sidebar-primary: 38 92% 40%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 40 15% 92%;
+    --sidebar-accent-foreground: 220 15% 20%;
+    --sidebar-border: 40 15% 88%;
+    --sidebar-ring: 38 92% 40%;
+
+    /* Chart colors */
+    --chart-1: 38 92% 40%;
+    --chart-2: 142 70% 35%;
+    --chart-3: 0 72% 45%;
+    --chart-4: 200 80% 45%;
+    --chart-5: 280 70% 45%;
+  }
+
+  .dark {
+    /* Dark trading theme */
     --background: 220 20% 6%;
     --foreground: 45 10% 95%;
 
@@ -48,8 +108,6 @@
     --input: 220 15% 14%;
     --ring: 45 93% 47%;
 
-    --radius: 0.75rem;
-
     --sidebar-background: 220 18% 8%;
     --sidebar-foreground: 45 10% 90%;
     --sidebar-primary: 45 93% 47%;
@@ -65,34 +123,6 @@
     --chart-3: 0 72% 51%;
     --chart-4: 200 80% 50%;
     --chart-5: 280 70% 50%;
-  }
-
-  .dark {
-    --background: 220 20% 6%;
-    --foreground: 45 10% 95%;
-    --card: 220 18% 10%;
-    --card-foreground: 45 10% 95%;
-    --popover: 220 18% 12%;
-    --popover-foreground: 45 10% 95%;
-    --primary: 45 93% 47%;
-    --primary-foreground: 220 20% 6%;
-    --secondary: 220 15% 16%;
-    --secondary-foreground: 45 10% 90%;
-    --muted: 220 15% 14%;
-    --muted-foreground: 220 10% 55%;
-    --accent: 45 80% 50%;
-    --accent-foreground: 220 20% 6%;
-    --profit: 142 70% 45%;
-    --profit-foreground: 142 70% 95%;
-    --loss: 0 72% 51%;
-    --loss-foreground: 0 72% 95%;
-    --vip: 45 100% 50%;
-    --vip-foreground: 220 20% 6%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 220 15% 18%;
-    --input: 220 15% 14%;
-    --ring: 45 93% 47%;
   }
 }
 
