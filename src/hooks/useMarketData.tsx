@@ -27,7 +27,7 @@ const fallbackData: MarketSymbol[] = [
   { symbol: 'NZDUSD', name: 'Kiwi/Dollar', asset_type: 'forex', price: 0, change: 0, change_percent: 0, high: 0, low: 0, last_update: '' },
 ];
 
-export const useMarketData = (autoRefresh = true, refreshInterval = 30000) => {
+export const useMarketData = (autoRefresh = true, refreshInterval = 90000) => {
   const [symbols, setSymbols] = useState<MarketSymbol[]>(fallbackData);
   const [loading, setLoading] = useState(true);
   const hasFetched = useRef(false);

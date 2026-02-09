@@ -4,24 +4,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Finnhub symbols (best for crypto)
-const FINNHUB_SYMBOLS: Record<string, string> = {
-  BTCUSD: "BINANCE:BTCUSDT",
-  ETHUSD: "BINANCE:ETHUSDT",
-};
-
-// Twelve Data symbols (best for forex & metals)
-const TWELVEDATA_SYMBOLS: Record<string, string> = {
-  XAUUSD: "XAU/USD",
-  XAGUSD: "XAG/USD",
-  EURUSD: "EUR/USD",
-  GBPUSD: "GBP/USD",
-  USDJPY: "USD/JPY",
-  USDCHF: "USD/CHF",
-  AUDUSD: "AUD/USD",
-  NZDUSD: "NZD/USD",
-};
-
 const SYMBOL_INFO: Record<string, { name: string; asset_type: string }> = {
   XAUUSD: { name: "Gold", asset_type: "metals" },
   XAGUSD: { name: "Silver", asset_type: "metals" },
@@ -47,83 +29,94 @@ interface MarketResult {
   last_update: string;
 }
 
-async function fetchFinnhub(apiKey: string): Promise<MarketResult[]> {
+// In-memory cache
+let cachedResults: MarketResult[] = [];
+let lastFetchTime = 0;
+const CACHE_TTL_MS = 60_000; // 1 minute
+
+// Finnhub for crypto
+async function fetchCrypto(apiKey: string): Promise<MarketResult[]> {
+  const symbols: Record<string, string> = {
+    BTCUSD: "BINANCE:BTCUSDT",
+    ETHUSD: "BINANCE:ETHUSDT",
+  };
   const results: MarketResult[] = [];
-  for (const [symbol, finnhubSymbol] of Object.entries(FINNHUB_SYMBOLS)) {
+  for (const [sym, fhSym] of Object.entries(symbols)) {
     try {
-      const res = await fetch(
-        `https://finnhub.io/api/v1/quote?symbol=${finnhubSymbol}&token=${apiKey}`
-      );
+      const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${fhSym}&token=${apiKey}`);
       if (!res.ok) continue;
-      const data = await res.json();
-      if (data.c && data.c > 0) {
-        const change = data.c - (data.pc || data.c);
-        const changePct = data.pc ? (change / data.pc) * 100 : 0;
-        const info = SYMBOL_INFO[symbol];
+      const d = await res.json();
+      if (d.c && d.c > 0) {
+        const change = d.c - (d.pc || d.c);
+        const info = SYMBOL_INFO[sym];
         results.push({
-          symbol,
-          name: info.name,
-          asset_type: info.asset_type,
-          price: data.c,
-          change: Number(change.toFixed(5)),
-          change_percent: Number(changePct.toFixed(2)),
-          high: data.h || data.c,
-          low: data.l || data.c,
+          symbol: sym, name: info.name, asset_type: info.asset_type,
+          price: d.c, change: Number(change.toFixed(2)),
+          change_percent: d.pc ? Number(((change / d.pc) * 100).toFixed(2)) : 0,
+          high: d.h || d.c, low: d.l || d.c,
           last_update: new Date().toISOString(),
         });
       }
     } catch { /* skip */ }
-    await new Promise((r) => setTimeout(r, 150));
+    await new Promise(r => setTimeout(r, 100));
   }
   return results;
 }
 
-async function fetchTwelveData(apiKey: string): Promise<MarketResult[]> {
+// Twelve Data for forex & metals - single batch call (uses 1 credit per symbol)
+async function fetchForexMetals(apiKey: string): Promise<MarketResult[]> {
+  const tdSymbols: Record<string, string> = {
+    XAUUSD: "XAU/USD", XAGUSD: "XAG/USD",
+    EURUSD: "EUR/USD", GBPUSD: "GBP/USD",
+    USDJPY: "USD/JPY", USDCHF: "USD/CHF",
+    AUDUSD: "AUD/USD", NZDUSD: "NZD/USD",
+  };
   const results: MarketResult[] = [];
-  // Twelve Data supports batch quotes - fetch all at once
-  const symbolsList = Object.values(TWELVEDATA_SYMBOLS).join(",");
+
+  // Use quote endpoint with batch - single request
+  const symbolsList = Object.values(tdSymbols).join(",");
   try {
     const res = await fetch(
       `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(symbolsList)}&apikey=${apiKey}`
     );
     if (!res.ok) {
-      console.error("Twelve Data error:", res.status);
+      console.error("Twelve Data batch error:", res.status);
       return results;
     }
     const data = await res.json();
+    
+    // Check if rate limited
+    if (data.code === 429 || data.status === "error") {
+      console.error("Twelve Data rate limited:", data.message);
+      return results;
+    }
 
-    // Batch response returns object keyed by symbol
-    for (const [ourSymbol, tdSymbol] of Object.entries(TWELVEDATA_SYMBOLS)) {
+    for (const [ourSym, tdSym] of Object.entries(tdSymbols)) {
       try {
-        const quote = data[tdSymbol as string];
-        if (!quote || quote.status === "error") continue;
-
-        const price = parseFloat(quote.close);
-        const prevClose = parseFloat(quote.previous_close);
-        const high = parseFloat(quote.high);
-        const low = parseFloat(quote.low);
-
+        const q = data[tdSym];
+        if (!q || q.code || q.status === "error") continue;
+        
+        const price = parseFloat(q.close);
+        const prevClose = parseFloat(q.previous_close);
         if (!price || price <= 0) continue;
 
         const change = prevClose ? price - prevClose : 0;
         const changePct = prevClose ? (change / prevClose) * 100 : 0;
-        const info = SYMBOL_INFO[ourSymbol];
+        const info = SYMBOL_INFO[ourSym];
 
         results.push({
-          symbol: ourSymbol,
-          name: info.name,
-          asset_type: info.asset_type,
+          symbol: ourSym, name: info.name, asset_type: info.asset_type,
           price,
           change: Number(change.toFixed(5)),
           change_percent: Number(changePct.toFixed(2)),
-          high: high || price,
-          low: low || price,
+          high: parseFloat(q.high) || price,
+          low: parseFloat(q.low) || price,
           last_update: new Date().toISOString(),
         });
-      } catch { /* skip symbol */ }
+      } catch { /* skip */ }
     }
   } catch (err) {
-    console.error("Twelve Data fetch error:", err);
+    console.error("Twelve Data error:", err);
   }
   return results;
 }
@@ -134,6 +127,15 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const now = Date.now();
+
+    // Return cache if fresh
+    if (cachedResults.length > 0 && now - lastFetchTime < CACHE_TTL_MS) {
+      return new Response(JSON.stringify(cachedResults), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const FINNHUB_API_KEY = Deno.env.get("FINNHUB_API_KEY");
     const TWELVE_DATA_API_KEY = Deno.env.get("TWELVE_DATA_API_KEY");
 
@@ -141,16 +143,18 @@ Deno.serve(async (req) => {
       throw new Error("No market data API keys configured");
     }
 
-    // Fetch from both providers in parallel
-    const [finnhubResults, twelveDataResults] = await Promise.all([
-      FINNHUB_API_KEY ? fetchFinnhub(FINNHUB_API_KEY) : Promise.resolve([]),
-      TWELVE_DATA_API_KEY ? fetchTwelveData(TWELVE_DATA_API_KEY) : Promise.resolve([]),
+    console.log("Fetching fresh market data...");
+
+    const [forexMetals, crypto] = await Promise.all([
+      TWELVE_DATA_API_KEY ? fetchForexMetals(TWELVE_DATA_API_KEY) : Promise.resolve([]),
+      FINNHUB_API_KEY ? fetchCrypto(FINNHUB_API_KEY) : Promise.resolve([]),
     ]);
 
-    // Merge: Twelve Data for forex/metals, Finnhub for crypto
-    const allResults = [...twelveDataResults, ...finnhubResults];
+    console.log(`ForexMetals: ${forexMetals.length}, Crypto: ${crypto.length}`);
 
-    // Deduplicate (prefer first occurrence)
+    const allResults = [...forexMetals, ...crypto];
+
+    // Deduplicate
     const seen = new Set<string>();
     const merged: MarketResult[] = [];
     for (const r of allResults) {
@@ -160,9 +164,14 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Sort by predefined order
+    // Sort
     const order = Object.keys(SYMBOL_INFO);
     merged.sort((a, b) => order.indexOf(a.symbol) - order.indexOf(b.symbol));
+
+    if (merged.length > 0) {
+      cachedResults = merged;
+      lastFetchTime = now;
+    }
 
     return new Response(JSON.stringify(merged), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -170,6 +179,13 @@ Deno.serve(async (req) => {
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : "Unknown error";
     console.error("Market data error:", msg);
+
+    if (cachedResults.length > 0) {
+      return new Response(JSON.stringify(cachedResults), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(JSON.stringify({ error: msg }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
