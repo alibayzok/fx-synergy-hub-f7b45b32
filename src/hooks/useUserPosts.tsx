@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
-
+import { moderateImage, type ModerationResult } from '@/lib/image-moderation';
 export type PostVisibility = 'everyone' | 'friends_only' | 'followers_only' | 'nobody';
 export type AssetType = 'forex' | 'metals' | 'crypto';
 export type Timeframe = 'M5' | 'M15' | 'H1' | 'H4' | 'D1';
@@ -180,9 +180,43 @@ export const useUserPosts = (userId?: string) => {
     },
   });
 
-  // Upload attachment
+  // Check if file is an image
+  const isImageFile = (file: File): boolean => {
+    return file.type.startsWith('image/');
+  };
+
+  // Upload attachment with moderation
   const uploadAttachment = async (file: File): Promise<string | null> => {
     if (!user) return null;
+
+    // Check for inappropriate content in images
+    if (isImageFile(file)) {
+      try {
+        toast.loading(t('posts.scanningImage', 'جاري فحص الصورة...'), { id: 'image-scan' });
+        
+        const moderationResult = await moderateImage(file);
+        
+        toast.dismiss('image-scan');
+        
+        if (!moderationResult.isAllowed) {
+          toast.error(moderationResult.message || t('posts.imageNotAllowed', 'الصورة غير مسموح بها'));
+          
+          // Log the flagged content for admin review
+          await logFlaggedContent(file, moderationResult);
+          
+          return null;
+        }
+        
+        // If flagged but allowed (e.g., error during scan), still log for manual review
+        if (moderationResult.isFlagged) {
+          await logFlaggedContent(file, moderationResult);
+        }
+      } catch (error) {
+        toast.dismiss('image-scan');
+        console.error('Image moderation error:', error);
+        // Continue with upload if moderation fails, but log for manual review
+      }
+    }
 
     const fileExt = file.name.split('.').pop();
     const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
@@ -202,6 +236,32 @@ export const useUserPosts = (userId?: string) => {
       .getPublicUrl(fileName);
 
     return publicUrl;
+  };
+
+  // Log flagged content for admin review
+  const logFlaggedContent = async (file: File, result: ModerationResult) => {
+    if (!user) return;
+    
+    try {
+      // We'll create a temporary URL for logging purposes
+      const tempUrl = URL.createObjectURL(file);
+      
+      await supabase
+        .from('flagged_content')
+        .insert({
+          content_type: 'post',
+          content_id: crypto.randomUUID(), // Temporary ID since post isn't created yet
+          user_id: user.id,
+          flagged_url: tempUrl,
+          flag_reason: result.reason || 'unknown',
+          confidence: result.confidence,
+          predictions: result.predictions as any,
+        });
+      
+      URL.revokeObjectURL(tempUrl);
+    } catch (error) {
+      console.error('Error logging flagged content:', error);
+    }
   };
 
   return {
