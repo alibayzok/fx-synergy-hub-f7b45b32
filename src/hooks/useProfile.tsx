@@ -15,6 +15,8 @@ interface Profile {
   last_name?: string;
   country?: string;
   phone?: string;
+  onboarding_completed?: boolean;
+  trading_preferences?: any;
   created_at: string;
   updated_at: string;
 }

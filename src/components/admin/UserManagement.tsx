@@ -20,6 +20,13 @@ interface UserProfile {
   user_id: string;
   display_name: string;
   username: string;
+  first_name: string;
+  last_name: string;
+  country: string;
+  phone: string;
+  avatar_url: string;
+  onboarding_completed: boolean;
+  trading_preferences: any;
   created_at: string;
   roles: string[];
 }
@@ -115,7 +122,11 @@ export const UserManagement = () => {
 
   const filteredUsers = users.filter(user =>
     (user.display_name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-    (user.username?.toLowerCase() || '').includes(searchQuery.toLowerCase())
+    (user.username?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+    (user.phone?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+    (user.first_name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+    (user.last_name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+    (user.country?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
 
   const getRoleIcon = (roles: string[]) => {
@@ -189,13 +200,31 @@ export const UserManagement = () => {
                     )}>
                       {getRoleIcon(user.roles)}
                     </div>
-                    <div className="min-w-0">
+                     <div className="min-w-0">
                       <p className="font-medium text-foreground truncate">
                         {user.display_name || t('admin.unnamed')}
                       </p>
                       <p className="text-xs text-muted-foreground truncate">
                         @{user.username || user.user_id.slice(0, 8)}
                       </p>
+                      {/* Full user details for admin */}
+                      <div className="mt-1 space-y-0.5">
+                        {(user.first_name || user.last_name) && (
+                          <p className="text-xs text-muted-foreground">
+                            👤 {[user.first_name, user.last_name].filter(Boolean).join(' ')}
+                          </p>
+                        )}
+                        {user.phone && (
+                          <p className="text-xs text-muted-foreground trading-number">
+                            📱 {user.phone}
+                          </p>
+                        )}
+                        {user.country && (
+                          <p className="text-xs text-muted-foreground">
+                            🌍 {user.country}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
                   

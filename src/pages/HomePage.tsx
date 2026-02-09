@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, LogIn } from 'lucide-react';
@@ -45,7 +46,14 @@ const HomePage = () => {
   const { user, isAdmin, isVip, loading: authLoading } = useAuth();
   const { trades, loading: tradesLoading, getStats } = useTrades();
   const { symbols } = useMarketData();
-  const { profile } = useProfile();
+  const { profile, loading: profileLoading } = useProfile();
+
+  // Redirect to onboarding if not completed
+  useEffect(() => {
+    if (user && !profileLoading && profile && !profile.onboarding_completed) {
+      navigate('/onboarding', { replace: true });
+    }
+  }, [user, profile, profileLoading, navigate]);
 
   const stats = getStats();
 

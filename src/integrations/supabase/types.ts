@@ -1186,7 +1186,9 @@ export type Database = {
           id: string | null
           language: string | null
           last_name: string | null
+          onboarding_completed: boolean | null
           phone: string | null
+          trading_preferences: Json | null
           updated_at: string | null
           user_id: string | null
           username: string | null
@@ -1200,7 +1202,9 @@ export type Database = {
           id?: string | null
           language?: string | null
           last_name?: string | null
-          phone?: never
+          onboarding_completed?: boolean | null
+          phone?: string | null
+          trading_preferences?: Json | null
           updated_at?: string | null
           user_id?: string | null
           username?: string | null
@@ -1214,7 +1218,9 @@ export type Database = {
           id?: string | null
           language?: string | null
           last_name?: string | null
-          phone?: never
+          onboarding_completed?: boolean | null
+          phone?: string | null
+          trading_preferences?: Json | null
           updated_at?: string | null
           user_id?: string | null
           username?: string | null

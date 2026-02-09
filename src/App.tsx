@@ -20,6 +20,7 @@ import AdminPage from "./pages/AdminPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import AnalysesPage from "./pages/AnalysesPage";
 import AIChatPage from "./pages/AIChatPage";
+import OnboardingPage from "./pages/OnboardingPage";
 import NotFound from "./pages/NotFound";
 import "./i18n";
 
@@ -68,6 +69,7 @@ const App = () => {
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/analyses" element={<AnalysesPage />} />
                 <Route path="/ai-chat" element={<AIChatPage />} />
+                <Route path="/onboarding" element={<OnboardingPage />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
