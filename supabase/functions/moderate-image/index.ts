@@ -28,24 +28,40 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const GOOGLE_AI_API_KEY = Deno.env.get("GOOGLE_AI_API_KEY");
+    if (!GOOGLE_AI_API_KEY) {
+      console.warn("GOOGLE_AI_API_KEY is not configured - allowing image with manual review flag");
+      return new Response(
+        JSON.stringify({
+          isAllowed: true,
+          isFlagged: true,
+          reason: "no_api_key",
+          message: "تم رفع الصورة - ستتم مراجعتها يدوياً"
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    // Prepare the image data URL for the API
-    const imageDataUrl = imageBase64 
-      ? `data:image/jpeg;base64,${imageBase64}`
-      : imageUrl;
+    // Prepare content for Gemini
+    const imagePart = imageBase64 
+      ? {
+          inline_data: {
+            mime_type: "image/jpeg",
+            data: imageBase64
+          }
+        }
+      : {
+          file_data: {
+            file_uri: imageUrl,
+            mime_type: "image/jpeg"
+          }
+        };
 
     const requestBody = {
-      model: "google/gemini-2.5-flash",
-      messages: [
+      contents: [
         {
-          role: "user",
-          content: [
+          parts: [
             {
-              type: "text",
               text: `You are a content moderation AI. Analyze this image for inappropriate content.
 
 IMPORTANT: You must respond ONLY with a valid JSON object, no other text.
@@ -64,47 +80,54 @@ Response format (JSON only):
   "description": "brief description"
 }`
             },
-            {
-              type: "image_url",
-              image_url: {
-                url: imageDataUrl
-              }
-            }
+            imagePart
           ]
         }
       ],
-      max_tokens: 200,
-      temperature: 0.1
+      generationConfig: {
+        temperature: 0.1,
+        maxOutputTokens: 200,
+      },
+      safetySettings: [
+        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
+      ]
     };
 
-    // Call Lovable AI API (OpenAI-compatible)
-    const response = await fetch("https://api.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-      },
-      body: JSON.stringify(requestBody),
-    });
+    // Call Google Gemini API
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_AI_API_KEY}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      }
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Lovable AI API error:", response.status, errorText);
+      console.error("Gemini API error:", response.status, errorText);
       
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Rate limit exceeded, please try again later" }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      
-      throw new Error(`Lovable AI API error: ${response.status}`);
+      // On any API error, allow upload but flag for manual review (return 200)
+      return new Response(
+        JSON.stringify({
+          isAllowed: true,
+          isFlagged: true,
+          reason: "api_error",
+          message: "تم رفع الصورة - ستتم مراجعتها يدوياً"
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const data = await response.json();
     
-    // Extract text from OpenAI-compatible response
-    const content = data.choices?.[0]?.message?.content || "";
+    // Extract text from Gemini response
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
     // Parse the AI response
     let analysis: { category: string; confidence: number; description: string };
@@ -146,16 +169,15 @@ Response format (JSON only):
 
   } catch (error) {
     console.error("Moderation error:", error);
+    // On any error, allow upload but flag for manual review (return 200, not 500)
     return new Response(
       JSON.stringify({ 
-        error: error instanceof Error ? error.message : "Unknown error",
-        // On error, allow but flag for manual review
         isAllowed: true,
         isFlagged: true,
         reason: "error",
-        message: "حدث خطأ في فحص الصورة - ستتم مراجعتها يدوياً"
+        message: "تم رفع الصورة - ستتم مراجعتها يدوياً"
       }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
