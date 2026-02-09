@@ -17,7 +17,9 @@ import {
   Edit,
   X,
   Camera,
-  Loader2
+  Loader2,
+  Trash2,
+  ZoomIn
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { cn } from '@/lib/utils';
@@ -52,7 +54,7 @@ const ProfilePage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, isAdmin, isVip, signOut, loading } = useAuth();
-  const { profile, updateProfile, uploadAvatar, uploadingAvatar } = useProfile();
+  const { profile, updateProfile, uploadAvatar, uploadingAvatar, deleteAvatar } = useProfile();
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const { watchlist } = useMarketData();
   const { trades } = useTrades();
@@ -62,6 +64,7 @@ const ProfilePage = () => {
   const [showWatchlistDialog, setShowWatchlistDialog] = useState(false);
   const [showFollowedDialog, setShowFollowedDialog] = useState(false);
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
+  const [showAvatarPreview, setShowAvatarPreview] = useState(false);
   
   const [editData, setEditData] = useState({
     display_name: '',
@@ -210,42 +213,46 @@ const ProfilePage = () => {
                 e.target.value = '';
               }}
             />
-            <button
-              onClick={() => avatarInputRef.current?.click()}
-              disabled={uploadingAvatar}
-              className="relative group"
-            >
-              {profile?.avatar_url ? (
-                <img
-                  src={profile.avatar_url}
-                  alt="Avatar"
-                  className={cn(
-                    "w-16 h-16 rounded-full object-cover border-2",
-                    isAdmin ? "border-primary" : isVip ? "border-vip" : "border-border"
-                  )}
-                />
-              ) : (
-                <div className={cn(
-                  "w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold",
-                  isAdmin ? "bg-primary/20 text-primary" :
-                  isVip ? "bg-vip/20 text-vip" : "bg-primary/20 text-primary"
-                )}>
-                  {profile?.display_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
-                </div>
-              )}
-              <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                {uploadingAvatar ? (
-                  <Loader2 className="w-5 h-5 text-white animate-spin" />
+            <div className="relative">
+              <button
+                onClick={() => profile?.avatar_url ? setShowAvatarPreview(true) : avatarInputRef.current?.click()}
+                disabled={uploadingAvatar}
+                className="relative group"
+              >
+                {profile?.avatar_url ? (
+                  <img
+                    src={profile.avatar_url}
+                    alt="Avatar"
+                    className={cn(
+                      "w-16 h-16 rounded-full object-cover border-2",
+                      isAdmin ? "border-primary" : isVip ? "border-vip" : "border-border"
+                    )}
+                  />
                 ) : (
-                  <Camera className="w-5 h-5 text-white" />
+                  <div className={cn(
+                    "w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold",
+                    isAdmin ? "bg-primary/20 text-primary" :
+                    isVip ? "bg-vip/20 text-vip" : "bg-primary/20 text-primary"
+                  )}>
+                    {profile?.display_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
+                  </div>
                 )}
-              </div>
-              {uploadingAvatar && (
-                <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center">
-                  <Loader2 className="w-5 h-5 text-white animate-spin" />
+                <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  {uploadingAvatar ? (
+                    <Loader2 className="w-5 h-5 text-white animate-spin" />
+                  ) : profile?.avatar_url ? (
+                    <ZoomIn className="w-5 h-5 text-white" />
+                  ) : (
+                    <Camera className="w-5 h-5 text-white" />
+                  )}
                 </div>
-              )}
-            </button>
+                {uploadingAvatar && (
+                  <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center">
+                    <Loader2 className="w-5 h-5 text-white animate-spin" />
+                  </div>
+                )}
+              </button>
+            </div>
             <div className="flex-1">
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-bold text-foreground">
@@ -545,6 +552,54 @@ const ProfilePage = () => {
       <Dialog open={showNotificationSettings} onOpenChange={setShowNotificationSettings}>
         <DialogContent className="sm:max-w-[400px]">
           <NotificationSettings />
+        </DialogContent>
+      </Dialog>
+
+      {/* Avatar Preview Dialog */}
+      <Dialog open={showAvatarPreview} onOpenChange={setShowAvatarPreview}>
+        <DialogContent className="sm:max-w-[420px] p-0 overflow-hidden">
+          <DialogHeader className="p-4 pb-0">
+            <DialogTitle>الصورة الشخصية</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4 p-4">
+            {profile?.avatar_url ? (
+              <img
+                src={profile.avatar_url}
+                alt="Avatar preview"
+                className="w-64 h-64 rounded-xl object-cover border border-border"
+              />
+            ) : (
+              <div className="w-64 h-64 rounded-xl bg-muted flex items-center justify-center text-6xl font-bold text-muted-foreground">
+                {profile?.display_name?.charAt(0).toUpperCase() || 'U'}
+              </div>
+            )}
+            <div className="flex gap-2 w-full">
+              <Button
+                variant="outline"
+                className="flex-1 gap-2"
+                onClick={() => {
+                  setShowAvatarPreview(false);
+                  avatarInputRef.current?.click();
+                }}
+              >
+                <Camera className="w-4 h-4" />
+                {profile?.avatar_url ? 'تغيير الصورة' : 'رفع صورة'}
+              </Button>
+              {profile?.avatar_url && (
+                <Button
+                  variant="outline"
+                  className="gap-2 border-destructive/30 text-destructive hover:bg-destructive/10"
+                  onClick={async () => {
+                    await deleteAvatar();
+                    setShowAvatarPreview(false);
+                  }}
+                >
+                  <Trash2 className="w-4 h-4" />
+                  حذف
+                </Button>
+              )}
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </AppLayout>

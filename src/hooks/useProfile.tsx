@@ -167,12 +167,45 @@ export const useProfile = () => {
     }
   };
 
+  const deleteAvatar = async (): Promise<{ error: Error | null }> => {
+    if (!user) return { error: new Error('Not authenticated') };
+
+    try {
+      // List and remove all files in user's avatar folder
+      const { data: files } = await supabase.storage.from('avatars').list(user.id);
+      if (files && files.length > 0) {
+        const paths = files.map(f => `${user.id}/${f.name}`);
+        await supabase.storage.from('avatars').remove(paths);
+      }
+
+      // Clear avatar_url in profile
+      const { error } = await supabase
+        .from('profiles')
+        .update({ avatar_url: null })
+        .eq('user_id', user.id);
+
+      if (error) {
+        toast({ title: 'فشل حذف الصورة', description: error.message, variant: 'destructive' });
+        return { error };
+      }
+
+      toast({ title: '✅ تم حذف الصورة الشخصية' });
+      await fetchProfile();
+      return { error: null };
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Unknown error');
+      toast({ title: 'خطأ', description: error.message, variant: 'destructive' });
+      return { error };
+    }
+  };
+
   return {
     profile,
     loading,
     fetchProfile,
     updateProfile,
     uploadAvatar,
-    uploadingAvatar
+    uploadingAvatar,
+    deleteAvatar
   };
 };
