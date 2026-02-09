@@ -39,7 +39,7 @@ type ViewMode = 'list' | 'chat' | 'thread' | 'usdt' | 'moderation';
 // Static rooms data
 const roomsData = [
   {
-    id: 'room-general',
+    id: 'general',
     type: 'general' as const,
     name_ar: 'المناقشات العامة',
     name_en: 'General Discussion',
@@ -50,7 +50,7 @@ const roomsData = [
     last_activity: new Date().toISOString(),
   },
   {
-    id: 'room-learning',
+    id: 'learning',
     type: 'learning' as const,
     name_ar: 'التعلم والتطوير',
     name_en: 'Learning & Development',
@@ -61,7 +61,7 @@ const roomsData = [
     last_activity: new Date().toISOString(),
   },
   {
-    id: 'room-vip',
+    id: 'vip',
     type: 'vip' as const,
     name_ar: 'غرفة VIP',
     name_en: 'VIP Room',
@@ -72,7 +72,7 @@ const roomsData = [
     last_activity: new Date().toISOString(),
   },
   {
-    id: 'room-usdt',
+    id: 'usdt',
     type: 'usdt' as const,
     name_ar: 'تبادل USDT',
     name_en: 'USDT Exchange',
@@ -83,7 +83,7 @@ const roomsData = [
     last_activity: new Date().toISOString(),
   },
   {
-    id: 'room-news',
+    id: 'news',
     type: 'news' as const,
     name_ar: 'مناقشة الأخبار',
     name_en: 'News Discussion',
@@ -104,7 +104,7 @@ const CommunityPage = () => {
   const [selectedRoom, setSelectedRoom] = useState<typeof roomsData[0] | null>(null);
   const [selectedThread, setSelectedThread] = useState<Thread | null>(null);
   const [showNewThreadDialog, setShowNewThreadDialog] = useState(false);
-  const [threadRoomFilter, setThreadRoomFilter] = useState<string>('room-general');
+  const [threadRoomFilter, setThreadRoomFilter] = useState<string>('general');
   const [newThread, setNewThread] = useState<{
     title: string;
     content: string;
@@ -114,7 +114,7 @@ const CommunityPage = () => {
     title: '',
     content: '',
     tag: 'question',
-    room_id: 'room-general',
+    room_id: 'general',
   });
 
   const { user, isVip, isAdmin, loading: authLoading } = useAuth();
@@ -155,7 +155,7 @@ const CommunityPage = () => {
     }
     setSelectedRoom(room);
     // For USDT room, use special panel
-    if (room.id === 'room-usdt') {
+    if (room.id === 'usdt') {
       setViewMode('usdt');
     } else {
       setViewMode('chat');
@@ -197,7 +197,7 @@ const CommunityPage = () => {
 
     if (result) {
       setThreadRoomFilter(newThread.room_id);
-      setNewThread({ title: '', content: '', tag: 'question', room_id: 'room-general' });
+      setNewThread({ title: '', content: '', tag: 'question', room_id: 'general' });
       setShowNewThreadDialog(false);
       setActiveTab('threads');
     }
