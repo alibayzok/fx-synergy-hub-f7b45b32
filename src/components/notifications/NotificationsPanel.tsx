@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Bell, Check, X, MessageSquare, TrendingUp, AlertCircle, UserPlus, Mail } from 'lucide-react';
+import { Bell, Check, X, MessageSquare, TrendingUp, AlertCircle, UserPlus, Mail, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNotifications, UserNotification } from '@/hooks/useNotifications';
 import { Button } from '@/components/ui/button';
@@ -46,10 +46,13 @@ export const NotificationsPanel = () => {
     switch (type) {
       case 'reply':
       case 'trade_comment':
+      case 'post_comment':
+      case 'comment_reply':
         return MessageSquare;
       case 'trade':
       case 'trade_update':
       case 'new_trade':
+      case 'analysis_like':
         return TrendingUp;
       case 'alert':
         return AlertCircle;
@@ -58,6 +61,10 @@ export const NotificationsPanel = () => {
         return UserPlus;
       case 'message':
         return Mail;
+      case 'post_like':
+      case 'comment_like':
+      case 'reply_like':
+        return Heart;
       default:
         return Bell;
     }
@@ -102,9 +109,9 @@ export const NotificationsPanel = () => {
 
     // Navigate based on notification type
     const data = notification.data as Record<string, string>;
-    if (notification.type === 'reply' && data?.thread_id) {
+    if (notification.type === 'reply' || notification.type === 'reply_like' && data?.thread_id) {
       navigate('/community');
-    } else if ((notification.type === 'trade' || notification.type === 'new_trade' || notification.type === 'trade_comment') && data?.trade_id) {
+    } else if ((notification.type === 'trade' || notification.type === 'new_trade' || notification.type === 'trade_comment' || notification.type === 'comment_like') && data?.trade_id) {
       navigate('/trades');
     } else if (notification.type === 'message' && data?.conversation_id) {
       navigate(`/messages?conv=${data.conversation_id}`);
@@ -112,6 +119,11 @@ export const NotificationsPanel = () => {
       navigate(`/user/${data.sender_id}`);
     } else if (notification.type === 'friend_accepted' && data?.friend_id) {
       navigate(`/user/${data.friend_id}`);
+    } else if ((notification.type === 'post_like' || notification.type === 'post_comment' || notification.type === 'comment_reply') && data?.post_id) {
+      // Navigate to user's profile to see the post
+      navigate('/profile');
+    } else if (notification.type === 'analysis_like' && data?.analysis_id) {
+      navigate('/analyses');
     }
   };
 
