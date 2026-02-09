@@ -18,7 +18,7 @@ import { ar, enUS } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 
 export const NotificationsPanel = () => {
   const { t, i18n } = useTranslation();
@@ -34,6 +34,7 @@ export const NotificationsPanel = () => {
   } = useNotifications();
   const isArabic = i18n.language === 'ar';
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
 
   const formatTime = (dateStr: string) => {
     return formatDistanceToNow(new Date(dateStr), {
@@ -107,23 +108,44 @@ export const NotificationsPanel = () => {
       markAsRead(notification.id);
     }
 
-    // Navigate based on notification type
     const data = notification.data as Record<string, string>;
-    if (notification.type === 'reply' || notification.type === 'reply_like' && data?.thread_id) {
-      navigate('/community');
-    } else if ((notification.type === 'trade' || notification.type === 'new_trade' || notification.type === 'trade_comment' || notification.type === 'comment_like') && data?.trade_id) {
-      navigate('/trades');
-    } else if (notification.type === 'message' && data?.conversation_id) {
-      navigate(`/messages?conv=${data.conversation_id}`);
-    } else if ((notification.type === 'friend_request' || notification.type === 'friend_accepted') && data?.sender_id) {
-      navigate(`/user/${data.sender_id}`);
-    } else if (notification.type === 'friend_accepted' && data?.friend_id) {
-      navigate(`/user/${data.friend_id}`);
-    } else if ((notification.type === 'post_like' || notification.type === 'post_comment' || notification.type === 'comment_reply') && data?.post_id) {
-      // Navigate to user's profile to see the post
-      navigate('/profile');
-    } else if (notification.type === 'analysis_like' && data?.analysis_id) {
-      navigate('/analyses');
+    let target: string | null = null;
+
+    switch (notification.type) {
+      case 'reply':
+      case 'reply_like':
+        if (data?.thread_id) target = '/community';
+        break;
+      case 'trade':
+      case 'new_trade':
+      case 'trade_update':
+      case 'trade_comment':
+      case 'comment_like':
+        if (data?.trade_id) target = '/trades';
+        break;
+      case 'message':
+        if (data?.conversation_id) target = `/messages?conv=${data.conversation_id}`;
+        break;
+      case 'friend_request':
+        if (data?.sender_id) target = `/user/${data.sender_id}`;
+        break;
+      case 'friend_accepted':
+        if (data?.friend_id) target = `/user/${data.friend_id}`;
+        else if (data?.sender_id) target = `/user/${data.sender_id}`;
+        break;
+      case 'post_like':
+      case 'post_comment':
+      case 'comment_reply':
+        if (data?.post_id) target = '/profile';
+        break;
+      case 'analysis_like':
+        if (data?.analysis_id) target = '/analyses';
+        break;
+    }
+
+    if (target) {
+      setOpen(false);
+      navigate(target);
     }
   };
 
@@ -175,7 +197,7 @@ export const NotificationsPanel = () => {
   };
 
   return (
-    <Sheet>
+    <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="w-5 h-5" />
