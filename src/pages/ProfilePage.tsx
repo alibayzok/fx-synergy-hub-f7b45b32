@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -15,7 +15,9 @@ import {
   Check,
   Shield,
   Edit,
-  X
+  X,
+  Camera,
+  Loader2
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { cn } from '@/lib/utils';
@@ -50,7 +52,8 @@ const ProfilePage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, isAdmin, isVip, signOut, loading } = useAuth();
-  const { profile, updateProfile } = useProfile();
+  const { profile, updateProfile, uploadAvatar, uploadingAvatar } = useProfile();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   const { watchlist } = useMarketData();
   const { trades } = useTrades();
   
@@ -195,13 +198,54 @@ const ProfilePage = () => {
           )}
         >
           <div className="flex items-center gap-4">
-            <div className={cn(
-              "w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold",
-              isAdmin ? "bg-primary/20 text-primary" :
-              isVip ? "bg-vip/20 text-vip" : "bg-primary/20 text-primary"
-            )}>
-              {profile?.display_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
-            </div>
+            {/* Avatar with upload */}
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (file) await uploadAvatar(file);
+                e.target.value = '';
+              }}
+            />
+            <button
+              onClick={() => avatarInputRef.current?.click()}
+              disabled={uploadingAvatar}
+              className="relative group"
+            >
+              {profile?.avatar_url ? (
+                <img
+                  src={profile.avatar_url}
+                  alt="Avatar"
+                  className={cn(
+                    "w-16 h-16 rounded-full object-cover border-2",
+                    isAdmin ? "border-primary" : isVip ? "border-vip" : "border-border"
+                  )}
+                />
+              ) : (
+                <div className={cn(
+                  "w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold",
+                  isAdmin ? "bg-primary/20 text-primary" :
+                  isVip ? "bg-vip/20 text-vip" : "bg-primary/20 text-primary"
+                )}>
+                  {profile?.display_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
+                </div>
+              )}
+              <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                {uploadingAvatar ? (
+                  <Loader2 className="w-5 h-5 text-white animate-spin" />
+                ) : (
+                  <Camera className="w-5 h-5 text-white" />
+                )}
+              </div>
+              {uploadingAvatar && (
+                <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center">
+                  <Loader2 className="w-5 h-5 text-white animate-spin" />
+                </div>
+              )}
+            </button>
             <div className="flex-1">
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-bold text-foreground">
