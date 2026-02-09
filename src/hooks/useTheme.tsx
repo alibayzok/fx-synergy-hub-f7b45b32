@@ -35,10 +35,18 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const root = document.documentElement;
+    const body = document.body;
     
     const applyTheme = (newTheme: 'light' | 'dark') => {
+      // Apply to both html and body for maximum compatibility
       root.classList.remove('light', 'dark');
       root.classList.add(newTheme);
+      body.classList.remove('light', 'dark');
+      body.classList.add(newTheme);
+      
+      // Also set data attribute for additional CSS targeting
+      root.setAttribute('data-theme', newTheme);
+      
       setResolvedTheme(newTheme);
       
       // Update meta theme-color for mobile browsers
