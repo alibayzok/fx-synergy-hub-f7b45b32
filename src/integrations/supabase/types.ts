@@ -266,6 +266,54 @@ export type Database = {
           },
         ]
       }
+      flagged_content: {
+        Row: {
+          action_taken: string | null
+          confidence: number | null
+          content_id: string
+          content_type: string
+          created_at: string
+          flag_reason: string
+          flagged_url: string | null
+          id: string
+          predictions: Json | null
+          reviewed: boolean | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          user_id: string
+        }
+        Insert: {
+          action_taken?: string | null
+          confidence?: number | null
+          content_id: string
+          content_type: string
+          created_at?: string
+          flag_reason: string
+          flagged_url?: string | null
+          id?: string
+          predictions?: Json | null
+          reviewed?: boolean | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          user_id: string
+        }
+        Update: {
+          action_taken?: string | null
+          confidence?: number | null
+          content_id?: string
+          content_type?: string
+          created_at?: string
+          flag_reason?: string
+          flagged_url?: string | null
+          id?: string
+          predictions?: Json | null
+          reviewed?: boolean | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       follows: {
         Row: {
           created_at: string
@@ -1017,7 +1065,12 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          is_hidden: boolean | null
           likes_count: number | null
+          moderated_at: string | null
+          moderated_by: string | null
+          moderation_reason: string | null
+          moderation_status: string | null
           symbol: string | null
           timeframe: Database["public"]["Enums"]["timeframe"] | null
           updated_at: string
@@ -1031,7 +1084,12 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          is_hidden?: boolean | null
           likes_count?: number | null
+          moderated_at?: string | null
+          moderated_by?: string | null
+          moderation_reason?: string | null
+          moderation_status?: string | null
           symbol?: string | null
           timeframe?: Database["public"]["Enums"]["timeframe"] | null
           updated_at?: string
@@ -1045,7 +1103,12 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          is_hidden?: boolean | null
           likes_count?: number | null
+          moderated_at?: string | null
+          moderated_by?: string | null
+          moderation_reason?: string | null
+          moderation_status?: string | null
           symbol?: string | null
           timeframe?: Database["public"]["Enums"]["timeframe"] | null
           updated_at?: string
