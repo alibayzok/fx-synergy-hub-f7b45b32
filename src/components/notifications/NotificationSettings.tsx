@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Bell, Volume2, VolumeX, Smartphone } from 'lucide-react';
+import { Bell, Volume2, VolumeX, Smartphone, MessageSquare, Heart, TrendingUp, UserPlus } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
@@ -11,7 +11,8 @@ import {
   setNotificationSoundEnabled,
   getNotificationVolume,
   setNotificationVolume,
-  playNotificationSound 
+  testNotificationSound,
+  NotificationSoundType
 } from '@/lib/notification-sound';
 import {
   isPushSupported,
@@ -21,6 +22,12 @@ import {
   setPushNotificationsEnabled
 } from '@/lib/push-notifications';
 import { toast } from 'sonner';
+
+interface SoundTestButton {
+  type: NotificationSoundType;
+  icon: typeof MessageSquare;
+  labelKey: string;
+}
 
 export const NotificationSettings = () => {
   const { t } = useTranslation();
@@ -48,9 +55,18 @@ export const NotificationSettings = () => {
     setNotificationVolume(newVolume);
   };
 
-  const handleTestSound = async () => {
-    await playNotificationSound();
+  const handleTestSound = async (type: NotificationSoundType = 'default') => {
+    await testNotificationSound(type);
   };
+
+  // Sound test buttons configuration
+  const soundTestButtons: SoundTestButton[] = [
+    { type: 'message', icon: MessageSquare, labelKey: 'notifications.soundMessage' },
+    { type: 'comment', icon: MessageSquare, labelKey: 'notifications.soundComment' },
+    { type: 'like', icon: Heart, labelKey: 'notifications.soundLike' },
+    { type: 'trade', icon: TrendingUp, labelKey: 'notifications.soundTrade' },
+    { type: 'friend', icon: UserPlus, labelKey: 'notifications.soundFriend' },
+  ];
 
   const handlePushToggle = async (enabled: boolean) => {
     if (enabled && pushPermission !== 'granted') {
@@ -107,7 +123,7 @@ export const NotificationSettings = () => {
           </div>
           
           {soundEnabled && (
-            <div className="space-y-2">
+            <div className="space-y-4">
               <Label className="text-sm text-muted-foreground">
                 {t('notifications.volume')}
               </Label>
@@ -119,9 +135,30 @@ export const NotificationSettings = () => {
                   step={0.1}
                   className="flex-1"
                 />
-                <Button variant="outline" size="sm" onClick={handleTestSound}>
-                  {t('notifications.testSound')}
-                </Button>
+                <span className="text-xs text-muted-foreground w-8">
+                  {Math.round(volume * 100)}%
+                </span>
+              </div>
+
+              {/* Sound Test Buttons */}
+              <div className="space-y-2">
+                <Label className="text-sm text-muted-foreground">
+                  {t('notifications.testSounds')}
+                </Label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {soundTestButtons.map(({ type, icon: Icon, labelKey }) => (
+                    <Button
+                      key={type}
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-1.5 text-xs"
+                      onClick={() => handleTestSound(type)}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      {t(labelKey)}
+                    </Button>
+                  ))}
+                </div>
               </div>
             </div>
           )}

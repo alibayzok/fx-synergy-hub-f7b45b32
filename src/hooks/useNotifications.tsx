@@ -138,8 +138,8 @@ export const useNotifications = () => {
           setNotifications(prev => [newNotification, ...prev]);
           setUnreadCount(prev => prev + 1);
 
-          // Play notification sound
-          await playNotificationSound();
+          // Play notification sound based on notification type
+          await playNotificationSound(newNotification.type);
 
           // Show toast notification inside the app
           toast(newNotification.title, {
