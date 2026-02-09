@@ -11,6 +11,7 @@ interface ModerationResult {
   reason?: string;
   confidence?: number;
   message?: string;
+  error?: string;
 }
 
 serve(async (req) => {
@@ -28,47 +29,40 @@ serve(async (req) => {
       );
     }
 
-    const GOOGLE_AI_API_KEY = Deno.env.get("GOOGLE_AI_API_KEY");
-    if (!GOOGLE_AI_API_KEY) {
-      console.warn("GOOGLE_AI_API_KEY is not configured - allowing image with manual review flag");
-      return new Response(
-        JSON.stringify({
-          isAllowed: true,
-          isFlagged: true,
-          reason: "no_api_key",
-          message: "تم رفع الصورة - ستتم مراجعتها يدوياً"
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      // Allow upload but flag for manual review
+      const result: ModerationResult = {
+        isAllowed: true,
+        isFlagged: true,
+        reason: "error",
+        error: "LOVABLE_API_KEY is not configured",
+        message: "حدث خطأ في فحص الصورة - ستتم مراجعتها يدوياً",
+      };
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // Prepare content for Gemini
-    const imagePart = imageBase64 
-      ? {
-          inline_data: {
-            mime_type: "image/jpeg",
-            data: imageBase64
-          }
-        }
-      : {
-          file_data: {
-            file_uri: imageUrl,
-            mime_type: "image/jpeg"
-          }
-        };
+    const imageDataUrl = imageBase64
+      ? `data:image/jpeg;base64,${imageBase64}`
+      : imageUrl;
 
     const requestBody = {
-      contents: [
+      model: "google/gemini-3-flash-preview",
+      messages: [
         {
-          parts: [
+          role: "user",
+          content: [
             {
+              type: "text",
               text: `You are a content moderation AI. Analyze this image for inappropriate content.
 
 IMPORTANT: You must respond ONLY with a valid JSON object, no other text.
 
 Categories to detect:
 - "porn": Explicit adult/sexual content
-- "sexy": Suggestive or revealing content  
+- "sexy": Suggestive or revealing content
 - "violence": Graphic violence or gore
 - "hate": Hate symbols or offensive imagery
 - "safe": No issues detected
@@ -78,107 +72,95 @@ Response format (JSON only):
   "category": "safe|porn|sexy|violence|hate",
   "confidence": 0.0-1.0,
   "description": "brief description"
-}`
+}`,
             },
-            imagePart
-          ]
-        }
+            {
+              type: "image_url",
+              image_url: { url: imageDataUrl },
+            },
+          ],
+        },
       ],
-      generationConfig: {
-        temperature: 0.1,
-        maxOutputTokens: 200,
-      },
-      safetySettings: [
-        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
-        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
-        { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
-        { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
-      ]
+      max_tokens: 200,
+      temperature: 0.1,
     };
 
-    // Call Google Gemini API
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_AI_API_KEY}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      }
-    );
+    // Correct Lovable AI Gateway endpoint
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+      },
+      body: JSON.stringify(requestBody),
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Gemini API error:", response.status, errorText);
-      
-      // On any API error, allow upload but flag for manual review (return 200)
-      return new Response(
-        JSON.stringify({
-          isAllowed: true,
-          isFlagged: true,
-          reason: "api_error",
-          message: "تم رفع الصورة - ستتم مراجعتها يدوياً"
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      console.error("AI gateway error:", response.status, errorText);
+
+      // IMPORTANT: Return 2xx so the client doesn't throw FunctionsHttpError.
+      const result: ModerationResult = {
+        isAllowed: true,
+        isFlagged: true,
+        reason: "error",
+        error:
+          response.status === 429
+            ? "Rate limits exceeded, please try again later"
+            : response.status === 402
+              ? "Payment required for AI usage"
+              : `AI gateway error: ${response.status}`,
+        message: "حدث خطأ في فحص الصورة - ستتم مراجعتها يدوياً",
+      };
+
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const data = await response.json();
-    
-    // Extract text from Gemini response
-    const content = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const content = data.choices?.[0]?.message?.content || "";
 
-    // Parse the AI response
     let analysis: { category: string; confidence: number; description: string };
     try {
-      // Try to extract JSON from the response
       const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        analysis = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error("No JSON found in response");
-      }
+      if (!jsonMatch) throw new Error("No JSON found in response");
+      analysis = JSON.parse(jsonMatch[0]);
     } catch (parseError) {
       console.error("Failed to parse AI response:", content);
-      // Default to safe if parsing fails
       analysis = { category: "safe", confidence: 0.5, description: "Unable to analyze" };
     }
 
-    // Determine if content is allowed
     const inappropriateCategories = ["porn", "sexy", "violence", "hate"];
-    const isInappropriate = inappropriateCategories.includes(analysis.category.toLowerCase());
-    const highConfidence = analysis.confidence >= 0.7;
+    const isInappropriate = inappropriateCategories.includes(String(analysis.category).toLowerCase());
+    const highConfidence = Number(analysis.confidence) >= 0.7;
 
     const result: ModerationResult = {
       isAllowed: !(isInappropriate && highConfidence),
       isFlagged: isInappropriate,
-      reason: isInappropriate ? analysis.category : undefined,
-      confidence: analysis.confidence,
-      message: isInappropriate && highConfidence 
-        ? getModerationMessage(analysis.category) 
-        : undefined,
+      reason: isInappropriate ? String(analysis.category).toLowerCase() : undefined,
+      confidence: Number(analysis.confidence),
+      message: isInappropriate && highConfidence ? getModerationMessage(String(analysis.category)) : undefined,
     };
 
-    console.log("Moderation result:", { category: analysis.category, confidence: analysis.confidence, isAllowed: result.isAllowed });
-
-    return new Response(
-      JSON.stringify(result),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-
+    return new Response(JSON.stringify(result), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (error) {
     console.error("Moderation error:", error);
-    // On any error, allow upload but flag for manual review (return 200, not 500)
-    return new Response(
-      JSON.stringify({ 
-        isAllowed: true,
-        isFlagged: true,
-        reason: "error",
-        message: "تم رفع الصورة - ستتم مراجعتها يدوياً"
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+
+    // IMPORTANT: Return 2xx so the client doesn't throw FunctionsHttpError.
+    const result: ModerationResult = {
+      isAllowed: true,
+      isFlagged: true,
+      reason: "error",
+      error: error instanceof Error ? error.message : "Unknown error",
+      message: "حدث خطأ في فحص الصورة - ستتم مراجعتها يدوياً",
+    };
+
+    return new Response(JSON.stringify(result), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
 
