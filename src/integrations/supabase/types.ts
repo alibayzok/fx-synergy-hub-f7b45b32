@@ -314,6 +314,83 @@ export type Database = {
         }
         Relationships: []
       }
+      post_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          likes_count: number | null
+          parent_id: string | null
+          post_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          likes_count?: number | null
+          parent_id?: string | null
+          post_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          likes_count?: number | null
+          parent_id?: string | null
+          post_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "post_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "user_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_likes: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "user_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -932,6 +1009,51 @@ export type Database = {
         }
         Relationships: []
       }
+      user_posts: {
+        Row: {
+          asset_type: Database["public"]["Enums"]["asset_type"] | null
+          attachments: string[] | null
+          comments_count: number | null
+          content: string
+          created_at: string
+          id: string
+          likes_count: number | null
+          symbol: string | null
+          timeframe: Database["public"]["Enums"]["timeframe"] | null
+          updated_at: string
+          user_id: string
+          visibility: Database["public"]["Enums"]["post_visibility"]
+        }
+        Insert: {
+          asset_type?: Database["public"]["Enums"]["asset_type"] | null
+          attachments?: string[] | null
+          comments_count?: number | null
+          content: string
+          created_at?: string
+          id?: string
+          likes_count?: number | null
+          symbol?: string | null
+          timeframe?: Database["public"]["Enums"]["timeframe"] | null
+          updated_at?: string
+          user_id: string
+          visibility?: Database["public"]["Enums"]["post_visibility"]
+        }
+        Update: {
+          asset_type?: Database["public"]["Enums"]["asset_type"] | null
+          attachments?: string[] | null
+          comments_count?: number | null
+          content?: string
+          created_at?: string
+          id?: string
+          likes_count?: number | null
+          symbol?: string | null
+          timeframe?: Database["public"]["Enums"]["timeframe"] | null
+          updated_at?: string
+          user_id?: string
+          visibility?: Database["public"]["Enums"]["post_visibility"]
+        }
+        Relationships: []
+      }
       user_privacy_settings: {
         Row: {
           created_at: string
@@ -1047,6 +1169,13 @@ export type Database = {
         Returns: boolean
       }
       can_message_user: { Args: { target_user_id: string }; Returns: boolean }
+      can_view_post: {
+        Args: {
+          post_user_id: string
+          post_visibility: Database["public"]["Enums"]["post_visibility"]
+        }
+        Returns: boolean
+      }
       get_thread_room_id: { Args: { p_thread_id: string }; Returns: string }
       has_role: {
         Args: {
@@ -1085,6 +1214,7 @@ export type Database = {
       conversation_type: "direct" | "group"
       entry_type: "market" | "limit" | "stop"
       friend_request_status: "pending" | "accepted" | "rejected"
+      post_visibility: "everyone" | "friends_only" | "followers_only" | "nobody"
       privacy_setting: "everyone" | "friends_only" | "followers_only" | "nobody"
       room_membership_status: "pending" | "approved" | "rejected" | "banned"
       room_role: "member" | "moderator" | "owner"
@@ -1243,6 +1373,7 @@ export const Constants = {
       conversation_type: ["direct", "group"],
       entry_type: ["market", "limit", "stop"],
       friend_request_status: ["pending", "accepted", "rejected"],
+      post_visibility: ["everyone", "friends_only", "followers_only", "nobody"],
       privacy_setting: ["everyone", "friends_only", "followers_only", "nobody"],
       room_membership_status: ["pending", "approved", "rejected", "banned"],
       room_role: ["member", "moderator", "owner"],
