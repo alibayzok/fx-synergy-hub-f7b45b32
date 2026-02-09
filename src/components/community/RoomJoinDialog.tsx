@@ -13,34 +13,62 @@ import {
 } from '@/components/ui/dialog';
 import { CommunityRoom } from '@/hooks/useRoomManagement';
 
-interface RoomJoinDialogProps {
+// Original interface for backward compatibility
+interface RoomJoinDialogPropsWithRoom {
   room: CommunityRoom | null;
+  roomName?: never;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (roomId: string, message?: string) => Promise<boolean>;
   status?: 'none' | 'pending' | 'approved' | 'rejected' | 'banned';
 }
 
-export const RoomJoinDialog = ({
-  room,
-  open,
-  onOpenChange,
-  onSubmit,
-  status = 'none'
-}: RoomJoinDialogProps) => {
+// Simplified interface for RoomChatPanel
+interface RoomJoinDialogPropsSimple {
+  room?: never;
+  roomName: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (message?: string) => void;
+  status?: never;
+}
+
+type RoomJoinDialogProps = RoomJoinDialogPropsWithRoom | RoomJoinDialogPropsSimple;
+
+export const RoomJoinDialog = (props: RoomJoinDialogProps) => {
   const { i18n } = useTranslation();
   const isArabic = i18n.language === 'ar';
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const { open, onOpenChange } = props;
+
+  // Determine which variant we're using
+  const isSimpleMode = 'roomName' in props && props.roomName !== undefined;
+  const room = isSimpleMode ? null : (props as RoomJoinDialogPropsWithRoom).room;
+  const roomName = isSimpleMode 
+    ? (props as RoomJoinDialogPropsSimple).roomName 
+    : (room ? (isArabic ? room.name_ar : room.name) : '');
+  const status = isSimpleMode ? 'none' : ((props as RoomJoinDialogPropsWithRoom).status || 'none');
+
   const handleSubmit = async () => {
-    if (!room) return;
     setLoading(true);
-    const success = await onSubmit(room.id, message);
-    setLoading(false);
-    if (success) {
+    
+    if (isSimpleMode) {
+      (props as RoomJoinDialogPropsSimple).onSubmit(message);
       setMessage('');
-      onOpenChange(false);
+      setLoading(false);
+    } else {
+      if (!room) {
+        setLoading(false);
+        return;
+      }
+      const success = await (props as RoomJoinDialogPropsWithRoom).onSubmit(room.id, message);
+      setLoading(false);
+      if (success) {
+        setMessage('');
+        onOpenChange(false);
+      }
     }
   };
 
@@ -115,7 +143,8 @@ export const RoomJoinDialog = ({
     }
   };
 
-  if (!room) return null;
+  // For non-simple mode, require room
+  if (!isSimpleMode && !room) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -123,11 +152,13 @@ export const RoomJoinDialog = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <DoorOpen className="w-5 h-5" />
-            {isArabic ? room.name_ar : room.name}
+            {roomName}
           </DialogTitle>
-          <DialogDescription>
-            {isArabic ? room.description_ar : room.description}
-          </DialogDescription>
+          {room && (
+            <DialogDescription>
+              {isArabic ? room.description_ar : room.description}
+            </DialogDescription>
+          )}
         </DialogHeader>
 
         {status !== 'none' ? (
