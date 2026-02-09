@@ -117,7 +117,7 @@ export const TradeDetailSheet = ({ trade, open, onOpenChange }: TradeDetailSheet
       // Fetch user profiles separately
       const userIds = [...new Set(data.map(c => c.user_id))];
       const { data: profiles } = await supabase
-        .from('profiles')
+        .from('profiles_public')
         .select('user_id, display_name')
         .in('user_id', userIds);
       

@@ -73,7 +73,7 @@ const UserProfilePage = () => {
       try {
         // Fetch profile
         const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
+          .from('profiles_public')
           .select('id, user_id, username, display_name, avatar_url, country, created_at')
           .eq('user_id', userId)
           .single();

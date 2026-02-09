@@ -66,7 +66,7 @@ export const useFriendship = () => {
       if (data && data.length > 0) {
         const senderIds = data.map(r => r.sender_id);
         const { data: profiles } = await supabase
-          .from('profiles')
+          .from('profiles_public')
           .select('user_id, display_name, username, avatar_url')
           .in('user_id', senderIds);
 
@@ -101,7 +101,7 @@ export const useFriendship = () => {
       if (data && data.length > 0) {
         const receiverIds = data.map(r => r.receiver_id);
         const { data: profiles } = await supabase
-          .from('profiles')
+          .from('profiles_public')
           .select('user_id, display_name, username, avatar_url')
           .in('user_id', receiverIds);
 
@@ -140,7 +140,7 @@ export const useFriendship = () => {
         );
 
         const { data: profiles } = await supabase
-          .from('profiles')
+          .from('profiles_public')
           .select('user_id, display_name, username, avatar_url')
           .in('user_id', friendIds);
 

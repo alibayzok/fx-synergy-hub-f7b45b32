@@ -263,7 +263,7 @@ export const useRoomModeration = (roomId: string) => {
       if (data && data.length > 0) {
         const userIds = [...new Set(data.map(m => m.user_id))];
         const { data: profiles } = await supabase
-          .from('profiles')
+          .from('profiles_public')
           .select('user_id, display_name, username, avatar_url')
           .in('user_id', userIds);
 
@@ -304,7 +304,7 @@ export const useRoomModeration = (roomId: string) => {
       if (data && data.length > 0) {
         const userIds = [...new Set(data.map(r => r.user_id))];
         const { data: profiles } = await supabase
-          .from('profiles')
+          .from('profiles_public')
           .select('user_id, display_name, username, avatar_url')
           .in('user_id', userIds);
 

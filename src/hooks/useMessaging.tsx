@@ -93,7 +93,7 @@ export const useConversations = () => {
       // Fetch profiles for participants
       const participantUserIds = [...new Set(allParticipants?.map(p => p.user_id) || [])];
       const { data: profiles } = await supabase
-        .from('profiles')
+        .from('profiles_public')
         .select('user_id, display_name, username, avatar_url')
         .in('user_id', participantUserIds);
 
@@ -324,7 +324,7 @@ export const useConversationMessages = (conversationId: string | null) => {
       // Fetch sender profiles
       const senderIds = [...new Set(messagesData?.map(m => m.sender_id) || [])];
       const { data: profiles } = await supabase
-        .from('profiles')
+        .from('profiles_public')
         .select('user_id, display_name, username, avatar_url')
         .in('user_id', senderIds);
 
@@ -372,7 +372,7 @@ export const useConversationMessages = (conversationId: string | null) => {
           
           // Fetch sender profile
           const { data: profile } = await supabase
-            .from('profiles')
+            .from('profiles_public')
             .select('user_id, display_name, username, avatar_url')
             .eq('user_id', newMsg.sender_id)
             .single();
