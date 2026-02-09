@@ -212,17 +212,32 @@ export const useRoomModeration = (roomId: string) => {
   const [pendingRequests, setPendingRequests] = useState<RoomJoinRequest[]>([]);
   const [loading, setLoading] = useState(false);
   const [isModerator, setIsModerator] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
+  const [currentUserRole, setCurrentUserRole] = useState<RoomMember['role'] | null>(null);
 
-  // Check if current user is moderator
+  // Check if current user is moderator/owner
   const checkModeratorStatus = useCallback(async () => {
     if (!user || !roomId) return;
     
     try {
-      const { data, error } = await supabase
-        .rpc('is_room_moderator', { p_room_id: roomId, p_user_id: user.id });
+      // First check the user's role in this room
+      const { data: memberData } = await supabase
+        .from('room_members')
+        .select('role, status')
+        .eq('room_id', roomId)
+        .eq('user_id', user.id)
+        .eq('status', 'approved')
+        .maybeSingle();
 
-      if (error) throw error;
-      setIsModerator(data || isAdmin);
+      if (memberData) {
+        setCurrentUserRole(memberData.role as RoomMember['role']);
+        setIsOwner(memberData.role === 'owner');
+        setIsModerator(memberData.role === 'moderator' || memberData.role === 'owner' || isAdmin);
+      } else {
+        setCurrentUserRole(null);
+        setIsOwner(false);
+        setIsModerator(isAdmin);
+      }
     } catch (error) {
       console.error('Error checking moderator status:', error);
       setIsModerator(isAdmin);
@@ -364,10 +379,30 @@ export const useRoomModeration = (roomId: string) => {
     }
   };
 
-  // Update member role
+  // Update member role - with permission checks
   const updateMemberRole = async (memberId: string, role: RoomMember['role']) => {
-    if (!isAdmin) {
-      toast({ title: 'صلاحية الأدمن مطلوبة', variant: 'destructive' });
+    // Find the target member
+    const targetMember = members.find(m => m.id === memberId);
+    if (!targetMember) {
+      toast({ title: 'العضو غير موجود', variant: 'destructive' });
+      return false;
+    }
+
+    // Prevent changing owner's role
+    if (targetMember.role === 'owner') {
+      toast({ title: 'لا يمكن تغيير صلاحية المالك', variant: 'destructive' });
+      return false;
+    }
+
+    // Only owner or admin can change roles
+    if (!isOwner && !isAdmin) {
+      toast({ title: 'صلاحية المالك أو الأدمن مطلوبة', variant: 'destructive' });
+      return false;
+    }
+
+    // Moderators can't change other moderators (only owner/admin can)
+    if (targetMember.role === 'moderator' && !isOwner && !isAdmin) {
+      toast({ title: 'لا يمكنك تغيير صلاحية مشرف آخر', variant: 'destructive' });
       return false;
     }
 
@@ -389,8 +424,23 @@ export const useRoomModeration = (roomId: string) => {
     }
   };
 
-  // Ban member
+  // Ban member - with permission checks
   const banMember = async (memberId: string, reason: string, duration?: number) => {
+    const targetMember = members.find(m => m.id === memberId);
+    if (!targetMember) return false;
+
+    // Can't ban owner
+    if (targetMember.role === 'owner') {
+      toast({ title: 'لا يمكن حظر المالك', variant: 'destructive' });
+      return false;
+    }
+
+    // Moderators can't ban other moderators
+    if (targetMember.role === 'moderator' && currentUserRole === 'moderator') {
+      toast({ title: 'لا يمكنك حظر مشرف آخر', variant: 'destructive' });
+      return false;
+    }
+
     try {
       const bannedUntil = duration 
         ? new Date(Date.now() + duration * 24 * 60 * 60 * 1000).toISOString()
@@ -502,6 +552,8 @@ export const useRoomModeration = (roomId: string) => {
     pendingRequests,
     loading,
     isModerator,
+    isOwner,
+    currentUserRole,
     fetchMembers,
     fetchPendingRequests,
     approveRequest,
