@@ -33,36 +33,39 @@ export const AppLayout = ({ children, showNotifications = true }: AppLayoutProps
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Floating Buttons */}
+      {/* Header Actions */}
       {showNotifications && user && (
-        <div className="fixed top-4 end-4 z-50 flex items-center gap-2">
+        <div className="fixed top-3 end-3 z-50 flex items-center gap-1.5 bg-background/80 backdrop-blur-md rounded-full px-1.5 py-1 border border-border/20 shadow-lg">
           {/* Profile Button */}
           <Button
             variant="ghost"
             size="icon"
-            className="relative glass-card border border-border/30 hover:bg-primary/10 p-0 overflow-hidden"
+            className="relative h-9 w-9 rounded-full hover:bg-accent/50 transition-colors p-0 overflow-hidden"
             onClick={() => navigate('/profile')}
           >
-            <Avatar className="w-9 h-9">
+            <Avatar className="h-8 w-8">
               <AvatarImage src={profile?.avatar_url || undefined} alt="Profile" />
-              <AvatarFallback className="bg-primary/10 text-primary text-xs">
+              <AvatarFallback className="bg-primary/20 text-primary text-xs font-medium">
                 {getInitials()}
               </AvatarFallback>
             </Avatar>
           </Button>
 
+          {/* Divider */}
+          <div className="h-5 w-px bg-border/30" />
+
           {/* Messages Button */}
           <Button
             variant="ghost"
             size="icon"
-            className="relative glass-card border border-border/30 hover:bg-primary/10"
+            className="relative h-9 w-9 rounded-full hover:bg-accent/50 transition-colors"
             onClick={() => navigate('/messages')}
           >
-            <MessageSquare className="w-5 h-5" />
+            <MessageSquare className="h-[18px] w-[18px] text-muted-foreground" />
             {unreadTotal > 0 && (
               <Badge 
                 variant="destructive" 
-                className="absolute -top-1 -end-1 w-5 h-5 p-0 flex items-center justify-center text-[10px]"
+                className="absolute -top-0.5 -end-0.5 h-4 min-w-4 px-1 flex items-center justify-center text-[9px] font-bold rounded-full"
               >
                 {unreadTotal > 9 ? '9+' : unreadTotal}
               </Badge>
