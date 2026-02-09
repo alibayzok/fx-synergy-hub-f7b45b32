@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Plus, MessageSquare, LogIn, MessageCircle } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { RoomCard } from '@/components/community/RoomCard';
+import { RoomCard, LegacyRoomCard } from '@/components/community/RoomCard';
 import { RoomChatPanel } from '@/components/community/RoomChatPanel';
 import { UsdtRoomPanel } from '@/components/community/UsdtRoomPanel';
 import { ThreadDetailPanel } from '@/components/community/ThreadDetailPanel';
@@ -313,7 +313,7 @@ const CommunityPage = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
               >
-                <RoomCard 
+                <LegacyRoomCard 
                   room={room} 
                   isLocked={room.is_vip && !isVipUser}
                   onClick={() => handleRoomClick(room)}

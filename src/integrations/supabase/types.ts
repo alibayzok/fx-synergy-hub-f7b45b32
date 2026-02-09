@@ -121,6 +121,51 @@ export type Database = {
           },
         ]
       }
+      community_rooms: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          description_ar: string | null
+          icon: string | null
+          id: string
+          is_private: boolean | null
+          name: string
+          name_ar: string
+          requires_approval: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          description_ar?: string | null
+          icon?: string | null
+          id: string
+          is_private?: boolean | null
+          name: string
+          name_ar: string
+          requires_approval?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          description_ar?: string | null
+          icon?: string | null
+          id?: string
+          is_private?: boolean | null
+          name?: string
+          name_ar?: string
+          requires_approval?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       conversation_participants: {
         Row: {
           conversation_id: string
@@ -390,6 +435,97 @@ export type Database = {
             columns: ["reply_id"]
             isOneToOne: false
             referencedRelation: "replies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      room_join_requests: {
+        Row: {
+          created_at: string | null
+          id: string
+          message: string | null
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          room_id: string
+          status: Database["public"]["Enums"]["room_membership_status"] | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          room_id: string
+          status?: Database["public"]["Enums"]["room_membership_status"] | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          room_id?: string
+          status?: Database["public"]["Enums"]["room_membership_status"] | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_join_requests_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "community_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      room_members: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          ban_reason: string | null
+          banned_until: string | null
+          id: string
+          joined_at: string | null
+          role: Database["public"]["Enums"]["room_role"] | null
+          room_id: string
+          status: Database["public"]["Enums"]["room_membership_status"] | null
+          user_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          ban_reason?: string | null
+          banned_until?: string | null
+          id?: string
+          joined_at?: string | null
+          role?: Database["public"]["Enums"]["room_role"] | null
+          room_id: string
+          status?: Database["public"]["Enums"]["room_membership_status"] | null
+          user_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          ban_reason?: string | null
+          banned_until?: string | null
+          id?: string
+          joined_at?: string | null
+          role?: Database["public"]["Enums"]["room_role"] | null
+          room_id?: string
+          status?: Database["public"]["Enums"]["room_membership_status"] | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_members_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "community_rooms"
             referencedColumns: ["id"]
           },
         ]
@@ -900,6 +1036,10 @@ export type Database = {
         Args: { user1_id: string; user2_id: string }
         Returns: boolean
       }
+      can_access_room: {
+        Args: { p_room_id: string; p_user_id?: string }
+        Returns: boolean
+      }
       can_access_trade: {
         Args: {
           trade_visibility: Database["public"]["Enums"]["trade_visibility"]
@@ -927,6 +1067,14 @@ export type Database = {
         Args: { check_user_id?: string; conv_id: string }
         Returns: boolean
       }
+      is_room_member: {
+        Args: { p_room_id: string; p_user_id?: string }
+        Returns: boolean
+      }
+      is_room_moderator: {
+        Args: { p_room_id: string; p_user_id?: string }
+        Returns: boolean
+      }
       is_vip: { Args: never; Returns: boolean }
       mask_phone_number: { Args: { phone: string }; Returns: string }
     }
@@ -937,6 +1085,8 @@ export type Database = {
       entry_type: "market" | "limit" | "stop"
       friend_request_status: "pending" | "accepted" | "rejected"
       privacy_setting: "everyone" | "friends_only" | "followers_only" | "nobody"
+      room_membership_status: "pending" | "approved" | "rejected" | "banned"
+      room_role: "member" | "moderator" | "owner"
       service_status:
         | "pending"
         | "in_progress"
@@ -1093,6 +1243,8 @@ export const Constants = {
       entry_type: ["market", "limit", "stop"],
       friend_request_status: ["pending", "accepted", "rejected"],
       privacy_setting: ["everyone", "friends_only", "followers_only", "nobody"],
+      room_membership_status: ["pending", "approved", "rejected", "banned"],
+      room_role: ["member", "moderator", "owner"],
       service_status: [
         "pending",
         "in_progress",
