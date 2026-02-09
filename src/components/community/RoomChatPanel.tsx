@@ -95,8 +95,12 @@ export const RoomChatPanel = ({ roomId, roomName, onBack, onManage }: RoomChatPa
     if (!newMessage.trim() || sending) return;
 
     setSending(true);
-    await sendMessage(newMessage);
-    setNewMessage('');
+    const result = await sendMessage(newMessage, isModerator || isAdmin);
+    
+    // Only clear if message was sent successfully (not blocked)
+    if (result && !('blocked' in result)) {
+      setNewMessage('');
+    }
     setSending(false);
   };
 

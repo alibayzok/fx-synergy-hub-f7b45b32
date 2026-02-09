@@ -398,13 +398,30 @@ export const useConversationMessages = (conversationId: string | null) => {
   const sendMessage = async (content: string): Promise<boolean> => {
     if (!user || !conversationId || !content.trim()) return false;
 
+    // Import and use content moderation for direct messages
+    const { moderateContent, sanitizeContent, getModerationErrorMessage } = await import('@/lib/content-moderation');
+    
+    // Sanitize content
+    const sanitizedContent = sanitizeContent(content);
+    
+    // Check moderation (links allowed in DMs, but spam detection active)
+    const moderationResult = moderateContent(sanitizedContent, { 
+      allowLinks: true, // Allow links in direct messages
+      spamDetection: true 
+    });
+    
+    if (!moderationResult.isAllowed) {
+      toast.error(getModerationErrorMessage(moderationResult, true));
+      return false;
+    }
+
     try {
       const { error } = await supabase
         .from('direct_messages')
         .insert({
           conversation_id: conversationId,
           sender_id: user.id,
-          content: content.trim()
+          content: sanitizedContent
         });
 
       if (error) throw error;

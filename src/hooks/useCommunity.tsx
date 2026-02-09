@@ -445,8 +445,25 @@ export const useRoomChat = (roomId: string) => {
     }
   }, [roomId]);
 
-  const sendMessage = async (content: string) => {
+  const sendMessage = async (content: string, isModerator: boolean = false) => {
     if (!user || !content.trim()) return null;
+
+    // Import and use content moderation
+    const { moderateContent, sanitizeContent, getModerationErrorMessage } = await import('@/lib/content-moderation');
+    
+    // Sanitize content first
+    const sanitizedContent = sanitizeContent(content);
+    
+    // Check moderation
+    const moderationResult = moderateContent(sanitizedContent, {}, isModerator);
+    
+    if (!moderationResult.isAllowed) {
+      toast({ 
+        title: getModerationErrorMessage(moderationResult, true),
+        variant: 'destructive' 
+      });
+      return { blocked: true, reason: moderationResult.reason };
+    }
 
     try {
       const { data: message, error } = await supabase
@@ -454,7 +471,7 @@ export const useRoomChat = (roomId: string) => {
         .insert({
           room_id: roomId,
           user_id: user.id,
-          content: content.trim()
+          content: sanitizedContent
         })
         .select()
         .single();
