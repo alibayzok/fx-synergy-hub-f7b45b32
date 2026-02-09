@@ -46,6 +46,28 @@ serve(async (req) => {
       });
     }
 
+    // Validate individual message structure
+    for (const msg of messages) {
+      if (!msg || typeof msg !== 'object' || !msg.role || !msg.content) {
+        return new Response(JSON.stringify({ error: "بنية رسالة غير صالحة" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (!['user', 'assistant'].includes(msg.role)) {
+        return new Response(JSON.stringify({ error: "دور رسالة غير صالح" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (typeof msg.content !== 'string' || msg.content.length > 5000) {
+        return new Response(JSON.stringify({ error: "محتوى رسالة غير صالح" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
