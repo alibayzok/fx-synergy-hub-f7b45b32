@@ -255,7 +255,6 @@ export const useUserPosts = (userId?: string) => {
           flagged_url: tempUrl,
           flag_reason: result.reason || 'unknown',
           confidence: result.confidence,
-          predictions: result.predictions as any,
         });
       
       URL.revokeObjectURL(tempUrl);
