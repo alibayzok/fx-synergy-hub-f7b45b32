@@ -7,13 +7,14 @@ import { RoomCard, LegacyRoomCard } from '@/components/community/RoomCard';
 import { RoomChatPanel } from '@/components/community/RoomChatPanel';
 import { RoomModerationPanel } from '@/components/community/RoomModerationPanel';
 import { UsdtRoomPanel } from '@/components/community/UsdtRoomPanel';
+import { LearningRoomPanel } from '@/components/community/LearningRoomPanel';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 
-type ViewMode = 'list' | 'chat' | 'usdt' | 'moderation';
+type ViewMode = 'list' | 'chat' | 'usdt' | 'learning' | 'moderation';
 
 // Static rooms data
 const roomsData = [
@@ -97,6 +98,8 @@ const CommunityPage = () => {
     setSelectedRoom(room);
     if (room.id === 'usdt') {
       setViewMode('usdt');
+    } else if (room.id === 'learning') {
+      setViewMode('learning');
     } else {
       setViewMode('chat');
     }
@@ -139,6 +142,15 @@ const CommunityPage = () => {
     return (
       <AppLayout>
         <UsdtRoomPanel onBack={handleBackToList} />
+      </AppLayout>
+    );
+  }
+
+  // Show Learning panel
+  if (viewMode === 'learning') {
+    return (
+      <AppLayout>
+        <LearningRoomPanel onBack={handleBackToList} />
       </AppLayout>
     );
   }
