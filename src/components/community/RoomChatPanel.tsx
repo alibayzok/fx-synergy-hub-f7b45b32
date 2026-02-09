@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, useDragControls, PanInfo } from 'framer-motion';
 import { Send, ArrowRight, ArrowLeft, Pencil, Trash2, X, Check, Shield, Crown, Settings } from 'lucide-react';
 import { useRoomChat, RoomMessage } from '@/hooks/useCommunity';
 import { useAuth } from '@/hooks/useAuth';
@@ -30,7 +30,9 @@ export const RoomChatPanel = ({ roomId, roomName, onBack, onManage }: RoomChatPa
   const { members, isModerator } = useRoomModeration(roomId);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const [fabPosition, setFabPosition] = useState({ x: 0, y: 0 });
   const scrollRef = useRef<HTMLDivElement>(null);
+  const constraintsRef = useRef<HTMLDivElement>(null);
   const isArabic = i18n.language === 'ar';
 
   // Create a map of user roles in this room
@@ -72,8 +74,10 @@ export const RoomChatPanel = ({ roomId, roomName, onBack, onManage }: RoomChatPa
 
   const BackArrow = isArabic ? ArrowRight : ArrowLeft;
 
+  const canManage = isAdmin || isModerator;
+
   return (
-    <div className="flex flex-col h-[calc(100vh-200px)]">
+    <div className="flex flex-col h-[calc(100vh-200px)] relative" ref={constraintsRef}>
       {/* Chat Header */}
       <div className="flex items-center gap-3 p-4 border-b border-border/30">
         <Button variant="ghost" size="icon" onClick={onBack}>
@@ -85,12 +89,24 @@ export const RoomChatPanel = ({ roomId, roomName, onBack, onManage }: RoomChatPa
             ({messages.length} {t('community.messages')})
           </span>
         </div>
-        {(isAdmin || isModerator) && onManage && (
-          <Button variant="ghost" size="icon" onClick={onManage}>
-            <Settings className="w-5 h-5" />
-          </Button>
-        )}
       </div>
+
+      {/* Floating Admin Button - Draggable */}
+      {canManage && onManage && (
+        <motion.button
+          drag
+          dragConstraints={constraintsRef}
+          dragElastic={0.1}
+          whileDrag={{ scale: 1.1 }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={onManage}
+          className="fixed z-50 bottom-32 left-4 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center cursor-grab active:cursor-grabbing"
+          style={{ touchAction: 'none' }}
+        >
+          <Settings className="w-6 h-6" />
+        </motion.button>
+      )}
 
       {/* Messages Area */}
       <ScrollArea className="flex-1 p-4" ref={scrollRef}>
