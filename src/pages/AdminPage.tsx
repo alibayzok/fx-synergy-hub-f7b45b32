@@ -15,7 +15,8 @@ import {
   BarChart3,
   ClipboardList,
   Database,
-  FileText
+  FileText,
+  AlertTriangle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -32,6 +33,7 @@ import { AdminNotifications } from '@/components/admin/AdminNotifications';
 import { ServiceRequestsManagement } from '@/components/admin/ServiceRequestsManagement';
 import { DatabaseExport } from '@/components/admin/DatabaseExport';
 import { AnalysesManagement } from '@/components/admin/AnalysesManagement';
+import FlaggedContentManagement from '@/components/admin/FlaggedContentManagement';
 
 interface Trade {
   id: string;
@@ -140,7 +142,7 @@ const AdminPage = () => {
 
       <div className="p-4">
         <Tabs defaultValue="dashboard" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="dashboard" className="gap-1 text-xs sm:text-sm">
               <LayoutDashboard className="w-4 h-4" />
               <span className="hidden sm:inline">{t('admin.dashboard')}</span>
@@ -148,6 +150,10 @@ const AdminPage = () => {
             <TabsTrigger value="requests" className="gap-1 text-xs sm:text-sm">
               <ClipboardList className="w-4 h-4" />
               <span className="hidden sm:inline">{t('admin.requests')}</span>
+            </TabsTrigger>
+            <TabsTrigger value="moderation" className="gap-1 text-xs sm:text-sm">
+              <AlertTriangle className="w-4 h-4" />
+              <span className="hidden sm:inline">المخالفات</span>
             </TabsTrigger>
             <TabsTrigger value="trades" className="gap-1 text-xs sm:text-sm">
               <TrendingUp className="w-4 h-4" />
@@ -183,6 +189,11 @@ const AdminPage = () => {
           {/* Service Requests Tab */}
           <TabsContent value="requests">
             <ServiceRequestsManagement />
+          </TabsContent>
+
+          {/* Moderation Tab */}
+          <TabsContent value="moderation">
+            <FlaggedContentManagement />
           </TabsContent>
 
           {/* Trades Tab */}
