@@ -296,11 +296,6 @@ const CommunityPage = () => {
       <header className="sticky top-0 z-30 glass-card border-b border-border/30">
         <div className="flex items-center justify-between px-4 py-3">
           <h1 className="text-xl font-bold text-foreground">{t('community.title')}</h1>
-          {/* زر موضوع جديد - مع مسافة من الأزرار العائمة */}
-          <Button size="sm" className="h-9 gap-2 me-24" onClick={() => setShowNewThreadDialog(true)}>
-            <Plus className="w-4 h-4" />
-            {t('community.newThread')}
-          </Button>
         </div>
 
         {/* Tabs */}
@@ -356,20 +351,26 @@ const CommunityPage = () => {
         ) : (
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-card/40 border border-border/30">
-              <span className="text-sm font-medium text-foreground">{isArabic ? 'الغرفة' : 'Room'}</span>
-              <Select value={threadRoomFilter} onValueChange={setThreadRoomFilter}>
-                <SelectTrigger className="w-[220px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{isArabic ? 'كل الغرف' : 'All rooms'}</SelectItem>
-                  {roomsData.filter(r => !r.is_vip || isVipUser).map(room => (
-                    <SelectItem key={room.id} value={room.id}>
-                      {isArabic ? room.name_ar : room.name_en}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-2 flex-1">
+                <span className="text-sm font-medium text-foreground">{isArabic ? 'الغرفة' : 'Room'}</span>
+                <Select value={threadRoomFilter} onValueChange={setThreadRoomFilter}>
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{isArabic ? 'كل الغرف' : 'All rooms'}</SelectItem>
+                    {roomsData.filter(r => !r.is_vip || isVipUser).map(room => (
+                      <SelectItem key={room.id} value={room.id}>
+                        {isArabic ? room.name_ar : room.name_en}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button size="sm" className="gap-1.5" onClick={() => setShowNewThreadDialog(true)}>
+                <Plus className="w-4 h-4" />
+                {t('community.newThread')}
+              </Button>
             </div>
 
             {threadsLoading ? (
