@@ -508,5 +508,35 @@
     "error": "حدث خطأ، يرجى المحاولة مرة أخرى",
     "rateLimitError": "تم تجاوز حد الطلبات، يرجى الانتظار قليلاً",
     "paymentError": "يرجى إضافة رصيد للاستمرار"
+  },
+  "posts": {
+    "title": "المنشورات",
+    "create": "نشر جديد",
+    "createTitle": "إنشاء منشور جديد",
+    "placeholder": "ماذا يدور في ذهنك؟",
+    "publish": "نشر",
+    "created": "تم نشر المنشور بنجاح",
+    "createError": "فشل في نشر المنشور",
+    "deleted": "تم حذف المنشور",
+    "deleteError": "فشل في حذف المنشور",
+    "deleteConfirm": "حذف المنشور؟",
+    "deleteWarning": "لا يمكن التراجع عن هذا الإجراء.",
+    "addAnalysis": "إضافة تحليل",
+    "symbol": "الرمز",
+    "assetType": "النوع",
+    "timeframe": "الإطار",
+    "addComment": "أضف تعليقاً...",
+    "comment": "تعليق",
+    "commentError": "فشل في إضافة التعليق",
+    "noComments": "لا توجد تعليقات بعد",
+    "noPosts": "لا توجد منشورات حتى الآن",
+    "noPostsOwn": "لم تنشر أي شيء بعد. شارك تحليلاتك مع المجتمع!",
+    "uploadError": "فشل في رفع الملف",
+    "visibility": {
+      "everyone": "الجميع",
+      "followers": "المتابعون فقط",
+      "friends": "الأصدقاء فقط",
+      "private": "خاص"
+    }
   }
 }

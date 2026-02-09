@@ -43,6 +43,7 @@ import { countries } from '@/data/countries';
 import { useToast } from '@/hooks/use-toast';
 import { NotificationSettings } from '@/components/notifications/NotificationSettings';
 import { FriendsSection } from '@/components/profile/FriendsSection';
+import { UserPostsSection } from '@/components/profile/UserPostsSection';
 
 const ProfilePage = () => {
   const { t, i18n } = useTranslation();
@@ -294,6 +295,17 @@ const ProfilePage = () => {
 
         {/* Friends Section */}
         <FriendsSection />
+
+        {/* User Posts Section */}
+        {user && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <UserPostsSection userId={user.id} isOwnProfile={true} />
+          </motion.div>
+        )}
 
         {/* Logout */}
         <motion.div

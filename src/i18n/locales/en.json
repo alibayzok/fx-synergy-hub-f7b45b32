@@ -508,5 +508,35 @@
     "error": "An error occurred, please try again",
     "rateLimitError": "Rate limit exceeded, please wait a moment",
     "paymentError": "Please add credits to continue"
+  },
+  "posts": {
+    "title": "Posts",
+    "create": "New Post",
+    "createTitle": "Create New Post",
+    "placeholder": "What's on your mind?",
+    "publish": "Publish",
+    "created": "Post published successfully",
+    "createError": "Failed to publish post",
+    "deleted": "Post deleted",
+    "deleteError": "Failed to delete post",
+    "deleteConfirm": "Delete post?",
+    "deleteWarning": "This action cannot be undone.",
+    "addAnalysis": "Add Analysis",
+    "symbol": "Symbol",
+    "assetType": "Type",
+    "timeframe": "Timeframe",
+    "addComment": "Add a comment...",
+    "comment": "Comment",
+    "commentError": "Failed to add comment",
+    "noComments": "No comments yet",
+    "noPosts": "No posts yet",
+    "noPostsOwn": "You haven't posted anything yet. Share your analysis with the community!",
+    "uploadError": "Failed to upload file",
+    "visibility": {
+      "everyone": "Everyone",
+      "followers": "Followers only",
+      "friends": "Friends only",
+      "private": "Private"
+    }
   }
 }
