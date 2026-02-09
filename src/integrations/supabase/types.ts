@@ -426,10 +426,12 @@ export type Database = {
           id: string
           network: string | null
           notes: string | null
+          payment_method: string | null
           status: Database["public"]["Enums"]["service_status"]
           type: Database["public"]["Enums"]["service_type"]
           updated_at: string
           user_id: string
+          wallet_address: string | null
         }
         Insert: {
           admin_notes?: string | null
@@ -438,10 +440,12 @@ export type Database = {
           id?: string
           network?: string | null
           notes?: string | null
+          payment_method?: string | null
           status?: Database["public"]["Enums"]["service_status"]
           type: Database["public"]["Enums"]["service_type"]
           updated_at?: string
           user_id: string
+          wallet_address?: string | null
         }
         Update: {
           admin_notes?: string | null
@@ -450,10 +454,12 @@ export type Database = {
           id?: string
           network?: string | null
           notes?: string | null
+          payment_method?: string | null
           status?: Database["public"]["Enums"]["service_status"]
           type?: Database["public"]["Enums"]["service_type"]
           updated_at?: string
           user_id?: string
+          wallet_address?: string | null
         }
         Relationships: []
       }
