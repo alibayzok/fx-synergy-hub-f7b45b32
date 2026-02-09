@@ -185,10 +185,12 @@
   },
   "services": {
     "title": "Services",
-    "broker": "Broker Services",
+    "broker": "Broker",
+    "brokerTab": "Broker",
     "brokerDesc": "Deposit and withdraw with OneRoyal",
-    "usdt": "Buy/Sell USDT",
+    "usdt": "USDT",
     "usdtDesc": "Crypto currency exchange",
+    "requests": "Requests",
     "deposit": "Deposit",
     "withdraw": "Withdraw",
     "buy": "Buy",
@@ -230,7 +232,56 @@
     "brokerBenefit1": "Low spreads",
     "brokerBenefit2": "24/7 support",
     "brokerBenefit3": "Welcome bonus",
-    "requestUpdated": "Your request has been updated"
+    "requestUpdated": "Your request has been updated",
+    "brokerLanding": {
+      "title": "Trade with OneRoyal",
+      "subtitle": "Official Trading Partner",
+      "openAccount": "Open Your Free Account",
+      "lowSpread": "Low Spread",
+      "leverage": "Leverage",
+      "platforms": "Platforms",
+      "support": "Support",
+      "features": {
+        "bonus": "Welcome bonus up to $500",
+        "fastWithdraw": "Fast deposits & withdrawals",
+        "islamic": "Islamic accounts (swap-free)",
+        "arabicSupport": "24/7 Arabic support",
+        "execution": "Instant order execution"
+      },
+      "depositDesc": "Fund your account",
+      "withdrawDesc": "Withdraw funds",
+      "partnerNote": "OneRoyal is our official and trusted trading partner"
+    },
+    "usdtSection": {
+      "title": "Buy & Sell USDT",
+      "subtitle": "Safe and fast crypto exchange",
+      "buy": "Buy",
+      "sell": "Sell",
+      "buyDesc": "Buy USDT at best price",
+      "sellDesc": "Sell USDT and get cash",
+      "currency": "LBP",
+      "buyRequest": "Buy USDT Request",
+      "sellRequest": "Sell USDT Request",
+      "paymentMethod": "Payment Method",
+      "selectPayment": "Select payment method",
+      "walletAddress": "Wallet Address",
+      "walletPlaceholder": "Enter your wallet address",
+      "recommended": "Recommended",
+      "availableListings": "Available Listings",
+      "noListings": "No listings available",
+      "adminBuys": "Buy",
+      "adminSells": "Sell",
+      "commission": "Commission",
+      "min": "Min",
+      "max": "Max",
+      "infoNote": "We will contact you via WhatsApp or phone to complete the transaction after submitting your request",
+      "paymentMethods": {
+        "bank_transfer": "Bank Transfer",
+        "omt": "OMT",
+        "whish": "Whish Money",
+        "cash": "Cash"
+      }
+    }
   },
   "profile": {
     "title": "Profile",

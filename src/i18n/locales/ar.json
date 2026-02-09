@@ -185,10 +185,12 @@
   },
   "services": {
     "title": "الخدمات",
-    "broker": "خدمات الوسيط",
+    "broker": "الوسيط",
+    "brokerTab": "الوسيط",
     "brokerDesc": "إيداع وسحب من OneRoyal",
-    "usdt": "بيع وشراء USDT",
+    "usdt": "USDT",
     "usdtDesc": "تحويل العملات الرقمية",
+    "requests": "طلباتي",
     "deposit": "إيداع",
     "withdraw": "سحب",
     "buy": "شراء",
@@ -230,7 +232,56 @@
     "brokerBenefit1": "سبريد منخفض",
     "brokerBenefit2": "دعم فني على مدار الساعة",
     "brokerBenefit3": "بونص ترحيبي",
-    "requestUpdated": "تم تحديث طلبك"
+    "requestUpdated": "تم تحديث طلبك",
+    "brokerLanding": {
+      "title": "تداول مع OneRoyal",
+      "subtitle": "الشريك الرسمي للتداول",
+      "openAccount": "افتح حسابك مجاناً",
+      "lowSpread": "سبريد منخفض",
+      "leverage": "الرافعة",
+      "platforms": "المنصات",
+      "support": "الدعم",
+      "features": {
+        "bonus": "بونص ترحيبي يصل إلى $500",
+        "fastWithdraw": "سحب وإيداع سريع",
+        "islamic": "حسابات إسلامية (بدون فوائد)",
+        "arabicSupport": "دعم فني عربي على مدار الساعة",
+        "execution": "تنفيذ فوري للصفقات"
+      },
+      "depositDesc": "إيداع للحساب",
+      "withdrawDesc": "سحب من الحساب",
+      "partnerNote": "OneRoyal هو شريكنا الرسمي والموثوق للتداول"
+    },
+    "usdtSection": {
+      "title": "بيع وشراء USDT",
+      "subtitle": "تحويل العملات الرقمية بأمان وسرعة",
+      "buy": "شراء",
+      "sell": "بيع",
+      "buyDesc": "اشترِ USDT بأفضل سعر",
+      "sellDesc": "بِع USDT واحصل على نقدك",
+      "currency": "LBP",
+      "buyRequest": "طلب شراء USDT",
+      "sellRequest": "طلب بيع USDT",
+      "paymentMethod": "طريقة الدفع",
+      "selectPayment": "اختر طريقة الدفع",
+      "walletAddress": "عنوان المحفظة",
+      "walletPlaceholder": "أدخل عنوان محفظتك",
+      "recommended": "موصى به",
+      "availableListings": "الإعلانات المتاحة",
+      "noListings": "لا توجد إعلانات متاحة حالياً",
+      "adminBuys": "شراء",
+      "adminSells": "بيع",
+      "commission": "العمولة",
+      "min": "الحد الأدنى",
+      "max": "الحد الأقصى",
+      "infoNote": "سيتم التواصل معك عبر الواتساب أو الهاتف لإتمام العملية بعد إرسال الطلب",
+      "paymentMethods": {
+        "bank_transfer": "تحويل بنكي",
+        "omt": "OMT",
+        "whish": "Whish Money",
+        "cash": "نقدي"
+      }
+    }
   },
   "profile": {
     "title": "الملف الشخصي",

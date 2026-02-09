@@ -13,6 +13,8 @@ export interface ServiceRequest {
   type: ServiceType;
   amount: number | null;
   network: string | null;
+  payment_method: string | null;
+  wallet_address: string | null;
   status: ServiceStatus;
   notes: string | null;
   admin_notes: string | null;
@@ -52,6 +54,8 @@ export const useServiceRequests = () => {
     type: ServiceType;
     amount?: number;
     network?: string;
+    payment_method?: string;
+    wallet_address?: string;
     notes?: string;
   }) => {
     if (!user) return null;
@@ -64,8 +68,10 @@ export const useServiceRequests = () => {
           type: data.type,
           amount: data.amount || null,
           network: data.network || null,
+          payment_method: data.payment_method || null,
+          wallet_address: data.wallet_address || null,
           notes: data.notes || null,
-        })
+        } as any)
         .select()
         .single();
 
