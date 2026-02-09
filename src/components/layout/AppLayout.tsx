@@ -5,6 +5,8 @@ import { BottomNav } from './BottomNav';
 import { FloatingAIButton } from './FloatingAIButton';
 import { ThemeToggle } from './ThemeToggle';
 import { NotificationsPanel } from '@/components/notifications/NotificationsPanel';
+import { FriendRequestsPanel } from '@/components/notifications/FriendRequestsPanel';
+import { AdminSignupNotifications } from '@/components/notifications/AdminSignupNotifications';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -80,8 +82,14 @@ export const AppLayout = ({ children, showNotifications = true }: AppLayoutProps
             )}
           </Button>
           
+          {/* Friend Requests */}
+          <FriendRequestsPanel />
+
           {/* Notifications */}
           <NotificationsPanel />
+
+          {/* Admin Signup Notifications */}
+          <AdminSignupNotifications />
         </div>
       )}
       

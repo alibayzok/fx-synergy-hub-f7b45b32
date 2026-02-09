@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Bell, Check, X, MessageSquare, TrendingUp, AlertCircle, UserPlus, Mail, Heart } from 'lucide-react';
+import { Bell, Check, X, MessageSquare, TrendingUp, AlertCircle, Mail, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNotifications, UserNotification } from '@/hooks/useNotifications';
 import { Button } from '@/components/ui/button';
@@ -16,9 +16,7 @@ import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 
 export const NotificationsPanel = () => {
   const { t, i18n } = useTranslation();
@@ -33,7 +31,6 @@ export const NotificationsPanel = () => {
     refetch
   } = useNotifications();
   const isArabic = i18n.language === 'ar';
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
 
   const formatTime = (dateStr: string) => {
@@ -57,9 +54,6 @@ export const NotificationsPanel = () => {
         return TrendingUp;
       case 'alert':
         return AlertCircle;
-      case 'friend_request':
-      case 'friend_accepted':
-        return UserPlus;
       case 'message':
         return Mail;
       case 'post_like':
@@ -71,37 +65,13 @@ export const NotificationsPanel = () => {
     }
   };
 
-  const handleFriendRequestAction = async (
-    e: React.MouseEvent,
-    notification: UserNotification,
-    action: 'accept' | 'reject'
-  ) => {
-    e.stopPropagation();
-    const data = notification.data as Record<string, string>;
-    const requestId = data?.request_id;
-    
-    if (!requestId) return;
-    
-    setActionLoading(`${notification.id}-${action}`);
-    
-    try {
-      const { error } = await supabase
-        .from('friend_requests')
-        .update({ status: action === 'accept' ? 'accepted' : 'rejected' })
-        .eq('id', requestId);
-      
-      if (error) throw error;
-      
-      toast.success(action === 'accept' ? t('social.friendRequestAccepted') : t('social.friendRequestRejected'));
-      markAsRead(notification.id);
-      refetch();
-    } catch (err) {
-      console.error('Error handling friend request:', err);
-      toast.error(t('common.error'));
-    } finally {
-      setActionLoading(null);
-    }
-  };
+  // Filter out friend request notifications (they have their own panel)
+  const filteredNotifications = notifications.filter(
+    n => n.type !== 'friend_request' && n.type !== 'friend_accepted'
+  );
+  const filteredUnreadCount = filteredNotifications.filter(n => !n.read).length;
+
+  // Friend request actions removed - handled by FriendRequestsPanel
 
   const handleNotificationClick = (notification: UserNotification) => {
     if (!notification.read) {
@@ -149,50 +119,7 @@ export const NotificationsPanel = () => {
     }
   };
 
-  const renderNotificationActions = (notification: UserNotification) => {
-    const data = notification.data as Record<string, string>;
-    
-    // Friend request actions
-    if (notification.type === 'friend_request' && data?.request_id) {
-      // Check if already handled
-      return (
-        <div className="flex gap-2 mt-2">
-          <Button
-            size="sm"
-            variant="default"
-            className="h-7 text-xs"
-            disabled={actionLoading !== null}
-            onClick={(e) => handleFriendRequestAction(e, notification, 'accept')}
-          >
-            {actionLoading === `${notification.id}-accept` ? (
-              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white" />
-            ) : (
-              <>
-                <Check className="w-3 h-3 me-1" />
-                {t('social.accept')}
-              </>
-            )}
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 text-xs"
-            disabled={actionLoading !== null}
-            onClick={(e) => handleFriendRequestAction(e, notification, 'reject')}
-          >
-            {actionLoading === `${notification.id}-reject` ? (
-              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current" />
-            ) : (
-              <>
-                <X className="w-3 h-3 me-1" />
-                {t('social.reject')}
-              </>
-            )}
-          </Button>
-        </div>
-      );
-    }
-    
+  const renderNotificationActions = (_notification: UserNotification) => {
     return null;
   };
 
@@ -201,11 +128,11 @@ export const NotificationsPanel = () => {
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="w-5 h-5" />
-          {unreadCount > 0 && (
+          {filteredUnreadCount > 0 && (
             <Badge
               className="absolute -top-1 -end-1 min-w-[18px] h-[18px] p-0 flex items-center justify-center text-[10px] bg-destructive text-destructive-foreground"
             >
-              {unreadCount > 99 ? '99+' : unreadCount}
+              {filteredUnreadCount > 99 ? '99+' : filteredUnreadCount}
             </Badge>
           )}
         </Button>
@@ -217,13 +144,13 @@ export const NotificationsPanel = () => {
             <SheetTitle className="flex items-center gap-2">
               <Bell className="w-5 h-5" />
               {t('notifications.title')}
-              {unreadCount > 0 && (
+              {filteredUnreadCount > 0 && (
                 <Badge variant="secondary" className="text-xs">
-                  {unreadCount}
+                  {filteredUnreadCount}
                 </Badge>
               )}
             </SheetTitle>
-            {notifications.length > 0 && (
+            {filteredNotifications.length > 0 && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -242,7 +169,7 @@ export const NotificationsPanel = () => {
             <div className="flex justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
             </div>
-          ) : notifications.length === 0 ? (
+          ) : filteredNotifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Bell className="w-12 h-12 text-muted-foreground/30 mb-3" />
               <p className="text-muted-foreground">{t('admin.notifications.empty')}</p>
@@ -250,7 +177,7 @@ export const NotificationsPanel = () => {
           ) : (
             <AnimatePresence>
               <div className="space-y-2">
-                {notifications.map((notification) => {
+                {filteredNotifications.map((notification) => {
                   const Icon = getNotificationIcon(notification.type);
                   return (
                     <motion.div
