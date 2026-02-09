@@ -126,8 +126,8 @@ export const NotificationsPanel = () => {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="w-5 h-5" />
+        <Button variant="ghost" size="icon" className="relative h-8 w-8 rounded-full hover:bg-accent/50 transition-colors">
+          <Bell className="w-4 h-4 text-muted-foreground" />
           {filteredUnreadCount > 0 && (
             <Badge
               className="absolute -top-1 -end-1 min-w-[18px] h-[18px] p-0 flex items-center justify-center text-[10px] bg-destructive text-destructive-foreground"
