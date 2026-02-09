@@ -8,6 +8,11 @@
 
 @layer base {
   :root {
+    /* Default - will be overridden by .light or .dark class */
+    --radius: 0.75rem;
+  }
+
+  :root, .light, [data-theme="light"] {
     /* Light trading theme */
     --background: 40 20% 98%;
     --foreground: 220 20% 10%;
@@ -48,8 +53,6 @@
     --input: 40 15% 92%;
     --ring: 38 92% 40%;
 
-    --radius: 0.75rem;
-
     --sidebar-background: 40 15% 96%;
     --sidebar-foreground: 220 15% 20%;
     --sidebar-primary: 38 92% 40%;
@@ -67,7 +70,7 @@
     --chart-5: 280 70% 45%;
   }
 
-  .dark {
+  .dark, [data-theme="dark"] {
     /* Dark trading theme */
     --background: 220 20% 6%;
     --foreground: 45 10% 95%;
