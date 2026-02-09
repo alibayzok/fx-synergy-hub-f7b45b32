@@ -449,7 +449,9 @@ export type Database = {
           id: string
           language: string | null
           last_name: string | null
+          onboarding_completed: boolean | null
           phone: string | null
+          trading_preferences: Json | null
           updated_at: string
           user_id: string
           username: string | null
@@ -463,7 +465,9 @@ export type Database = {
           id?: string
           language?: string | null
           last_name?: string | null
+          onboarding_completed?: boolean | null
           phone?: string | null
+          trading_preferences?: Json | null
           updated_at?: string
           user_id: string
           username?: string | null
@@ -477,7 +481,9 @@ export type Database = {
           id?: string
           language?: string | null
           last_name?: string | null
+          onboarding_completed?: boolean | null
           phone?: string | null
+          trading_preferences?: Json | null
           updated_at?: string
           user_id?: string
           username?: string | null
