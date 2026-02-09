@@ -1047,6 +1047,7 @@ export type Database = {
         Returns: boolean
       }
       can_message_user: { Args: { target_user_id: string }; Returns: boolean }
+      get_thread_room_id: { Args: { p_thread_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

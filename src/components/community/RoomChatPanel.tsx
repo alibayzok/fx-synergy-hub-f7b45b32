@@ -2,13 +2,15 @@ import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Send, ArrowRight, ArrowLeft, Pencil, Trash2, X, Check } from 'lucide-react';
+import { Send, ArrowRight, ArrowLeft, Pencil, Trash2, X, Check, Shield, Crown, Settings } from 'lucide-react';
 import { useRoomChat, RoomMessage } from '@/hooks/useCommunity';
 import { useAuth } from '@/hooks/useAuth';
+import { useRoomModeration } from '@/hooks/useRoomManagement';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
@@ -17,17 +19,22 @@ interface RoomChatPanelProps {
   roomId: string;
   roomName: string;
   onBack: () => void;
+  onManage?: () => void;
 }
 
-export const RoomChatPanel = ({ roomId, roomName, onBack }: RoomChatPanelProps) => {
+export const RoomChatPanel = ({ roomId, roomName, onBack, onManage }: RoomChatPanelProps) => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
   const { messages, loading, sendMessage, updateMessage, deleteMessage } = useRoomChat(roomId);
+  const { members, isModerator } = useRoomModeration(roomId);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const isArabic = i18n.language === 'ar';
+
+  // Create a map of user roles in this room
+  const memberRolesMap = new Map(members.map(m => [m.user_id, m.role]));
 
   const handleUserClick = (userId: string) => {
     navigate(`/user/${userId}`);
@@ -72,10 +79,17 @@ export const RoomChatPanel = ({ roomId, roomName, onBack }: RoomChatPanelProps) 
         <Button variant="ghost" size="icon" onClick={onBack}>
           <BackArrow className="w-5 h-5" />
         </Button>
-        <h2 className="font-semibold text-foreground">{roomName}</h2>
-        <span className="text-xs text-muted-foreground">
-          ({messages.length} {t('community.messages')})
-        </span>
+        <div className="flex-1">
+          <h2 className="font-semibold text-foreground">{roomName}</h2>
+          <span className="text-xs text-muted-foreground">
+            ({messages.length} {t('community.messages')})
+          </span>
+        </div>
+        {(isAdmin || isModerator) && onManage && (
+          <Button variant="ghost" size="icon" onClick={onManage}>
+            <Settings className="w-5 h-5" />
+          </Button>
+        )}
       </div>
 
       {/* Messages Area */}
@@ -97,6 +111,8 @@ export const RoomChatPanel = ({ roomId, roomName, onBack }: RoomChatPanelProps) 
                 message={message}
                 isOwn={message.user_id === user?.id}
                 isAdmin={isAdmin}
+                isModerator={isModerator}
+                userRole={memberRolesMap.get(message.user_id)}
                 onEdit={(content) => updateMessage(message.id, content)}
                 onDelete={() => deleteMessage(message.id)}
                 onUserClick={handleUserClick}
@@ -136,6 +152,8 @@ interface MessageBubbleProps {
   message: RoomMessage;
   isOwn: boolean;
   isAdmin: boolean;
+  isModerator: boolean;
+  userRole?: 'member' | 'moderator' | 'owner';
   onEdit: (content: string) => Promise<boolean>;
   onDelete: () => Promise<boolean>;
   onUserClick: (userId: string) => void;
@@ -143,14 +161,30 @@ interface MessageBubbleProps {
   showAvatar: boolean;
 }
 
-const MessageBubble = ({ message, isOwn, isAdmin, onEdit, onDelete, onUserClick, formatTime, showAvatar }: MessageBubbleProps) => {
-  const { t } = useTranslation();
+const MessageBubble = ({ 
+  message, 
+  isOwn, 
+  isAdmin, 
+  isModerator,
+  userRole,
+  onEdit, 
+  onDelete, 
+  onUserClick, 
+  formatTime, 
+  showAvatar 
+}: MessageBubbleProps) => {
+  const { t, i18n } = useTranslation();
+  const isArabic = i18n.language === 'ar';
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
   const [saving, setSaving] = useState(false);
   
   const authorName = message.author?.display_name || message.author?.username || 'مستخدم';
-  const canModify = isOwn || isAdmin;
+  
+  // Only owner can edit their own messages
+  const canEdit = isOwn;
+  // Owner, admin, or moderator can delete
+  const canDelete = isOwn || isAdmin || isModerator;
 
   const handleSaveEdit = async () => {
     if (!editContent.trim() || saving) return;
@@ -205,12 +239,26 @@ const MessageBubble = ({ message, isOwn, isAdmin, onEdit, onDelete, onUserClick,
 
       <div className={cn("flex flex-col max-w-[75%]", isOwn ? "items-end" : "items-start")}>
         {showAvatar && (
-          <button 
-            onClick={() => onUserClick(message.user_id)}
-            className="text-xs text-muted-foreground mb-1 hover:text-primary transition-colors"
-          >
-            {authorName}
-          </button>
+          <div className="flex items-center gap-1.5 mb-1">
+            <button 
+              onClick={() => onUserClick(message.user_id)}
+              className="text-xs text-muted-foreground hover:text-primary transition-colors"
+            >
+              {authorName}
+            </button>
+            {userRole === 'owner' && (
+              <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/30 text-[9px] px-1 py-0 gap-0.5">
+                <Crown className="w-2.5 h-2.5" />
+                {isArabic ? 'مالك' : 'Owner'}
+              </Badge>
+            )}
+            {userRole === 'moderator' && (
+              <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/30 text-[9px] px-1 py-0 gap-0.5">
+                <Shield className="w-2.5 h-2.5" />
+                {isArabic ? 'مشرف' : 'Mod'}
+              </Badge>
+            )}
+          </div>
         )}
         
         {isEditing ? (
@@ -243,14 +291,18 @@ const MessageBubble = ({ message, isOwn, isAdmin, onEdit, onDelete, onUserClick,
               <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
             </div>
             
-            {canModify && (
+            {(canEdit || canDelete) && (
               <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setIsEditing(true)}>
-                  <Pencil className="w-3 h-3 text-muted-foreground hover:text-primary" />
-                </Button>
-                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={handleDelete}>
-                  <Trash2 className="w-3 h-3 text-muted-foreground hover:text-destructive" />
-                </Button>
+                {canEdit && (
+                  <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setIsEditing(true)}>
+                    <Pencil className="w-3 h-3 text-muted-foreground hover:text-primary" />
+                  </Button>
+                )}
+                {canDelete && (
+                  <Button size="icon" variant="ghost" className="h-6 w-6" onClick={handleDelete}>
+                    <Trash2 className="w-3 h-3 text-muted-foreground hover:text-destructive" />
+                  </Button>
+                )}
               </div>
             )}
           </div>

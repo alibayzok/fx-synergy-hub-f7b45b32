@@ -5,6 +5,7 @@ import { Plus, MessageSquare, LogIn, MessageCircle } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { RoomCard, LegacyRoomCard } from '@/components/community/RoomCard';
 import { RoomChatPanel } from '@/components/community/RoomChatPanel';
+import { RoomModerationPanel } from '@/components/community/RoomModerationPanel';
 import { UsdtRoomPanel } from '@/components/community/UsdtRoomPanel';
 import { ThreadDetailPanel } from '@/components/community/ThreadDetailPanel';
 import { Button } from '@/components/ui/button';
@@ -33,7 +34,7 @@ import {
 } from '@/components/ui/select';
 
 type Tab = 'rooms' | 'threads';
-type ViewMode = 'list' | 'chat' | 'thread' | 'usdt';
+type ViewMode = 'list' | 'chat' | 'thread' | 'usdt' | 'moderation';
 
 // Static rooms data
 const roomsData = [
@@ -247,12 +248,30 @@ const CommunityPage = () => {
 
   // Show chat panel
   if (viewMode === 'chat' && selectedRoom) {
+    const handleOpenModeration = () => {
+      setViewMode('moderation');
+    };
+    
     return (
       <AppLayout>
         <RoomChatPanel
           roomId={selectedRoom.id}
           roomName={isArabic ? selectedRoom.name_ar : selectedRoom.name_en}
           onBack={handleBackToList}
+          onManage={handleOpenModeration}
+        />
+      </AppLayout>
+    );
+  }
+
+  // Show moderation panel
+  if (viewMode === 'moderation' && selectedRoom) {
+    return (
+      <AppLayout>
+        <RoomModerationPanel
+          roomId={selectedRoom.id}
+          roomName={isArabic ? selectedRoom.name_ar : selectedRoom.name_en}
+          onBack={() => setViewMode('chat')}
         />
       </AppLayout>
     );
