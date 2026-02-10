@@ -7,6 +7,7 @@ import { ThemeToggle } from './ThemeToggle';
 import { NotificationsPanel } from '@/components/notifications/NotificationsPanel';
 import { FriendRequestsPanel } from '@/components/notifications/FriendRequestsPanel';
 import { AdminSignupNotifications } from '@/components/notifications/AdminSignupNotifications';
+import { SupportNotificationsIcon } from '@/components/notifications/SupportNotificationsIcon';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -58,6 +59,9 @@ export const AppLayout = ({ children, showNotifications = true }: AppLayoutProps
 
             {/* Admin Signup Notifications */}
             <AdminSignupNotifications />
+
+            {/* Support Notifications (agents & admins only) */}
+            <SupportNotificationsIcon />
 
             {/* Friend Requests */}
             <FriendRequestsPanel />
