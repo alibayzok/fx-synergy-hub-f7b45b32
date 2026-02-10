@@ -947,6 +947,10 @@ export type Database = {
         Row: {
           assigned_to: string | null
           created_at: string
+          escalated_at: string | null
+          escalated_by: string | null
+          escalated_to: string | null
+          escalation_reason: string | null
           id: string
           priority: string
           status: string
@@ -957,6 +961,10 @@ export type Database = {
         Insert: {
           assigned_to?: string | null
           created_at?: string
+          escalated_at?: string | null
+          escalated_by?: string | null
+          escalated_to?: string | null
+          escalation_reason?: string | null
           id?: string
           priority?: string
           status?: string
@@ -967,6 +975,10 @@ export type Database = {
         Update: {
           assigned_to?: string | null
           created_at?: string
+          escalated_at?: string | null
+          escalated_by?: string | null
+          escalated_to?: string | null
+          escalation_reason?: string | null
           id?: string
           priority?: string
           status?: string
