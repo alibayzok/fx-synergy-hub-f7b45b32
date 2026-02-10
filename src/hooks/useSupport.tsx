@@ -7,6 +7,8 @@ export interface SupportTicket {
   user_id: string;
   subject: string;
   status: 'open' | 'closed';
+  priority: 'low' | 'normal' | 'high' | 'urgent';
+  assigned_to: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -17,6 +19,7 @@ export interface SupportMessage {
   sender_id: string;
   is_admin: boolean;
   content: string;
+  attachments: string[];
   created_at: string;
 }
 
@@ -24,6 +27,17 @@ export const useSupport = () => {
   const { user } = useAuth();
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isSupportAgent, setIsSupportAgent] = useState(false);
+
+  // Check if current user is a support agent
+  useEffect(() => {
+    if (!user) { setIsSupportAgent(false); return; }
+    const check = async () => {
+      const { data } = await supabase.rpc('is_support_agent', { p_user_id: user.id });
+      setIsSupportAgent(!!data);
+    };
+    check();
+  }, [user]);
 
   const fetchTickets = useCallback(async () => {
     if (!user) return;
@@ -42,7 +56,7 @@ export const useSupport = () => {
     }
   }, [user]);
 
-  const createTicket = async (subject: string, message: string) => {
+  const createTicket = async (subject: string, message: string, attachments: string[] = []) => {
     if (!user) return null;
     try {
       const { data: ticket, error } = await supabase
@@ -54,7 +68,13 @@ export const useSupport = () => {
 
       const { error: msgError } = await supabase
         .from('support_messages')
-        .insert({ ticket_id: (ticket as any).id, sender_id: user.id, content: message, is_admin: false } as any);
+        .insert({
+          ticket_id: (ticket as any).id,
+          sender_id: user.id,
+          content: message,
+          is_admin: false,
+          attachments,
+        } as any);
       if (msgError) throw msgError;
 
       await fetchTickets();
@@ -78,18 +98,23 @@ export const useSupport = () => {
     return (data || []) as SupportMessage[];
   };
 
-  const sendMessage = async (ticketId: string, content: string) => {
+  const sendMessage = async (ticketId: string, content: string, attachments: string[] = [], asAgent = false) => {
     if (!user) return null;
     const { data, error } = await supabase
       .from('support_messages')
-      .insert({ ticket_id: ticketId, sender_id: user.id, content, is_admin: false } as any)
+      .insert({
+        ticket_id: ticketId,
+        sender_id: user.id,
+        content,
+        is_admin: asAgent,
+        attachments,
+      } as any)
       .select()
       .single();
     if (error) {
       console.error('Error sending message:', error);
       return null;
     }
-    // Update ticket timestamp
     await supabase.from('support_tickets').update({ updated_at: new Date().toISOString() } as any).eq('id', ticketId);
     return data as SupportMessage;
   };
@@ -103,11 +128,41 @@ export const useSupport = () => {
     else await fetchTickets();
   };
 
+  const updateTicketPriority = async (ticketId: string, priority: string) => {
+    await supabase.from('support_tickets').update({ priority } as any).eq('id', ticketId);
+    await fetchTickets();
+  };
+
+  const assignTicket = async (ticketId: string, agentId: string | null) => {
+    await supabase.from('support_tickets').update({ assigned_to: agentId } as any).eq('id', ticketId);
+    await fetchTickets();
+  };
+
+  const uploadAttachment = async (file: File, ticketId: string) => {
+    if (!user) return null;
+    const ext = file.name.split('.').pop();
+    const path = `${user.id}/${ticketId}/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage
+      .from('support-attachments')
+      .upload(path, file);
+    if (error) {
+      console.error('Error uploading attachment:', error);
+      return null;
+    }
+    const { data: urlData } = supabase.storage
+      .from('support-attachments')
+      .getPublicUrl(path);
+    // Since bucket is private, use createSignedUrl instead
+    const { data: signedData } = await supabase.storage
+      .from('support-attachments')
+      .createSignedUrl(path, 3600 * 24 * 7); // 7 days
+    return signedData?.signedUrl || path;
+  };
+
   useEffect(() => {
     if (user) fetchTickets();
   }, [user, fetchTickets]);
 
-  // Realtime for tickets
   useEffect(() => {
     if (!user) return;
     const channel = supabase
@@ -119,5 +174,9 @@ export const useSupport = () => {
     return () => { supabase.removeChannel(channel); };
   }, [user, fetchTickets]);
 
-  return { tickets, loading, createTicket, fetchMessages, sendMessage, closeTicket, fetchTickets };
+  return {
+    tickets, loading, isSupportAgent,
+    createTicket, fetchMessages, sendMessage, closeTicket,
+    updateTicketPriority, assignTicket, uploadAttachment, fetchTickets,
+  };
 };
