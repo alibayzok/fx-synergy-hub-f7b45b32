@@ -22,6 +22,7 @@ import AnalysesPage from "./pages/AnalysesPage";
 import AIChatPage from "./pages/AIChatPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import SupportPage from "./pages/SupportPage";
+import SupportDashboardPage from "./pages/SupportDashboardPage";
 import NotFound from "./pages/NotFound";
 import "./i18n";
 
@@ -72,6 +73,7 @@ const App = () => {
                 <Route path="/ai-chat" element={<AIChatPage />} />
                 <Route path="/onboarding" element={<OnboardingPage />} />
                 <Route path="/support" element={<SupportPage />} />
+                <Route path="/support-dashboard" element={<SupportDashboardPage />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

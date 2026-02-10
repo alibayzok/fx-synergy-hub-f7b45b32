@@ -884,8 +884,30 @@ export type Database = {
         }
         Relationships: []
       }
+      support_agents: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       support_messages: {
         Row: {
+          attachments: string[] | null
           content: string
           created_at: string
           id: string
@@ -894,6 +916,7 @@ export type Database = {
           ticket_id: string
         }
         Insert: {
+          attachments?: string[] | null
           content: string
           created_at?: string
           id?: string
@@ -902,6 +925,7 @@ export type Database = {
           ticket_id: string
         }
         Update: {
+          attachments?: string[] | null
           content?: string
           created_at?: string
           id?: string
@@ -921,24 +945,30 @@ export type Database = {
       }
       support_tickets: {
         Row: {
+          assigned_to: string | null
           created_at: string
           id: string
+          priority: string
           status: string
           subject: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          assigned_to?: string | null
           created_at?: string
           id?: string
+          priority?: string
           status?: string
           subject: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          assigned_to?: string | null
           created_at?: string
           id?: string
+          priority?: string
           status?: string
           subject?: string
           updated_at?: string
@@ -1538,6 +1568,7 @@ export type Database = {
         Args: { p_room_id: string; p_user_id?: string }
         Returns: boolean
       }
+      is_support_agent: { Args: { p_user_id?: string }; Returns: boolean }
       is_vip: { Args: never; Returns: boolean }
       mask_phone_number: { Args: { phone: string }; Returns: string }
     }
