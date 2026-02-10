@@ -1,7 +1,8 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Filter, MessageCircle, Loader2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Filter, MessageCircle, Loader2, UserCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -28,6 +29,12 @@ interface Ticket {
   updated_at: string;
 }
 
+interface Agent {
+  id: string;
+  user_id: string;
+  is_active: boolean;
+}
+
 const priorityColors: Record<string, string> = {
   low: 'bg-muted text-muted-foreground',
   normal: 'bg-primary/20 text-primary',
@@ -47,6 +54,9 @@ interface SupportTicketListProps {
   loading: boolean;
   filter: 'all' | 'open' | 'closed';
   onFilterChange: (filter: 'all' | 'open' | 'closed') => void;
+  agentFilter: string;
+  onAgentFilterChange: (agentId: string) => void;
+  agents: Agent[];
   selectedTicketId: string | null;
   onSelectTicket: (ticket: Ticket) => void;
   getUserName: (userId: string) => string;
@@ -55,11 +65,12 @@ interface SupportTicketListProps {
 
 const SupportTicketList = ({
   tickets, loading, filter, onFilterChange,
+  agentFilter, onAgentFilterChange, agents,
   selectedTicketId, onSelectTicket, getUserName, profiles
 }: SupportTicketListProps) => {
   return (
     <div className="flex flex-col h-full">
-      {/* Filter */}
+      {/* Status Filter */}
       <div className="flex items-center gap-1.5 p-3 border-b border-border/30">
         <Filter className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
         {(['open', 'all', 'closed'] as const).map(f => (
@@ -68,6 +79,21 @@ const SupportTicketList = ({
             {f === 'open' ? 'مفتوحة' : f === 'closed' ? 'مغلقة' : 'الكل'}
           </Button>
         ))}
+      </div>
+
+      {/* Agent Filter */}
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-border/30">
+        <UserCheck className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+        <Select value={agentFilter} onValueChange={onAgentFilterChange}>
+          <SelectTrigger className="h-7 text-xs flex-1"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="mine">تذاكري</SelectItem>
+            <SelectItem value="all">كل التذاكر</SelectItem>
+            {agents.map(a => (
+              <SelectItem key={a.user_id} value={a.user_id}>{getUserName(a.user_id)}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* List */}

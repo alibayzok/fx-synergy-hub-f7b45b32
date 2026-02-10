@@ -117,7 +117,15 @@ const SupportChat = ({
       ticket_id: ticket.id, sender_id: userId,
       content: input.trim() || '📎 مرفق', is_admin: true, attachments: attachmentUrls,
     } as any);
-    await supabase.from('support_tickets').update({ updated_at: new Date().toISOString() } as any).eq('id', ticket.id);
+    // Auto-claim: assign ticket to current agent on reply
+    const updateData: any = { updated_at: new Date().toISOString() };
+    if (!ticket.assigned_to) {
+      updateData.assigned_to = userId;
+    }
+    await supabase.from('support_tickets').update(updateData).eq('id', ticket.id);
+    if (!ticket.assigned_to) {
+      onTicketUpdate({ ...ticket, assigned_to: userId });
+    }
     setInput('');
     setPendingFiles([]);
     setSending(false);
