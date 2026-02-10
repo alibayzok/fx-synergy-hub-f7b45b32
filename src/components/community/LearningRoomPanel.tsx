@@ -179,7 +179,7 @@ export const LearningRoomPanel = ({ onBack }: LearningRoomPanelProps) => {
     const nextLesson = lessonIndex < currentLessons.length - 1 ? currentLessons[lessonIndex + 1] : null;
 
     return (
-      <div className="flex flex-col h-[calc(100vh-80px)]">
+      <div className="flex flex-col h-[calc(100vh-80px)] pt-14">
         {/* Lesson Header */}
         <div className="flex items-center gap-3 p-4 border-b border-border/30 bg-background/80 backdrop-blur-sm">
           <Button variant="ghost" size="icon" onClick={() => setSelectedLesson(null)}>
@@ -255,7 +255,7 @@ export const LearningRoomPanel = ({ onBack }: LearningRoomPanelProps) => {
   // Course detail view - list of lessons
   if (selectedCourse) {
     return (
-      <div className="flex flex-col h-[calc(100vh-80px)]">
+      <div className="flex flex-col h-[calc(100vh-80px)] pt-14">
         {/* Course Header */}
         <div className="p-4 border-b border-border/30 bg-background/80 backdrop-blur-sm">
           <div className="flex items-center gap-3 mb-3">
@@ -349,7 +349,7 @@ export const LearningRoomPanel = ({ onBack }: LearningRoomPanelProps) => {
   // Category courses view
   if (selectedCategory && currentCategory) {
     return (
-      <div className="flex flex-col h-[calc(100vh-80px)]">
+      <div className="flex flex-col h-[calc(100vh-80px)] pt-14">
         {/* Category Header */}
         <div className="flex items-center gap-3 p-4 border-b border-border/30 bg-background/80 backdrop-blur-sm">
           <Button variant="ghost" size="icon" onClick={() => setSelectedCategory(null)}>
@@ -439,7 +439,7 @@ export const LearningRoomPanel = ({ onBack }: LearningRoomPanelProps) => {
 
   // Main categories view
   return (
-    <div className="flex flex-col h-[calc(100vh-80px)]">
+    <div className="flex flex-col h-[calc(100vh-80px)] pt-14">
       {/* Header */}
       <div className="p-4 border-b border-border/30 bg-background/80 backdrop-blur-sm">
         <div className="flex items-center gap-3 mb-3">
