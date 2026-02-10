@@ -66,6 +66,7 @@ const SupportDashboardPage = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'open' | 'closed'>('open');
+  const [agentFilter, setAgentFilter] = useState<string>('mine');
   const [activeTab, setActiveTab] = useState<'tickets' | 'agents'>('tickets');
 
   const fetchTickets = useCallback(async () => {
@@ -77,9 +78,19 @@ const SupportDashboardPage = () => {
     const all = (allData || []) as Ticket[];
     setAllTickets(all);
 
-    // Apply filter
+    // Apply status filter
     let filtered = all;
     if (filter !== 'all') filtered = all.filter(t => t.status === filter);
+    
+    // Apply agent filter: "mine" = unassigned + assigned to me + escalated to me
+    if (agentFilter === 'mine' && user) {
+      filtered = filtered.filter(t => 
+        !t.assigned_to || t.assigned_to === user.id || t.escalated_to === user.id
+      );
+    } else if (agentFilter !== 'all' && agentFilter !== 'mine') {
+      filtered = filtered.filter(t => t.assigned_to === agentFilter);
+    }
+    
     setTickets(filtered);
 
     // Fetch profiles
@@ -91,7 +102,7 @@ const SupportDashboardPage = () => {
       setProfiles(map);
     }
     setLoading(false);
-  }, [filter]);
+  }, [filter, agentFilter, user]);
 
   const fetchAgents = useCallback(async () => {
     const { data } = await supabase.from('support_agents').select('*');
@@ -174,8 +185,10 @@ const SupportDashboardPage = () => {
     };
     if (data.type === 'escalate') {
       updateData.escalated_to = data.target;
+      updateData.assigned_to = null; // Release from current agent
     } else {
       updateData.assigned_to = data.target;
+      updateData.escalated_to = null; // Clear escalation on transfer
     }
     await supabase.from('support_tickets').update(updateData).eq('id', selectedTicket.id);
 
@@ -271,6 +284,9 @@ const SupportDashboardPage = () => {
                 loading={loading}
                 filter={filter}
                 onFilterChange={setFilter}
+                agentFilter={agentFilter}
+                onAgentFilterChange={setAgentFilter}
+                agents={agents}
                 selectedTicketId={selectedTicket?.id || null}
                 onSelectTicket={openChat}
                 getUserName={getUserName}
