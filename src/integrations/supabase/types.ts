@@ -362,6 +362,154 @@ export type Database = {
         }
         Relationships: []
       }
+      learning_categories: {
+        Row: {
+          color: string
+          created_at: string
+          icon: string
+          id: string
+          is_active: boolean
+          sort_order: number
+          title_ar: string
+          title_en: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          sort_order?: number
+          title_ar: string
+          title_en: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          sort_order?: number
+          title_ar?: string
+          title_en?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      learning_courses: {
+        Row: {
+          category_id: string
+          created_at: string
+          created_by: string | null
+          description_ar: string
+          description_en: string
+          icon: string
+          id: string
+          is_published: boolean
+          is_vip: boolean
+          level: Database["public"]["Enums"]["course_level"]
+          sort_order: number
+          title_ar: string
+          title_en: string
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          created_by?: string | null
+          description_ar?: string
+          description_en?: string
+          icon?: string
+          id?: string
+          is_published?: boolean
+          is_vip?: boolean
+          level?: Database["public"]["Enums"]["course_level"]
+          sort_order?: number
+          title_ar: string
+          title_en: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          created_by?: string | null
+          description_ar?: string
+          description_en?: string
+          icon?: string
+          id?: string
+          is_published?: boolean
+          is_vip?: boolean
+          level?: Database["public"]["Enums"]["course_level"]
+          sort_order?: number
+          title_ar?: string
+          title_en?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learning_courses_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "learning_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      learning_lessons: {
+        Row: {
+          content_ar: string
+          content_en: string
+          course_id: string
+          created_at: string
+          duration_minutes: number
+          id: string
+          is_published: boolean
+          is_vip: boolean
+          sort_order: number
+          title_ar: string
+          title_en: string
+          updated_at: string
+        }
+        Insert: {
+          content_ar?: string
+          content_en?: string
+          course_id: string
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          is_published?: boolean
+          is_vip?: boolean
+          sort_order?: number
+          title_ar: string
+          title_en: string
+          updated_at?: string
+        }
+        Update: {
+          content_ar?: string
+          content_en?: string
+          course_id?: string
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          is_published?: boolean
+          is_vip?: boolean
+          sort_order?: number
+          title_ar?: string
+          title_en?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learning_lessons_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "learning_courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_comments: {
         Row: {
           content: string
@@ -1329,6 +1477,7 @@ export type Database = {
       app_role: "admin" | "vip" | "free"
       asset_type: "forex" | "metals" | "crypto"
       conversation_type: "direct" | "group"
+      course_level: "beginner" | "intermediate" | "advanced"
       entry_type: "market" | "limit" | "stop"
       friend_request_status: "pending" | "accepted" | "rejected"
       post_visibility: "everyone" | "friends_only" | "followers_only" | "nobody"
@@ -1488,6 +1637,7 @@ export const Constants = {
       app_role: ["admin", "vip", "free"],
       asset_type: ["forex", "metals", "crypto"],
       conversation_type: ["direct", "group"],
+      course_level: ["beginner", "intermediate", "advanced"],
       entry_type: ["market", "limit", "stop"],
       friend_request_status: ["pending", "accepted", "rejected"],
       post_visibility: ["everyone", "friends_only", "followers_only", "nobody"],
