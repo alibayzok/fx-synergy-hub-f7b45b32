@@ -19,7 +19,8 @@ import {
   Camera,
   Loader2,
   Trash2,
-  ZoomIn
+  ZoomIn,
+  Headset
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { cn } from '@/lib/utils';
@@ -307,6 +308,26 @@ const ProfilePage = () => {
                 <span className="font-medium text-foreground">{t('admin.title')}</span>
               </div>
               <ChevronRight className="w-4 h-4 text-primary rtl:rotate-180" />
+            </button>
+          </motion.div>
+        )}
+
+        {/* Support Button */}
+        {user && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.06 }}
+          >
+            <button
+              onClick={() => navigate('/support')}
+              className="w-full flex items-center justify-between p-4 rounded-xl bg-card/50 border border-border/30 hover:bg-card/80 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <Headset className="w-5 h-5 text-primary" />
+                <span className="font-medium text-foreground">الدعم الفني</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground rtl:rotate-180" />
             </button>
           </motion.div>
         )}

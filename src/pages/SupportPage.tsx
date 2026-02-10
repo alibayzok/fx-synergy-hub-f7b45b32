@@ -1,0 +1,265 @@
+import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
+import { AppLayout } from '@/components/layout/AppLayout';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/hooks/useAuth';
+import { useSupport, SupportTicket, SupportMessage } from '@/hooks/useSupport';
+import { supabase } from '@/integrations/supabase/client';
+import { ArrowLeft, Send, Plus, MessageCircle, LogIn, CheckCircle2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { ar } from 'date-fns/locale';
+
+type View = 'list' | 'chat' | 'new';
+
+const SupportPage = () => {
+  const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
+  const { tickets, loading, createTicket, fetchMessages, sendMessage, closeTicket } = useSupport();
+  const isRTL = i18n.language === 'ar';
+
+  const [view, setView] = useState<View>('list');
+  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
+  const [messages, setMessages] = useState<SupportMessage[]>([]);
+  const [newSubject, setNewSubject] = useState('');
+  const [newMessage, setNewMessage] = useState('');
+  const [chatInput, setChatInput] = useState('');
+  const [sending, setSending] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => { scrollToBottom(); }, [messages]);
+
+  const openChat = async (ticket: SupportTicket) => {
+    setSelectedTicket(ticket);
+    setView('chat');
+    const msgs = await fetchMessages(ticket.id);
+    setMessages(msgs);
+  };
+
+  // Realtime messages for active chat
+  useEffect(() => {
+    if (!selectedTicket) return;
+    const channel = supabase
+      .channel(`support-msgs-${selectedTicket.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'support_messages',
+        filter: `ticket_id=eq.${selectedTicket.id}`,
+      }, (payload) => {
+        setMessages(prev => [...prev, payload.new as SupportMessage]);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [selectedTicket]);
+
+  const handleCreateTicket = async () => {
+    if (!newSubject.trim() || !newMessage.trim()) return;
+    setSending(true);
+    const ticket = await createTicket(newSubject.trim(), newMessage.trim());
+    setSending(false);
+    if (ticket) {
+      setNewSubject('');
+      setNewMessage('');
+      await openChat(ticket);
+    }
+  };
+
+  const handleSend = async () => {
+    if (!chatInput.trim() || !selectedTicket) return;
+    setSending(true);
+    await sendMessage(selectedTicket.id, chatInput.trim());
+    setChatInput('');
+    setSending(false);
+  };
+
+  if (!authLoading && !user) {
+    return (
+      <AppLayout>
+        <div className="flex-1 flex flex-col items-center justify-center p-8 space-y-6">
+          <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center">
+            <LogIn className="w-10 h-10 text-primary" />
+          </div>
+          <div className="text-center space-y-2">
+            <h2 className="text-xl font-bold">تسجيل الدخول مطلوب</h2>
+            <p className="text-muted-foreground">يجب تسجيل الدخول للتواصل مع الدعم</p>
+          </div>
+          <Button onClick={() => navigate('/auth')} className="gap-2">
+            <LogIn className="w-4 h-4" />
+            تسجيل الدخول
+          </Button>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  return (
+    <AppLayout>
+      {/* Header */}
+      <header className="sticky top-0 z-40 glass-card border-b border-border/30">
+        <div className="flex items-center gap-3 px-4 py-3">
+          <Button variant="ghost" size="icon" onClick={() => {
+            if (view === 'chat' || view === 'new') setView('list');
+            else navigate(-1);
+          }}>
+            <ArrowLeft className="w-5 h-5 rtl:rotate-180" />
+          </Button>
+          <div className="flex-1">
+            <h1 className="text-lg font-bold">
+              {view === 'new' ? 'تذكرة جديدة' : view === 'chat' ? selectedTicket?.subject : 'الدعم الفني'}
+            </h1>
+            {view === 'chat' && selectedTicket && (
+              <Badge variant={selectedTicket.status === 'open' ? 'default' : 'secondary'} className="text-xs mt-0.5">
+                {selectedTicket.status === 'open' ? 'مفتوحة' : 'مغلقة'}
+              </Badge>
+            )}
+          </div>
+          {view === 'list' && (
+            <Button size="sm" onClick={() => setView('new')} className="gap-1">
+              <Plus className="w-4 h-4" />
+              جديد
+            </Button>
+          )}
+          {view === 'chat' && selectedTicket?.status === 'open' && (
+            <Button size="sm" variant="outline" onClick={() => closeTicket(selectedTicket.id)} className="gap-1">
+              <CheckCircle2 className="w-4 h-4" />
+              إغلاق
+            </Button>
+          )}
+        </div>
+      </header>
+
+      {/* List View */}
+      {view === 'list' && (
+        <div className="flex-1 overflow-auto p-4 space-y-3">
+          {loading ? (
+            <div className="text-center py-12 text-muted-foreground">جاري التحميل...</div>
+          ) : tickets.length === 0 ? (
+            <div className="text-center py-12 space-y-4">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                <MessageCircle className="w-8 h-8 text-primary" />
+              </div>
+              <div>
+                <p className="font-semibold text-foreground">لا توجد تذاكر دعم</p>
+                <p className="text-sm text-muted-foreground">اضغط "جديد" للتواصل مع الدعم</p>
+              </div>
+            </div>
+          ) : (
+            tickets.map(ticket => (
+              <button
+                key={ticket.id}
+                onClick={() => openChat(ticket)}
+                className="w-full text-start p-4 rounded-xl bg-card/50 border border-border/30 hover:bg-card/80 transition-colors"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <p className="font-semibold text-foreground truncate flex-1">{ticket.subject}</p>
+                  <Badge variant={ticket.status === 'open' ? 'default' : 'secondary'} className="text-xs ms-2">
+                    {ticket.status === 'open' ? 'مفتوحة' : 'مغلقة'}
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {format(new Date(ticket.updated_at), 'dd MMM yyyy - HH:mm', { locale: ar })}
+                </p>
+              </button>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* New Ticket View */}
+      {view === 'new' && (
+        <div className="flex-1 overflow-auto p-4 space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">الموضوع</label>
+            <Input
+              value={newSubject}
+              onChange={e => setNewSubject(e.target.value)}
+              placeholder="عنوان مختصر للمشكلة..."
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">الرسالة</label>
+            <Textarea
+              value={newMessage}
+              onChange={e => setNewMessage(e.target.value)}
+              placeholder="اشرح مشكلتك بالتفصيل..."
+              rows={5}
+            />
+          </div>
+          <Button
+            onClick={handleCreateTicket}
+            disabled={!newSubject.trim() || !newMessage.trim() || sending}
+            className="w-full gap-2"
+          >
+            <Send className="w-4 h-4" />
+            {sending ? 'جاري الإرسال...' : 'إرسال'}
+          </Button>
+        </div>
+      )}
+
+      {/* Chat View */}
+      {view === 'chat' && selectedTicket && (
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-auto p-4 space-y-3">
+            {messages.map(msg => (
+              <div
+                key={msg.id}
+                className={cn(
+                  "max-w-[80%] p-3 rounded-2xl",
+                  msg.is_admin
+                    ? "bg-primary/10 border border-primary/20 self-start me-auto"
+                    : "bg-card border border-border/30 self-end ms-auto"
+                )}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs font-semibold">
+                    {msg.is_admin ? '🛡️ الدعم' : 'أنت'}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {format(new Date(msg.created_at), 'HH:mm', { locale: ar })}
+                  </span>
+                </div>
+                <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {selectedTicket.status === 'open' && (
+            <div className="p-3 border-t border-border/30 bg-background/80 backdrop-blur-sm">
+              <div className="flex gap-2">
+                <Input
+                  value={chatInput}
+                  onChange={e => setChatInput(e.target.value)}
+                  placeholder="اكتب رسالتك..."
+                  onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
+                  disabled={sending}
+                />
+                <Button size="icon" onClick={handleSend} disabled={!chatInput.trim() || sending}>
+                  <Send className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {selectedTicket.status === 'closed' && (
+            <div className="p-3 border-t border-border/30 text-center text-sm text-muted-foreground">
+              هذه التذكرة مغلقة
+            </div>
+          )}
+        </div>
+      )}
+    </AppLayout>
+  );
+};
+
+export default SupportPage;
