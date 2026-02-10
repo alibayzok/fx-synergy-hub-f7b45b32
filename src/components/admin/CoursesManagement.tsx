@@ -487,11 +487,11 @@ export const CoursesManagement = () => {
 
       {/* Lesson Dialog */}
       <Dialog open={lessonDialog} onOpenChange={setLessonDialog}>
-        <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle>{editingLesson ? (isArabic ? 'تعديل الدرس' : 'Edit Lesson') : (isArabic ? 'درس جديد' : 'New Lesson')}</DialogTitle>
           </DialogHeader>
-          <ScrollArea className="flex-1 -mx-6 px-6">
+          <ScrollArea className="flex-1 -mx-6 px-6 min-h-0">
             <div className="space-y-4 pb-2">
               {/* Title Inputs */}
               <div className="space-y-2">
