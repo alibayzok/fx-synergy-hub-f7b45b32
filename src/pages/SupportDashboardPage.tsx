@@ -8,9 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Send, ArrowLeft, CheckCircle2, MessageCircle, Headset, ImagePlus, X, Loader2,
-  Users, AlertTriangle, Clock, Filter
+  Users, AlertTriangle, Clock, Filter, ArrowUpRight, Forward
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -23,6 +25,10 @@ interface Ticket {
   status: string;
   priority: string;
   assigned_to: string | null;
+  escalated_to: string | null;
+  escalation_reason: string | null;
+  escalated_at: string | null;
+  escalated_by: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -83,6 +89,10 @@ const SupportDashboardPage = () => {
   const [uploading, setUploading] = useState(false);
   const [showAgentManager, setShowAgentManager] = useState(false);
   const [newAgentEmail, setNewAgentEmail] = useState('');
+  const [showTransferDialog, setShowTransferDialog] = useState(false);
+  const [transferTarget, setTransferTarget] = useState('');
+  const [transferReason, setTransferReason] = useState('');
+  const [transferType, setTransferType] = useState<'transfer' | 'escalate'>('transfer');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -206,6 +216,41 @@ const SupportDashboardPage = () => {
     e.target.value = '';
   };
 
+  const openTransferDialog = (type: 'transfer' | 'escalate') => {
+    setTransferType(type);
+    setTransferTarget('');
+    setTransferReason('');
+    setShowTransferDialog(true);
+  };
+
+  const handleTransfer = async () => {
+    if (!selectedTicket || !transferTarget || !user) return;
+    const updateData: any = {
+      escalation_reason: transferReason || null,
+      escalated_at: new Date().toISOString(),
+      escalated_by: user.id,
+    };
+    if (transferType === 'escalate') {
+      updateData.escalated_to = transferTarget;
+    } else {
+      updateData.assigned_to = transferTarget;
+    }
+    await supabase.from('support_tickets').update(updateData).eq('id', selectedTicket.id);
+
+    // Add system message about the transfer
+    const targetName = getUserName(transferTarget);
+    const actionText = transferType === 'escalate' ? `تم تصعيد التذكرة إلى ${targetName}` : `تم تحويل التذكرة إلى ${targetName}`;
+    const fullMsg = transferReason ? `${actionText}\nالسبب: ${transferReason}` : actionText;
+    await supabase.from('support_messages').insert({
+      ticket_id: selectedTicket.id, sender_id: user.id,
+      content: `⚡ ${fullMsg}`, is_admin: true, attachments: [],
+    } as any);
+
+    setShowTransferDialog(false);
+    setSelectedTicket(prev => prev ? { ...prev, ...updateData } : null);
+    fetchTickets();
+  };
+
   const removeFile = (index: number) => setPendingFiles(prev => prev.filter((_, i) => i !== index));
 
   const addAgent = async () => {
@@ -317,6 +362,16 @@ const SupportDashboardPage = () => {
                 </SelectContent>
               </Select>
             )}
+            {selectedTicket.status === 'open' && (
+              <>
+                <Button size="sm" variant="outline" onClick={() => openTransferDialog('transfer')} className="h-7 text-xs gap-1">
+                  <Forward className="w-3 h-3" /> تحويل
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => openTransferDialog('escalate')} className="h-7 text-xs gap-1 text-orange-500 border-orange-500/30 hover:bg-orange-500/10">
+                  <ArrowUpRight className="w-3 h-3" /> تصعيد
+                </Button>
+              </>
+            )}
             {selectedTicket.status === 'open' ? (
               <Button size="sm" variant="outline" onClick={() => handleClose(selectedTicket.id)} className="h-7 text-xs gap-1">
                 <CheckCircle2 className="w-3 h-3" /> إغلاق
@@ -327,6 +382,19 @@ const SupportDashboardPage = () => {
               </Button>
             )}
           </div>
+
+          {/* Escalation info */}
+          {selectedTicket.escalated_to && (
+            <div className="px-4 py-1.5 bg-orange-500/5 border-b border-orange-500/20 flex items-center gap-2">
+              <ArrowUpRight className="w-3.5 h-3.5 text-orange-500" />
+              <span className="text-xs text-orange-500 font-medium">
+                تم التصعيد إلى: {getUserName(selectedTicket.escalated_to)}
+              </span>
+              {selectedTicket.escalation_reason && (
+                <span className="text-xs text-muted-foreground">- {selectedTicket.escalation_reason}</span>
+              )}
+            </div>
+          )}
 
           {/* Messages */}
           <div className="flex-1 overflow-auto p-4 space-y-3">
@@ -461,6 +529,60 @@ const SupportDashboardPage = () => {
           </div>
         </div>
       )}
+
+      {/* Transfer/Escalation Dialog */}
+      <Dialog open={showTransferDialog} onOpenChange={setShowTransferDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {transferType === 'escalate' ? (
+                <><ArrowUpRight className="w-5 h-5 text-orange-500" /> تصعيد التذكرة</>
+              ) : (
+                <><Forward className="w-5 h-5 text-primary" /> تحويل التذكرة</>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div>
+              <label className="text-sm font-medium mb-2 block">
+                {transferType === 'escalate' ? 'تصعيد إلى' : 'تحويل إلى'}
+              </label>
+              <Select value={transferTarget} onValueChange={setTransferTarget}>
+                <SelectTrigger><SelectValue placeholder="اختر الشخص..." /></SelectTrigger>
+                <SelectContent>
+                  {transferType === 'escalate' ? (
+                    // Show admins for escalation
+                    agents.filter(a => a.user_id !== user?.id).map(a => (
+                      <SelectItem key={a.user_id} value={a.user_id}>{getUserName(a.user_id)}</SelectItem>
+                    ))
+                  ) : (
+                    // Show all agents for transfer
+                    agents.filter(a => a.user_id !== user?.id).map(a => (
+                      <SelectItem key={a.user_id} value={a.user_id}>{getUserName(a.user_id)}</SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">سبب {transferType === 'escalate' ? 'التصعيد' : 'التحويل'}</label>
+              <Textarea
+                value={transferReason}
+                onChange={e => setTransferReason(e.target.value)}
+                placeholder="اكتب السبب هنا..."
+                rows={3}
+              />
+            </div>
+            <Button onClick={handleTransfer} disabled={!transferTarget} className="w-full gap-2">
+              {transferType === 'escalate' ? (
+                <><ArrowUpRight className="w-4 h-4" /> تصعيد</>
+              ) : (
+                <><Forward className="w-4 h-4" /> تحويل</>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 };
