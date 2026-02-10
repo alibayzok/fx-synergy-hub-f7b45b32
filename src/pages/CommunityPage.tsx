@@ -6,7 +6,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { RoomCard, LegacyRoomCard } from '@/components/community/RoomCard';
 import { RoomChatPanel } from '@/components/community/RoomChatPanel';
 import { RoomModerationPanel } from '@/components/community/RoomModerationPanel';
-import { UsdtRoomPanel } from '@/components/community/UsdtRoomPanel';
+
 import { LearningRoomPanel } from '@/components/community/LearningRoomPanel';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -14,7 +14,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 
-type ViewMode = 'list' | 'chat' | 'usdt' | 'learning' | 'moderation';
+type ViewMode = 'list' | 'chat' | 'learning' | 'moderation';
 
 // Static rooms data
 const roomsData = [
@@ -52,17 +52,6 @@ const roomsData = [
     last_activity: new Date().toISOString(),
   },
   {
-    id: 'usdt',
-    type: 'usdt' as const,
-    name_ar: 'تبادل USDT',
-    name_en: 'USDT Exchange',
-    description_ar: 'طلبات بيع وشراء USDT',
-    description_en: 'USDT buy and sell requests',
-    members_count: 432,
-    is_vip: false,
-    last_activity: new Date().toISOString(),
-  },
-  {
     id: 'news',
     type: 'news' as const,
     name_ar: 'مناقشة الأخبار',
@@ -96,9 +85,7 @@ const CommunityPage = () => {
       return;
     }
     setSelectedRoom(room);
-    if (room.id === 'usdt') {
-      setViewMode('usdt');
-    } else if (room.id === 'learning') {
+    if (room.id === 'learning') {
       setViewMode('learning');
     } else {
       setViewMode('chat');
@@ -137,14 +124,6 @@ const CommunityPage = () => {
     );
   }
 
-  // Show USDT panel
-  if (viewMode === 'usdt') {
-    return (
-      <AppLayout>
-        <UsdtRoomPanel onBack={handleBackToList} />
-      </AppLayout>
-    );
-  }
 
   // Show Learning panel
   if (viewMode === 'learning') {
