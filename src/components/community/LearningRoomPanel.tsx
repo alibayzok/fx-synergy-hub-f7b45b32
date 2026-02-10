@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import {
   ArrowRight, ArrowLeft, BookOpen, GraduationCap,
   Clock, Star, ChevronLeft, ChevronRight,
-  Play, Lock
+  Play, Lock, Video
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -52,7 +52,22 @@ interface Lesson {
   sort_order: number;
   is_vip: boolean;
   is_published: boolean;
+  video_url?: string;
+  content_type?: string;
 }
+
+const getEmbedUrl = (url: string): string | null => {
+  if (!url) return null;
+  // YouTube
+  const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
+  // Vimeo
+  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+  if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+  // Direct video URL
+  if (url.match(/\.(mp4|webm|ogg)(\?|$)/i)) return url;
+  return url;
+};
 
 const colorMap: Record<string, string> = {
   blue: 'from-blue-500/20 to-blue-600/10 border-blue-500/30',
@@ -146,15 +161,38 @@ export const LearningRoomPanel = ({ onBack }: LearningRoomPanelProps) => {
 
         <ScrollArea className="flex-1">
           <div className="p-5">
-            {(isArabic ? selectedLesson.content_ar : selectedLesson.content_en).split('\n').map((line, i) => (
-              <p key={i} className={cn(
-                "text-foreground leading-relaxed mb-2",
-                line.startsWith('•') && "ps-4 text-muted-foreground",
-                line.match(/^\d\./) && "ps-4 font-medium"
-              )}>
-                {line}
-              </p>
-            ))}
+            {/* Video Player */}
+            {selectedLesson.video_url && (selectedLesson.content_type === 'video' || selectedLesson.content_type === 'both') && (() => {
+              const embedUrl = getEmbedUrl(selectedLesson.video_url);
+              const isDirectVideo = selectedLesson.video_url.match(/\.(mp4|webm|ogg)(\?|$)/i);
+              return (
+                <div className="mb-5 rounded-xl overflow-hidden border border-border/30 bg-black aspect-video">
+                  {isDirectVideo ? (
+                    <video src={embedUrl || ''} controls className="w-full h-full" />
+                  ) : (
+                    <iframe
+                      src={embedUrl || ''}
+                      className="w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Text Content */}
+            {(selectedLesson.content_type !== 'video' || !selectedLesson.video_url) && (
+              (isArabic ? selectedLesson.content_ar : selectedLesson.content_en).split('\n').map((line, i) => (
+                <p key={i} className={cn(
+                  "text-foreground leading-relaxed mb-2",
+                  line.startsWith('•') && "ps-4 text-muted-foreground",
+                  line.match(/^\d\./) && "ps-4 font-medium"
+                )}>
+                  {line}
+                </p>
+              ))
+            )}
           </div>
         </ScrollArea>
 
@@ -226,7 +264,7 @@ export const LearningRoomPanel = ({ onBack }: LearningRoomPanelProps) => {
                       <Clock className="w-3 h-3" /> {lesson.duration_minutes} {isArabic ? 'د' : 'min'}
                     </span>
                   </div>
-                  {!isLocked && <Play className="w-4 h-4 text-primary flex-shrink-0" />}
+                  {!isLocked && (lesson.content_type === 'video' || lesson.content_type === 'both' ? <Video className="w-4 h-4 text-primary flex-shrink-0" /> : <Play className="w-4 h-4 text-primary flex-shrink-0" />)}
                 </motion.button>
               );
             }) : (

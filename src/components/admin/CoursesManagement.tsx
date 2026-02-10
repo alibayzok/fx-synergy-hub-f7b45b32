@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Edit, Trash2, Eye, EyeOff, ChevronDown, ChevronUp,
-  BookOpen, GraduationCap, Save, X, ArrowUp, ArrowDown, Crown
+  BookOpen, GraduationCap, Save, X, ArrowUp, ArrowDown, Crown, Video, FileText
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -80,6 +80,7 @@ export const CoursesManagement = () => {
   const [courseDialog, setCourseDialog] = useState(false);
   const [lessonDialog, setLessonDialog] = useState(false);
 
+
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
@@ -98,7 +99,8 @@ export const CoursesManagement = () => {
   });
   const [lessonForm, setLessonForm] = useState({
     title_ar: '', title_en: '', content_ar: '', content_en: '',
-    duration_minutes: 5, is_vip: false, is_published: false
+    duration_minutes: 5, is_vip: false, is_published: false,
+    video_url: '', content_type: 'text' as string
   });
 
   const fetchAll = useCallback(async () => {
@@ -214,11 +216,12 @@ export const CoursesManagement = () => {
       setLessonForm({
         title_ar: lesson.title_ar, title_en: lesson.title_en,
         content_ar: lesson.content_ar, content_en: lesson.content_en,
-        duration_minutes: lesson.duration_minutes, is_vip: lesson.is_vip, is_published: lesson.is_published
+        duration_minutes: lesson.duration_minutes, is_vip: lesson.is_vip, is_published: lesson.is_published,
+        video_url: (lesson as any).video_url || '', content_type: (lesson as any).content_type || 'text'
       });
     } else {
       setEditingLesson(null);
-      setLessonForm({ title_ar: '', title_en: '', content_ar: '', content_en: '', duration_minutes: 5, is_vip: false, is_published: false });
+      setLessonForm({ title_ar: '', title_en: '', content_ar: '', content_en: '', duration_minutes: 5, is_vip: false, is_published: false, video_url: '', content_type: 'text' });
     }
     setLessonDialog(true);
   };
@@ -383,6 +386,8 @@ export const CoursesManagement = () => {
                                           <span className="w-5 h-5 rounded bg-primary/10 text-primary text-[10px] flex items-center justify-center font-bold">{idx + 1}</span>
                                           <span className="text-sm">{isArabic ? lesson.title_ar : lesson.title_en}</span>
                                           <span className="text-[10px] text-muted-foreground">{lesson.duration_minutes}{isArabic ? 'د' : 'm'}</span>
+                                          {(lesson as any).content_type === 'video' && <Badge variant="outline" className="text-[8px] px-1 gap-0.5"><Video className="w-2.5 h-2.5" />فيديو</Badge>}
+                                          {(lesson as any).content_type === 'both' && <Badge variant="outline" className="text-[8px] px-1 gap-0.5"><Video className="w-2.5 h-2.5" />نص+فيديو</Badge>}
                                           {lesson.is_vip && <Crown className="w-3 h-3 text-primary" />}
                                           {!lesson.is_published && <Badge variant="secondary" className="text-[8px] px-1">مسودة</Badge>}
                                         </div>
@@ -486,11 +491,55 @@ export const CoursesManagement = () => {
             <DialogTitle>{editingLesson ? (isArabic ? 'تعديل الدرس' : 'Edit Lesson') : (isArabic ? 'درس جديد' : 'New Lesson')}</DialogTitle>
           </DialogHeader>
           <ScrollArea className="max-h-[60vh]">
-            <div className="space-y-3 pe-2">
+           <div className="space-y-3 pe-2">
               <Input placeholder={isArabic ? 'عنوان الدرس بالعربي' : 'Arabic lesson title'} value={lessonForm.title_ar} onChange={e => setLessonForm(p => ({ ...p, title_ar: e.target.value }))} />
               <Input placeholder={isArabic ? 'عنوان الدرس بالإنجليزي' : 'English lesson title'} value={lessonForm.title_en} onChange={e => setLessonForm(p => ({ ...p, title_en: e.target.value }))} />
-              <Textarea placeholder={isArabic ? 'محتوى الدرس بالعربي' : 'Arabic lesson content'} value={lessonForm.content_ar} onChange={e => setLessonForm(p => ({ ...p, content_ar: e.target.value }))} rows={6} />
-              <Textarea placeholder={isArabic ? 'محتوى الدرس بالإنجليزي' : 'English lesson content'} value={lessonForm.content_en} onChange={e => setLessonForm(p => ({ ...p, content_en: e.target.value }))} rows={6} />
+              
+              {/* Content Type Selection */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{isArabic ? 'نوع المحتوى' : 'Content Type'}</label>
+                <div className="flex gap-2">
+                  {[
+                    { value: 'text', label: isArabic ? 'نص' : 'Text', icon: FileText },
+                    { value: 'video', label: isArabic ? 'فيديو' : 'Video', icon: Video },
+                    { value: 'both', label: isArabic ? 'نص + فيديو' : 'Text + Video', icon: BookOpen },
+                  ].map(({ value, label, icon: Icon }) => (
+                    <Button
+                      key={value}
+                      type="button"
+                      variant={lessonForm.content_type === value ? 'default' : 'outline'}
+                      size="sm"
+                      className="flex-1 gap-1.5"
+                      onClick={() => setLessonForm(p => ({ ...p, content_type: value }))}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      {label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Video URL */}
+              {(lessonForm.content_type === 'video' || lessonForm.content_type === 'both') && (
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">{isArabic ? 'رابط الفيديو' : 'Video URL'}</label>
+                  <Input 
+                    placeholder={isArabic ? 'رابط يوتيوب أو فيميو أو رابط مباشر' : 'YouTube, Vimeo, or direct video URL'} 
+                    value={lessonForm.video_url} 
+                    onChange={e => setLessonForm(p => ({ ...p, video_url: e.target.value }))} 
+                  />
+                  <p className="text-[10px] text-muted-foreground">{isArabic ? 'يدعم يوتيوب، فيميو، أو رابط فيديو مباشر' : 'Supports YouTube, Vimeo, or direct video links'}</p>
+                </div>
+              )}
+
+              {/* Text Content */}
+              {(lessonForm.content_type === 'text' || lessonForm.content_type === 'both') && (
+                <>
+                  <Textarea placeholder={isArabic ? 'محتوى الدرس بالعربي' : 'Arabic lesson content'} value={lessonForm.content_ar} onChange={e => setLessonForm(p => ({ ...p, content_ar: e.target.value }))} rows={6} />
+                  <Textarea placeholder={isArabic ? 'محتوى الدرس بالإنجليزي' : 'English lesson content'} value={lessonForm.content_en} onChange={e => setLessonForm(p => ({ ...p, content_en: e.target.value }))} rows={6} />
+                </>
+              )}
+
               <div className="flex items-center gap-3">
                 <label className="text-sm whitespace-nowrap">{isArabic ? 'المدة (دقائق)' : 'Duration (min)'}</label>
                 <Input type="number" min={1} value={lessonForm.duration_minutes} onChange={e => setLessonForm(p => ({ ...p, duration_minutes: parseInt(e.target.value) || 5 }))} className="w-24" />
