@@ -91,6 +91,8 @@ const SupportDashboardPage = () => {
 
   const fetchTickets = useCallback(async () => {
     setLoading(true);
+    // Auto-close stale tickets (48h inactive)
+    await supabase.rpc('close_stale_support_tickets');
     let query = supabase.from('support_tickets').select('*').order('updated_at', { ascending: false });
     if (filter !== 'all') query = query.eq('status', filter);
     const { data } = await query;
@@ -435,13 +437,21 @@ const SupportDashboardPage = () => {
                   <span className="text-xs text-muted-foreground">{format(new Date(ticket.updated_at), 'dd/MM HH:mm', { locale: ar })}</span>
                 </div>
                 <p className="text-sm text-foreground truncate mb-1">{ticket.subject}</p>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <Badge variant={ticket.status === 'open' ? 'default' : 'secondary'} className="text-xs">
                     {ticket.status === 'open' ? 'مفتوحة' : 'مغلقة'}
                   </Badge>
                   <Badge className={cn("text-xs", priorityColors[ticket.priority])}>
                     {priorityLabels[ticket.priority]}
                   </Badge>
+                  {ticket.status === 'open' && (() => {
+                    const hoursLeft = Math.max(0, 48 - (Date.now() - new Date(ticket.updated_at).getTime()) / 3600000);
+                    return (
+                      <span className={cn("text-xs", hoursLeft < 6 ? "text-destructive" : "text-muted-foreground")}>
+                        ⏱ {hoursLeft < 1 ? 'أقل من ساعة' : `${Math.floor(hoursLeft)} ساعة`}
+                      </span>
+                    );
+                  })()}
                   {ticket.assigned_to && (
                     <span className="text-xs text-muted-foreground">← {getUserName(ticket.assigned_to)}</span>
                   )}
