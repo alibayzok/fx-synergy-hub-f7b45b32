@@ -445,7 +445,7 @@ const SupportDashboardPage = () => {
                     {priorityLabels[ticket.priority]}
                   </Badge>
                   {ticket.status === 'open' && (() => {
-                    const hoursLeft = Math.max(0, 48 - (Date.now() - new Date(ticket.updated_at).getTime()) / 3600000);
+                    const hoursLeft = Math.max(0, 4 - (Date.now() - new Date(ticket.updated_at).getTime()) / 3600000);
                     return (
                       <span className={cn("text-xs", hoursLeft < 6 ? "text-destructive" : "text-muted-foreground")}>
                         ⏱ {hoursLeft < 1 ? 'أقل من ساعة' : `${Math.floor(hoursLeft)} ساعة`}
