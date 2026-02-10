@@ -37,10 +37,10 @@ export const AppLayout = ({ children, showNotifications = true }: AppLayoutProps
 
   return (
     <div className="min-h-screen bg-background transition-colors duration-300">
-      {/* Header Actions - Single Row */}
+      {/* Header Bar - Facebook style */}
       {showNotifications && user && (
-        <div className="fixed top-3 start-3 end-3 z-50 flex items-center justify-center">
-          <div className="flex items-center gap-2 bg-background/80 backdrop-blur-md rounded-full px-3 py-1.5 border border-border/20 shadow-lg">
+        <div className="fixed top-0 start-0 end-0 z-50 bg-card/95 backdrop-blur-md border-b border-border/30 shadow-sm">
+          <div className="flex items-center justify-center gap-2 px-3 py-2">
             {/* Profile */}
             <Button
               variant="ghost"
@@ -89,7 +89,7 @@ export const AppLayout = ({ children, showNotifications = true }: AppLayoutProps
         </div>
       )}
       
-      <main className="pb-20">
+      <main className={`pb-20 ${showNotifications && user ? 'pt-[52px]' : ''}`}>
         {children}
       </main>
       <FloatingAIButton />
