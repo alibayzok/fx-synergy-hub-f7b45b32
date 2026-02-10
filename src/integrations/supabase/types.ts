@@ -1539,6 +1539,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      close_stale_support_tickets: { Args: never; Returns: number }
       get_thread_room_id: { Args: { p_thread_id: string }; Returns: string }
       has_role: {
         Args: {
