@@ -49,6 +49,7 @@ import { useToast } from '@/hooks/use-toast';
 import { NotificationSettings } from '@/components/notifications/NotificationSettings';
 import { FriendsSection } from '@/components/profile/FriendsSection';
 import { UserPostsSection } from '@/components/profile/UserPostsSection';
+import { useSupport } from '@/hooks/useSupport';
 
 const ProfilePage = () => {
   const { t, i18n } = useTranslation();
@@ -59,6 +60,7 @@ const ProfilePage = () => {
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const { watchlist } = useMarketData();
   const { trades } = useTrades();
+  const { isSupportAgent } = useSupport();
   
   const [showLanguageDialog, setShowLanguageDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -312,8 +314,8 @@ const ProfilePage = () => {
           </motion.div>
         )}
 
-        {/* Support Dashboard for admins */}
-        {isAdmin && (
+        {/* Support Dashboard for admins and support agents */}
+        {(isAdmin || isSupportAgent) && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.055 }}>
             <button onClick={() => navigate('/support-dashboard')}
               className="w-full flex items-center justify-between p-4 rounded-xl bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-colors">

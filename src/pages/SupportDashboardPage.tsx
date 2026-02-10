@@ -233,7 +233,7 @@ const SupportDashboardPage = () => {
   if (authLoading) return <AppLayout><div className="flex-1 flex items-center justify-center text-muted-foreground">جاري التحميل...</div></AppLayout>;
 
   return (
-    <AppLayout>
+    <AppLayout showNotifications={false}>
       <header className="sticky top-0 z-40 glass-card border-b border-border/30">
         <div className="flex items-center gap-3 px-4 py-3">
           <Button variant="ghost" size="icon" onClick={() => {
