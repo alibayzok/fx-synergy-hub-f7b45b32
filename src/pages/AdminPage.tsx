@@ -16,7 +16,8 @@ import {
   ClipboardList,
   Database,
   FileText,
-  AlertTriangle
+  AlertTriangle,
+  GraduationCap
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -34,7 +35,7 @@ import { ServiceRequestsManagement } from '@/components/admin/ServiceRequestsMan
 import { DatabaseExport } from '@/components/admin/DatabaseExport';
 import { AnalysesManagement } from '@/components/admin/AnalysesManagement';
 import FlaggedContentManagement from '@/components/admin/FlaggedContentManagement';
-
+import { CoursesManagement } from '@/components/admin/CoursesManagement';
 interface Trade {
   id: string;
   symbol: string;
@@ -142,7 +143,7 @@ const AdminPage = () => {
 
       <div className="p-4">
         <Tabs defaultValue="dashboard" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="dashboard" className="gap-1 text-xs sm:text-sm">
               <LayoutDashboard className="w-4 h-4" />
               <span className="hidden sm:inline">{t('admin.dashboard')}</span>
@@ -162,6 +163,10 @@ const AdminPage = () => {
             <TabsTrigger value="analyses" className="gap-1 text-xs sm:text-sm">
               <FileText className="w-4 h-4" />
               <span className="hidden sm:inline">التحليلات</span>
+            </TabsTrigger>
+            <TabsTrigger value="courses" className="gap-1 text-xs sm:text-sm">
+              <GraduationCap className="w-4 h-4" />
+              <span className="hidden sm:inline">الكورسات</span>
             </TabsTrigger>
             <TabsTrigger value="users" className="gap-1 text-xs sm:text-sm">
               <Users className="w-4 h-4" />
@@ -277,6 +282,11 @@ const AdminPage = () => {
           {/* Analyses Tab */}
           <TabsContent value="analyses">
             <AnalysesManagement />
+          </TabsContent>
+
+          {/* Courses Tab */}
+          <TabsContent value="courses">
+            <CoursesManagement />
           </TabsContent>
 
           {/* Users Tab */}
