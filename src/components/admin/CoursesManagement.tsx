@@ -487,14 +487,18 @@ export const CoursesManagement = () => {
 
       {/* Lesson Dialog */}
       <Dialog open={lessonDialog} onOpenChange={setLessonDialog}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>{editingLesson ? (isArabic ? 'تعديل الدرس' : 'Edit Lesson') : (isArabic ? 'درس جديد' : 'New Lesson')}</DialogTitle>
           </DialogHeader>
-          <ScrollArea className="max-h-[60vh]">
-           <div className="space-y-3 pe-2">
-              <Input placeholder={isArabic ? 'عنوان الدرس بالعربي' : 'Arabic lesson title'} value={lessonForm.title_ar} onChange={e => setLessonForm(p => ({ ...p, title_ar: e.target.value }))} />
-              <Input placeholder={isArabic ? 'عنوان الدرس بالإنجليزي' : 'English lesson title'} value={lessonForm.title_en} onChange={e => setLessonForm(p => ({ ...p, title_en: e.target.value }))} />
+          <ScrollArea className="flex-1 -mx-6 px-6">
+            <div className="space-y-4 pb-2">
+              {/* Title Inputs */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{isArabic ? 'العنوان' : 'Title'}</label>
+                <Input placeholder={isArabic ? 'عنوان الدرس بالعربي' : 'Arabic lesson title'} value={lessonForm.title_ar} onChange={e => setLessonForm(p => ({ ...p, title_ar: e.target.value }))} />
+                <Input placeholder={isArabic ? 'عنوان الدرس بالإنجليزي' : 'English lesson title'} value={lessonForm.title_en} onChange={e => setLessonForm(p => ({ ...p, title_en: e.target.value }))} />
+              </div>
               
               {/* Content Type Selection */}
               <div className="space-y-2">
@@ -522,67 +526,68 @@ export const CoursesManagement = () => {
 
               {/* Video URL or Upload */}
               {(lessonForm.content_type === 'video' || lessonForm.content_type === 'both') && (
-                <div className="space-y-2">
+                <div className="space-y-3 rounded-lg border border-border/30 bg-muted/10 p-3">
                   <label className="text-sm font-medium">{isArabic ? 'الفيديو' : 'Video'}</label>
                   
-                  {/* Upload Button */}
-                  <div className="flex gap-2">
-                    <label className={cn(
-                      "flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-dashed cursor-pointer transition-colors",
-                      uploadingVideo ? "border-primary/50 bg-primary/5" : "border-border/50 hover:border-primary/40 hover:bg-muted/30"
-                    )}>
-                      <input
-                        type="file"
-                        accept="video/mp4,video/webm,video/ogg,video/quicktime"
-                        className="hidden"
-                        disabled={uploadingVideo}
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          if (file.size > 100 * 1024 * 1024) {
-                            toast({ title: isArabic ? 'خطأ' : 'Error', description: isArabic ? 'الحد الأقصى 100 ميجا' : 'Max 100MB', variant: 'destructive' });
-                            return;
-                          }
-                          setUploadingVideo(true);
-                          const ext = file.name.split('.').pop();
-                          const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-                          const { error } = await supabase.storage.from('lesson-videos').upload(path, file);
-                          if (error) {
-                            toast({ title: isArabic ? 'خطأ بالرفع' : 'Upload error', description: error.message, variant: 'destructive' });
+                  {!lessonForm.video_url ? (
+                    <>
+                      {/* Upload Button */}
+                      <label className={cn(
+                        "flex items-center justify-center gap-2 p-4 rounded-lg border-2 border-dashed cursor-pointer transition-colors",
+                        uploadingVideo ? "border-primary/50 bg-primary/5" : "border-border/50 hover:border-primary/40 hover:bg-muted/30"
+                      )}>
+                        <input
+                          type="file"
+                          accept="video/mp4,video/webm,video/ogg,video/quicktime"
+                          className="hidden"
+                          disabled={uploadingVideo}
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            if (file.size > 100 * 1024 * 1024) {
+                              toast({ title: isArabic ? 'خطأ' : 'Error', description: isArabic ? 'الحد الأقصى 100 ميجا' : 'Max 100MB', variant: 'destructive' });
+                              return;
+                            }
+                            setUploadingVideo(true);
+                            const ext = file.name.split('.').pop();
+                            const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+                            const { error } = await supabase.storage.from('lesson-videos').upload(path, file);
+                            if (error) {
+                              toast({ title: isArabic ? 'خطأ بالرفع' : 'Upload error', description: error.message, variant: 'destructive' });
+                              setUploadingVideo(false);
+                              return;
+                            }
+                            const { data: urlData } = supabase.storage.from('lesson-videos').getPublicUrl(path);
+                            setLessonForm(p => ({ ...p, video_url: urlData.publicUrl }));
                             setUploadingVideo(false);
-                            return;
-                          }
-                          const { data: urlData } = supabase.storage.from('lesson-videos').getPublicUrl(path);
-                          setLessonForm(p => ({ ...p, video_url: urlData.publicUrl }));
-                          setUploadingVideo(false);
-                          toast({ title: isArabic ? 'تم رفع الفيديو ✅' : 'Video uploaded ✅' });
-                        }}
-                      />
-                      {uploadingVideo ? (
-                        <><Loader2 className="w-4 h-4 animate-spin" /><span className="text-sm">{isArabic ? 'جاري الرفع...' : 'Uploading...'}</span></>
-                      ) : (
-                        <><Upload className="w-4 h-4" /><span className="text-sm">{isArabic ? 'رفع فيديو' : 'Upload Video'}</span></>
-                      )}
-                    </label>
-                  </div>
+                            toast({ title: isArabic ? 'تم رفع الفيديو ✅' : 'Video uploaded ✅' });
+                          }}
+                        />
+                        {uploadingVideo ? (
+                          <><Loader2 className="w-4 h-4 animate-spin" /><span className="text-sm">{isArabic ? 'جاري الرفع...' : 'Uploading...'}</span></>
+                        ) : (
+                          <><Upload className="w-4 h-4" /><span className="text-sm">{isArabic ? 'رفع فيديو' : 'Upload Video'}</span></>
+                        )}
+                      </label>
 
-                  {/* Or paste URL */}
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <div className="flex-1 h-px bg-border/30" />
-                    {isArabic ? 'أو أدخل رابط' : 'or paste URL'}
-                    <div className="flex-1 h-px bg-border/30" />
-                  </div>
-                  <Input 
-                    placeholder={isArabic ? 'رابط يوتيوب أو فيميو أو رابط مباشر' : 'YouTube, Vimeo, or direct video URL'} 
-                    value={lessonForm.video_url} 
-                    onChange={e => setLessonForm(p => ({ ...p, video_url: e.target.value }))} 
-                  />
-                  
-                  {/* Preview */}
-                  {lessonForm.video_url && (
-                    <div className="rounded-lg overflow-hidden border border-border/30 bg-muted/20 p-2">
-                      <p className="text-[10px] text-muted-foreground truncate mb-1">✅ {lessonForm.video_url}</p>
-                      <Button size="sm" variant="ghost" className="text-xs text-destructive h-6" onClick={() => setLessonForm(p => ({ ...p, video_url: '' }))}>
+                      {/* Or paste URL */}
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <div className="flex-1 h-px bg-border/30" />
+                        {isArabic ? 'أو أدخل رابط' : 'or paste URL'}
+                        <div className="flex-1 h-px bg-border/30" />
+                      </div>
+                      <Input 
+                        placeholder={isArabic ? 'رابط يوتيوب أو فيميو أو رابط مباشر' : 'YouTube, Vimeo, or direct video URL'} 
+                        value={lessonForm.video_url} 
+                        onChange={e => setLessonForm(p => ({ ...p, video_url: e.target.value }))} 
+                      />
+                    </>
+                  ) : (
+                    /* Video Set - Show Preview */
+                    <div className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-2.5">
+                      <Video className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                      <p className="text-xs text-muted-foreground truncate flex-1 max-w-[280px]" dir="ltr">{lessonForm.video_url}</p>
+                      <Button size="sm" variant="ghost" className="text-xs text-destructive h-7 px-2 flex-shrink-0" onClick={() => setLessonForm(p => ({ ...p, video_url: '' }))}>
                         {isArabic ? 'إزالة' : 'Remove'}
                       </Button>
                     </div>
@@ -592,24 +597,29 @@ export const CoursesManagement = () => {
 
               {/* Text Content */}
               {(lessonForm.content_type === 'text' || lessonForm.content_type === 'both') && (
-                <>
-                  <Textarea placeholder={isArabic ? 'محتوى الدرس بالعربي' : 'Arabic lesson content'} value={lessonForm.content_ar} onChange={e => setLessonForm(p => ({ ...p, content_ar: e.target.value }))} rows={6} />
-                  <Textarea placeholder={isArabic ? 'محتوى الدرس بالإنجليزي' : 'English lesson content'} value={lessonForm.content_en} onChange={e => setLessonForm(p => ({ ...p, content_en: e.target.value }))} rows={6} />
-                </>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">{isArabic ? 'المحتوى النصي' : 'Text Content'}</label>
+                  <Textarea placeholder={isArabic ? 'محتوى الدرس بالعربي' : 'Arabic lesson content'} value={lessonForm.content_ar} onChange={e => setLessonForm(p => ({ ...p, content_ar: e.target.value }))} rows={4} />
+                  <Textarea placeholder={isArabic ? 'محتوى الدرس بالإنجليزي' : 'English lesson content'} value={lessonForm.content_en} onChange={e => setLessonForm(p => ({ ...p, content_en: e.target.value }))} rows={4} />
+                </div>
               )}
 
-              <div className="flex items-center gap-3">
-                <label className="text-sm whitespace-nowrap">{isArabic ? 'المدة (دقائق)' : 'Duration (min)'}</label>
-                <Input type="number" min={1} value={lessonForm.duration_minutes} onChange={e => setLessonForm(p => ({ ...p, duration_minutes: parseInt(e.target.value) || 5 }))} className="w-24" />
+              {/* Settings */}
+              <div className="space-y-3 rounded-lg border border-border/30 bg-muted/10 p-3">
+                <div className="flex items-center gap-3">
+                  <label className="text-sm whitespace-nowrap">{isArabic ? 'المدة (دقائق)' : 'Duration (min)'}</label>
+                  <Input type="number" min={1} value={lessonForm.duration_minutes} onChange={e => setLessonForm(p => ({ ...p, duration_minutes: parseInt(e.target.value) || 5 }))} className="w-24" />
+                </div>
+                <div className="flex items-center justify-between">
+                  <label className="text-sm">{isArabic ? 'محتوى VIP' : 'VIP Content'}</label>
+                  <Switch checked={lessonForm.is_vip} onCheckedChange={v => setLessonForm(p => ({ ...p, is_vip: v }))} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <label className="text-sm">{isArabic ? 'منشور' : 'Published'}</label>
+                  <Switch checked={lessonForm.is_published} onCheckedChange={v => setLessonForm(p => ({ ...p, is_published: v }))} />
+                </div>
               </div>
-              <div className="flex items-center justify-between">
-                <label className="text-sm">{isArabic ? 'محتوى VIP' : 'VIP Content'}</label>
-                <Switch checked={lessonForm.is_vip} onCheckedChange={v => setLessonForm(p => ({ ...p, is_vip: v }))} />
-              </div>
-              <div className="flex items-center justify-between">
-                <label className="text-sm">{isArabic ? 'منشور' : 'Published'}</label>
-                <Switch checked={lessonForm.is_published} onCheckedChange={v => setLessonForm(p => ({ ...p, is_published: v }))} />
-              </div>
+
               <Button onClick={saveLesson} className="w-full gap-1.5"><Save className="w-4 h-4" />{isArabic ? 'حفظ' : 'Save'}</Button>
             </div>
           </ScrollArea>
