@@ -7,9 +7,11 @@ import {
   FileJson, 
   FileCode,
   Loader2,
-  CheckCircle,
   Table,
-  RefreshCw
+  RefreshCw,
+  BookOpen,
+  Settings,
+  Package
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,15 +19,31 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import SCHEMA_SQL from '../../../scripts/export-schema.sql?raw';
 
 const TABLES = [
   'profiles',
   'user_roles',
   'trades',
+  'trade_comments',
+  'trade_comment_likes',
+  'trade_followers',
+  'trade_shares',
+  'analyses',
+  'analysis_likes',
+  'user_posts',
+  'post_likes',
+  'post_comments',
+  'community_rooms',
+  'room_members',
+  'room_join_requests',
+  'room_messages',
   'threads',
   'replies',
   'reply_likes',
-  'room_messages',
+  'learning_categories',
+  'learning_courses',
+  'learning_lessons',
   'conversations',
   'conversation_participants',
   'direct_messages',
@@ -33,427 +51,33 @@ const TABLES = [
   'friend_requests',
   'service_requests',
   'usdt_listings',
+  'flagged_content',
   'admin_notifications',
   'user_notifications',
-  'user_privacy_settings'
+  'user_privacy_settings',
 ] as const;
 
 type TableName = typeof TABLES[number];
 
-const SCHEMA_SQL = `-- ASSASSIN FX Database Schema
--- Exported on: ${new Date().toISOString()}
--- Project: ASSASSIN FX Trading Community
+const ENV_TEMPLATE = `# ============================================================
+# ASSASSIN FX - Environment Variables
+# ============================================================
+# انسخ هذا الملف وسمّه .env ثم عدّل القيم
 
--- ============================================
--- ENUMS
--- ============================================
-
-CREATE TYPE app_role AS ENUM ('admin', 'vip', 'free');
-CREATE TYPE asset_type AS ENUM ('forex', 'metals', 'crypto');
-CREATE TYPE conversation_type AS ENUM ('direct', 'group');
-CREATE TYPE entry_type AS ENUM ('market', 'limit', 'stop');
-CREATE TYPE friend_request_status AS ENUM ('pending', 'accepted', 'rejected');
-CREATE TYPE messaging_privacy AS ENUM ('everyone', 'friends_only', 'followers_only', 'nobody');
-CREATE TYPE service_status AS ENUM ('pending', 'in_progress', 'approved', 'rejected', 'completed');
-CREATE TYPE service_type AS ENUM ('broker_deposit', 'broker_withdraw', 'usdt_buy', 'usdt_sell', 'broker_account');
-CREATE TYPE timeframe AS ENUM ('M5', 'M15', 'H1', 'H4', 'D1');
-CREATE TYPE trade_direction AS ENUM ('buy', 'sell');
-CREATE TYPE trade_status AS ENUM ('pending', 'running', 'tp_hit', 'sl_hit', 'cancelled', 'closed_manual');
-CREATE TYPE trade_visibility AS ENUM ('free', 'vip');
-CREATE TYPE usdt_listing_type AS ENUM ('buy', 'sell');
-
--- ============================================
--- TABLES
--- ============================================
-
--- Profiles Table
-CREATE TABLE public.profiles (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID NOT NULL UNIQUE,
-  username TEXT,
-  display_name TEXT,
-  first_name TEXT,
-  last_name TEXT,
-  avatar_url TEXT,
-  country TEXT,
-  phone TEXT,
-  language TEXT DEFAULT 'ar',
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- User Roles Table
-CREATE TABLE public.user_roles (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID NOT NULL,
-  role app_role NOT NULL DEFAULT 'free',
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- Trades Table
-CREATE TABLE public.trades (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  created_by UUID,
-  symbol TEXT NOT NULL,
-  asset_type asset_type NOT NULL,
-  direction trade_direction NOT NULL,
-  entry_type entry_type NOT NULL DEFAULT 'market',
-  entry_price NUMERIC NOT NULL,
-  sl_price NUMERIC NOT NULL,
-  tp_prices NUMERIC[] NOT NULL DEFAULT '{}',
-  status trade_status NOT NULL DEFAULT 'pending',
-  visibility trade_visibility NOT NULL DEFAULT 'free',
-  timeframe timeframe NOT NULL DEFAULT 'H1',
-  reason TEXT NOT NULL,
-  risk_note TEXT,
-  alternative_scenario TEXT,
-  last_update_note TEXT,
-  attachments TEXT[],
-  followers_count INTEGER DEFAULT 0,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- Threads Table
-CREATE TABLE public.threads (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID NOT NULL,
-  room_id TEXT NOT NULL,
-  title TEXT NOT NULL,
-  content TEXT NOT NULL,
-  tag TEXT NOT NULL,
-  replies_count INTEGER DEFAULT 0,
-  is_pinned BOOLEAN DEFAULT false,
-  is_locked BOOLEAN DEFAULT false,
-  has_best_answer BOOLEAN DEFAULT false,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- Replies Table
-CREATE TABLE public.replies (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  thread_id UUID NOT NULL REFERENCES public.threads(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL,
-  parent_id UUID REFERENCES public.replies(id) ON DELETE CASCADE,
-  content TEXT NOT NULL,
-  likes_count INTEGER DEFAULT 0,
-  is_best_answer BOOLEAN DEFAULT false,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- Reply Likes Table
-CREATE TABLE public.reply_likes (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  reply_id UUID NOT NULL REFERENCES public.replies(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(reply_id, user_id)
-);
-
--- Room Messages Table
-CREATE TABLE public.room_messages (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  room_id TEXT NOT NULL,
-  user_id UUID NOT NULL,
-  content TEXT NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-
--- Conversations Table
-CREATE TABLE public.conversations (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  created_by UUID NOT NULL,
-  type conversation_type NOT NULL DEFAULT 'direct',
-  name TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- Conversation Participants Table
-CREATE TABLE public.conversation_participants (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  conversation_id UUID NOT NULL REFERENCES public.conversations(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL,
-  is_admin BOOLEAN NOT NULL DEFAULT false,
-  joined_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  last_read_at TIMESTAMPTZ,
-  UNIQUE(conversation_id, user_id)
-);
-
--- Direct Messages Table
-CREATE TABLE public.direct_messages (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  conversation_id UUID NOT NULL REFERENCES public.conversations(id) ON DELETE CASCADE,
-  sender_id UUID NOT NULL,
-  content TEXT NOT NULL,
-  is_read BOOLEAN NOT NULL DEFAULT false,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- Follows Table
-CREATE TABLE public.follows (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  follower_id UUID NOT NULL,
-  following_id UUID NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE(follower_id, following_id)
-);
-
--- Friend Requests Table
-CREATE TABLE public.friend_requests (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  sender_id UUID NOT NULL,
-  receiver_id UUID NOT NULL,
-  status friend_request_status NOT NULL DEFAULT 'pending',
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- Service Requests Table
-CREATE TABLE public.service_requests (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID NOT NULL,
-  type service_type NOT NULL,
-  status service_status NOT NULL DEFAULT 'pending',
-  amount NUMERIC,
-  network TEXT,
-  notes TEXT,
-  admin_notes TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- USDT Listings Table
-CREATE TABLE public.usdt_listings (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  created_by UUID NOT NULL,
-  listing_type usdt_listing_type NOT NULL,
-  price NUMERIC NOT NULL,
-  commission NUMERIC NOT NULL DEFAULT 0,
-  min_amount NUMERIC,
-  max_amount NUMERIC,
-  payment_methods TEXT[] NOT NULL DEFAULT '{}',
-  contact_info TEXT NOT NULL,
-  notes TEXT,
-  is_active BOOLEAN NOT NULL DEFAULT true,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- Admin Notifications Table
-CREATE TABLE public.admin_notifications (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  type TEXT NOT NULL,
-  title TEXT NOT NULL,
-  message TEXT NOT NULL,
-  data JSONB DEFAULT '{}',
-  read BOOLEAN DEFAULT false,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- User Notifications Table
-CREATE TABLE public.user_notifications (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID NOT NULL,
-  type TEXT NOT NULL,
-  title TEXT NOT NULL,
-  message TEXT NOT NULL,
-  data JSONB DEFAULT '{}',
-  read BOOLEAN DEFAULT false,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-
--- User Privacy Settings Table
-CREATE TABLE public.user_privacy_settings (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID NOT NULL UNIQUE,
-  messaging_privacy messaging_privacy NOT NULL DEFAULT 'everyone',
-  show_online_status BOOLEAN NOT NULL DEFAULT true,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- ============================================
--- FUNCTIONS
--- ============================================
-
--- Check if user has a specific role
-CREATE OR REPLACE FUNCTION public.has_role(_user_id uuid, _role app_role)
-RETURNS boolean
-LANGUAGE sql
-STABLE SECURITY DEFINER
-SET search_path TO 'public'
-AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.user_roles
-    WHERE user_id = _user_id AND role = _role
-  )
-$$;
-
--- Check if current user is admin
-CREATE OR REPLACE FUNCTION public.is_admin()
-RETURNS boolean
-LANGUAGE sql
-STABLE SECURITY DEFINER
-SET search_path TO 'public'
-AS $$
-  SELECT public.has_role(auth.uid(), 'admin')
-$$;
-
--- Check if current user is VIP
-CREATE OR REPLACE FUNCTION public.is_vip()
-RETURNS boolean
-LANGUAGE sql
-STABLE SECURITY DEFINER
-SET search_path TO 'public'
-AS $$
-  SELECT public.has_role(auth.uid(), 'vip')
-$$;
-
--- Check if user can access a trade based on visibility
-CREATE OR REPLACE FUNCTION public.can_access_trade(trade_visibility trade_visibility)
-RETURNS boolean
-LANGUAGE sql
-STABLE SECURITY DEFINER
-SET search_path TO 'public'
-AS $$
-  SELECT 
-    CASE 
-      WHEN public.is_admin() THEN true
-      WHEN trade_visibility = 'free' AND auth.uid() IS NOT NULL THEN true
-      WHEN trade_visibility = 'vip' AND public.is_vip() THEN true
-      ELSE false
-    END
-$$;
-
--- Check if two users are friends
-CREATE OR REPLACE FUNCTION public.are_friends(user1_id uuid, user2_id uuid)
-RETURNS boolean
-LANGUAGE sql
-STABLE SECURITY DEFINER
-SET search_path TO 'public'
-AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.friend_requests
-    WHERE status = 'accepted'
-    AND ((sender_id = user1_id AND receiver_id = user2_id)
-         OR (sender_id = user2_id AND receiver_id = user1_id))
-  )
-$$;
-
--- Check if current user can message target user
-CREATE OR REPLACE FUNCTION public.can_message_user(target_user_id uuid)
-RETURNS boolean
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path TO 'public'
-AS $$
-DECLARE
-  privacy_setting messaging_privacy;
-  is_friend BOOLEAN;
-  is_follower BOOLEAN;
-BEGIN
-  SELECT messaging_privacy INTO privacy_setting
-  FROM public.user_privacy_settings
-  WHERE user_id = target_user_id;
-  
-  IF privacy_setting IS NULL THEN
-    RETURN true;
-  END IF;
-  
-  CASE privacy_setting
-    WHEN 'everyone' THEN RETURN true;
-    WHEN 'nobody' THEN RETURN false;
-    WHEN 'friends_only' THEN
-      SELECT public.are_friends(auth.uid(), target_user_id) INTO is_friend;
-      RETURN is_friend;
-    WHEN 'followers_only' THEN
-      SELECT EXISTS (
-        SELECT 1 FROM public.follows
-        WHERE follower_id = auth.uid() AND following_id = target_user_id
-      ) INTO is_follower;
-      RETURN is_follower;
-    ELSE RETURN true;
-  END CASE;
-END;
-$$;
-
--- Mask phone number for privacy
-CREATE OR REPLACE FUNCTION public.mask_phone_number(phone text)
-RETURNS text
-LANGUAGE sql
-IMMUTABLE
-SET search_path TO 'public'
-AS $$
-  SELECT CASE
-    WHEN phone IS NULL THEN NULL
-    WHEN length(phone) <= 4 THEN '****'
-    ELSE concat(repeat('*', length(phone) - 4), right(phone, 4))
-  END
-$$;
-
--- Update updated_at timestamp
-CREATE OR REPLACE FUNCTION public.update_updated_at_column()
-RETURNS trigger
-LANGUAGE plpgsql
-SET search_path TO 'public'
-AS $$
-BEGIN
-  NEW.updated_at = now();
-  RETURN NEW;
-END;
-$$;
-
--- ============================================
--- Enable RLS on all tables
--- ============================================
-
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.trades ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.threads ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.replies ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.reply_likes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.room_messages ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.conversations ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.conversation_participants ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.direct_messages ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.follows ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.friend_requests ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.service_requests ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.usdt_listings ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.admin_notifications ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.user_notifications ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.user_privacy_settings ENABLE ROW LEVEL SECURITY;
-
--- ============================================
--- RLS POLICIES (Examples - Add your own)
--- ============================================
-
--- Profiles policies
-CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = user_id OR is_admin());
-CREATE POLICY "Admins can view all profiles" ON public.profiles FOR SELECT USING (is_admin());
-
--- Trades policies  
-CREATE POLICY "Users can view trades based on visibility" ON public.trades FOR SELECT USING (can_access_trade(visibility));
-CREATE POLICY "Only admins can insert trades" ON public.trades FOR INSERT WITH CHECK (is_admin());
-CREATE POLICY "Only admins can update trades" ON public.trades FOR UPDATE USING (is_admin());
-CREATE POLICY "Only admins can delete trades" ON public.trades FOR DELETE USING (is_admin());
-
--- Add more RLS policies as needed...
+# إعدادات Supabase - من Settings → API في لوحة تحكم Supabase
+VITE_SUPABASE_URL=https://YOUR_PROJECT_ID.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=your_anon_key_here
+VITE_SUPABASE_PROJECT_ID=YOUR_PROJECT_ID
 `;
 
-const AUTO_REFRESH_INTERVAL = 30000; // 30 seconds
+const AUTO_REFRESH_INTERVAL = 30000;
 
 export const DatabaseExport = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isArabic = i18n.language === 'ar';
   const { toast } = useToast();
   const [exporting, setExporting] = useState(false);
-  const [exportType, setExportType] = useState<'schema' | 'data' | 'full' | null>(null);
+  const [exportType, setExportType] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [tableStats, setTableStats] = useState<Record<string, number>>({});
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -475,26 +99,18 @@ export const DatabaseExport = () => {
       setLastUpdated(new Date());
       
       if (showToast) {
-        toast({
-          title: t('admin.export.dataRefreshed'),
-          description: t('admin.export.dataRefreshedDesc')
-        });
+        toast({ title: isArabic ? 'تم تحديث البيانات' : 'Data refreshed' });
       }
     } catch (error) {
       console.error('Error fetching table counts:', error);
     } finally {
       setIsRefreshing(false);
     }
-  }, [t, toast]);
+  }, [isArabic, toast]);
 
-  // Auto-refresh on mount and periodically
   useEffect(() => {
     fetchTableCounts();
-    
-    const interval = setInterval(() => {
-      fetchTableCounts();
-    }, AUTO_REFRESH_INTERVAL);
-    
+    const interval = setInterval(() => fetchTableCounts(), AUTO_REFRESH_INTERVAL);
     return () => clearInterval(interval);
   }, [fetchTableCounts]);
 
@@ -510,76 +126,44 @@ export const DatabaseExport = () => {
     URL.revokeObjectURL(url);
   };
 
+  const timestamp = () => new Date().toISOString().split('T')[0];
+
   const exportSchema = () => {
     setExporting(true);
     setExportType('schema');
     setProgress(50);
-    
     setTimeout(() => {
-      const timestamp = new Date().toISOString().split('T')[0];
-      downloadFile(SCHEMA_SQL, `assassin-fx-schema-${timestamp}.sql`, 'text/sql');
+      downloadFile(SCHEMA_SQL, `assassin-fx-schema-${timestamp()}.sql`, 'text/sql');
       setProgress(100);
-      
       setTimeout(() => {
-        setExporting(false);
-        setExportType(null);
-        setProgress(0);
-        toast({
-          title: t('admin.export.schemaExported'),
-          description: t('admin.export.schemaExportedDesc')
-        });
+        setExporting(false); setExportType(null); setProgress(0);
+        toast({ title: isArabic ? 'تم تصدير هيكل قاعدة البيانات' : 'Schema exported' });
       }, 500);
-    }, 1000);
+    }, 500);
   };
 
   const exportData = async () => {
     setExporting(true);
     setExportType('data');
     setProgress(0);
-    
     const allData: Record<string, unknown[]> = {};
-    const totalTables = TABLES.length;
-    
-    for (let i = 0; i < totalTables; i++) {
+    for (let i = 0; i < TABLES.length; i++) {
       const table = TABLES[i];
-      const { data, error } = await supabase
-        .from(table)
-        .select('*');
-      
-      if (!error && data) {
-        allData[table] = data;
-      } else {
-        allData[table] = [];
-      }
-      
-      setProgress(Math.round(((i + 1) / totalTables) * 100));
+      const { data, error } = await supabase.from(table).select('*');
+      allData[table] = (!error && data) ? data : [];
+      setProgress(Math.round(((i + 1) / TABLES.length) * 100));
     }
-    
-    const exportPayload = {
+    const payload = {
       exportedAt: new Date().toISOString(),
       projectName: 'ASSASSIN FX',
+      tablesCount: TABLES.length,
+      totalRecords: Object.values(allData).reduce((sum, arr) => sum + arr.length, 0),
       data: allData,
-      metadata: {
-        totalRecords: Object.values(allData).reduce((sum, arr) => sum + arr.length, 0),
-        tablesCount: totalTables
-      }
     };
-    
-    const timestamp = new Date().toISOString().split('T')[0];
-    downloadFile(
-      JSON.stringify(exportPayload, null, 2), 
-      `assassin-fx-data-${timestamp}.json`, 
-      'application/json'
-    );
-    
+    downloadFile(JSON.stringify(payload, null, 2), `assassin-fx-data-${timestamp()}.json`, 'application/json');
     setTimeout(() => {
-      setExporting(false);
-      setExportType(null);
-      setProgress(0);
-      toast({
-        title: t('admin.export.dataExported'),
-        description: t('admin.export.dataExportedDesc')
-      });
+      setExporting(false); setExportType(null); setProgress(0);
+      toast({ title: isArabic ? 'تم تصدير البيانات' : 'Data exported' });
     }, 500);
   };
 
@@ -587,140 +171,126 @@ export const DatabaseExport = () => {
     setExporting(true);
     setExportType('full');
     setProgress(0);
-    
     const allData: Record<string, unknown[]> = {};
-    const totalTables = TABLES.length;
-    
-    for (let i = 0; i < totalTables; i++) {
+    for (let i = 0; i < TABLES.length; i++) {
       const table = TABLES[i];
-      const { data, error } = await supabase
-        .from(table)
-        .select('*');
-      
-      if (!error && data) {
-        allData[table] = data;
-      } else {
-        allData[table] = [];
-      }
-      
-      setProgress(Math.round(((i + 1) / totalTables) * 80));
+      const { data, error } = await supabase.from(table).select('*');
+      allData[table] = (!error && data) ? data : [];
+      setProgress(Math.round(((i + 1) / TABLES.length) * 80));
     }
-    
     setProgress(90);
-    
-    const exportPayload = {
+    const payload = {
       exportedAt: new Date().toISOString(),
       projectName: 'ASSASSIN FX',
-      schema: {
-        sql: SCHEMA_SQL
-      },
+      schema: { sql: SCHEMA_SQL },
+      envTemplate: ENV_TEMPLATE,
+      tablesCount: TABLES.length,
+      totalRecords: Object.values(allData).reduce((sum, arr) => sum + arr.length, 0),
       data: allData,
-      metadata: {
-        totalRecords: Object.values(allData).reduce((sum, arr) => sum + arr.length, 0),
-        tablesCount: totalTables
-      }
     };
-    
-    const timestamp = new Date().toISOString().split('T')[0];
-    downloadFile(
-      JSON.stringify(exportPayload, null, 2), 
-      `assassin-fx-full-backup-${timestamp}.json`, 
-      'application/json'
-    );
-    
+    downloadFile(JSON.stringify(payload, null, 2), `assassin-fx-full-backup-${timestamp()}.json`, 'application/json');
     setProgress(100);
-    
     setTimeout(() => {
-      setExporting(false);
-      setExportType(null);
-      setProgress(0);
-      toast({
-        title: t('admin.export.fullExported'),
-        description: t('admin.export.fullExportedDesc')
-      });
+      setExporting(false); setExportType(null); setProgress(0);
+      toast({ title: isArabic ? 'تم تصدير النسخة الاحتياطية الكاملة' : 'Full backup exported' });
     }, 500);
   };
 
+  const exportMigrationGuide = () => {
+    downloadFile(ENV_TEMPLATE, `env-template-${timestamp()}.env`, 'text/plain');
+    toast({ title: isArabic ? 'تم تحميل قالب الإعدادات' : 'Env template downloaded' });
+  };
+
+  const totalRecords = Object.values(tableStats).reduce((sum, c) => sum + c, 0);
+
   return (
     <div className="space-y-6">
-      {/* Export Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Stats Summary */}
+      <div className="grid grid-cols-2 gap-3">
         <Card className="border-border/30">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <FileCode className="w-5 h-5 text-primary" />
-              {t('admin.export.schemaTitle')}
+          <CardContent className="p-4 text-center">
+            <p className="text-2xl font-bold text-primary">{TABLES.length}</p>
+            <p className="text-xs text-muted-foreground">{isArabic ? 'جدول' : 'Tables'}</p>
+          </CardContent>
+        </Card>
+        <Card className="border-border/30">
+          <CardContent className="p-4 text-center">
+            <p className="text-2xl font-bold text-primary">{totalRecords.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground">{isArabic ? 'سجل' : 'Records'}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Export Actions */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <Card className="border-border/30">
+          <CardHeader className="pb-2 pt-4 px-4">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <FileCode className="w-4 h-4 text-primary" />
+              {isArabic ? 'هيكل قاعدة البيانات' : 'Database Schema'}
             </CardTitle>
-            <CardDescription className="text-sm">
-              {t('admin.export.schemaDesc')}
+            <CardDescription className="text-xs">
+              {isArabic ? 'جميع الجداول والدوال وسياسات الأمان (SQL)' : 'All tables, functions, and RLS policies (SQL)'}
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Button 
-              onClick={exportSchema} 
-              disabled={exporting}
-              className="w-full gap-2"
-              variant="outline"
-            >
-              {exporting && exportType === 'schema' ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Download className="w-4 h-4" />
-              )}
-              {t('admin.export.downloadSql')}
+          <CardContent className="px-4 pb-4">
+            <Button onClick={exportSchema} disabled={exporting} className="w-full gap-2" variant="outline" size="sm">
+              {exporting && exportType === 'schema' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              {isArabic ? 'تحميل SQL' : 'Download SQL'}
             </Button>
           </CardContent>
         </Card>
 
         <Card className="border-border/30">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <FileJson className="w-5 h-5 text-profit" />
-              {t('admin.export.dataTitle')}
+          <CardHeader className="pb-2 pt-4 px-4">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <FileJson className="w-4 h-4 text-emerald-500" />
+              {isArabic ? 'بيانات الجداول' : 'Table Data'}
             </CardTitle>
-            <CardDescription className="text-sm">
-              {t('admin.export.dataDesc')}
+            <CardDescription className="text-xs">
+              {isArabic ? `تصدير بيانات ${TABLES.length} جدول (JSON)` : `Export data from ${TABLES.length} tables (JSON)`}
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Button 
-              onClick={exportData} 
-              disabled={exporting}
-              className="w-full gap-2"
-              variant="outline"
-            >
-              {exporting && exportType === 'data' ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Download className="w-4 h-4" />
-              )}
-              {t('admin.export.downloadJson')}
+          <CardContent className="px-4 pb-4">
+            <Button onClick={exportData} disabled={exporting} className="w-full gap-2" variant="outline" size="sm">
+              {exporting && exportType === 'data' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              {isArabic ? 'تحميل JSON' : 'Download JSON'}
             </Button>
           </CardContent>
         </Card>
 
         <Card className="border-primary/30 bg-primary/5">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Database className="w-5 h-5 text-primary" />
-              {t('admin.export.fullTitle')}
+          <CardHeader className="pb-2 pt-4 px-4">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <Package className="w-4 h-4 text-primary" />
+              {isArabic ? 'نسخة احتياطية كاملة' : 'Full Backup'}
             </CardTitle>
-            <CardDescription className="text-sm">
-              {t('admin.export.fullDesc')}
+            <CardDescription className="text-xs">
+              {isArabic ? 'هيكل + بيانات + إعدادات (للترحيل الكامل)' : 'Schema + Data + Config (for full migration)'}
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Button 
-              onClick={exportFull} 
-              disabled={exporting}
-              className="w-full gap-2"
-            >
-              {exporting && exportType === 'full' ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Download className="w-4 h-4" />
-              )}
-              {t('admin.export.downloadFull')}
+          <CardContent className="px-4 pb-4">
+            <Button onClick={exportFull} disabled={exporting} className="w-full gap-2" size="sm">
+              {exporting && exportType === 'full' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              {isArabic ? 'تحميل نسخة كاملة' : 'Download Full Backup'}
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/30">
+          <CardHeader className="pb-2 pt-4 px-4">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <Settings className="w-4 h-4 text-muted-foreground" />
+              {isArabic ? 'قالب الإعدادات' : 'Env Template'}
+            </CardTitle>
+            <CardDescription className="text-xs">
+              {isArabic ? 'ملف .env جاهز لربط سيرفر خاص' : '.env template for your own server'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            <Button onClick={exportMigrationGuide} disabled={exporting} className="w-full gap-2" variant="outline" size="sm">
+              <Download className="w-4 h-4" />
+              {isArabic ? 'تحميل القالب' : 'Download Template'}
             </Button>
           </CardContent>
         </Card>
@@ -728,20 +298,33 @@ export const DatabaseExport = () => {
 
       {/* Progress Bar */}
       {exporting && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-2"
-        >
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="space-y-2">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">
-              {t('admin.export.exporting')}...
-            </span>
+            <span className="text-muted-foreground">{isArabic ? 'جاري التصدير...' : 'Exporting...'}</span>
             <span className="font-medium">{progress}%</span>
           </div>
           <Progress value={progress} className="h-2" />
         </motion.div>
       )}
+
+      {/* Migration Info */}
+      <Card className="border-border/30 bg-muted/20">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <BookOpen className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-foreground">
+                {isArabic ? 'دليل الترحيل متوفر' : 'Migration Guide Available'}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {isArabic 
+                  ? 'ملف MIGRATION_GUIDE.md في المشروع يحتوي على خطوات مفصلة لنقل التطبيق لسيرفرك الخاص (Supabase + Vercel/Netlify + Android APK)'
+                  : 'MIGRATION_GUIDE.md in the project contains detailed steps to migrate to your own server'}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Tables Overview */}
       <Card className="border-border/30">
@@ -750,44 +333,31 @@ export const DatabaseExport = () => {
             <div>
               <CardTitle className="flex items-center gap-2 text-base">
                 <Table className="w-5 h-5 text-muted-foreground" />
-                {t('admin.export.tablesOverview')}
+                {isArabic ? 'نظرة عامة على الجداول' : 'Tables Overview'}
               </CardTitle>
               {lastUpdated && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  {t('admin.export.lastUpdated')}: {lastUpdated.toLocaleTimeString()}
+                  {isArabic ? 'آخر تحديث' : 'Last updated'}: {lastUpdated.toLocaleTimeString()}
                 </p>
               )}
             </div>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => fetchTableCounts(true)}
-              disabled={isRefreshing}
-              className="gap-2"
-            >
+            <Button variant="ghost" size="sm" onClick={() => fetchTableCounts(true)} disabled={isRefreshing} className="gap-2">
               <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-              {t('admin.export.refresh')}
+              {isArabic ? 'تحديث' : 'Refresh'}
             </Button>
           </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
             {TABLES.map((table) => (
-              <div 
-                key={table}
-                className="flex items-center justify-between p-2 rounded-lg bg-muted/50 text-sm"
-              >
-                <span className="truncate text-muted-foreground">{table}</span>
+              <div key={table} className="flex items-center justify-between p-2 rounded-lg bg-muted/50 text-sm">
+                <span className="truncate text-muted-foreground text-xs">{table}</span>
                 {tableStats[table] !== undefined ? (
-                  <Badge variant="secondary" className="ml-2">
-                    {tableStats[table]}
-                  </Badge>
+                  <Badge variant="secondary" className="ml-1 text-xs">{tableStats[table]}</Badge>
                 ) : isRefreshing ? (
                   <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
                 ) : (
-                  <Badge variant="outline" className="ml-2">
-                    -
-                  </Badge>
+                  <Badge variant="outline" className="ml-1">-</Badge>
                 )}
               </div>
             ))}
