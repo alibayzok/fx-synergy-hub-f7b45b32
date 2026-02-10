@@ -461,6 +461,7 @@ export type Database = {
         Row: {
           content_ar: string
           content_en: string
+          content_type: string
           course_id: string
           created_at: string
           duration_minutes: number
@@ -471,10 +472,12 @@ export type Database = {
           title_ar: string
           title_en: string
           updated_at: string
+          video_url: string | null
         }
         Insert: {
           content_ar?: string
           content_en?: string
+          content_type?: string
           course_id: string
           created_at?: string
           duration_minutes?: number
@@ -485,10 +488,12 @@ export type Database = {
           title_ar: string
           title_en: string
           updated_at?: string
+          video_url?: string | null
         }
         Update: {
           content_ar?: string
           content_en?: string
+          content_type?: string
           course_id?: string
           created_at?: string
           duration_minutes?: number
@@ -499,6 +504,7 @@ export type Database = {
           title_ar?: string
           title_en?: string
           updated_at?: string
+          video_url?: string | null
         }
         Relationships: [
           {
