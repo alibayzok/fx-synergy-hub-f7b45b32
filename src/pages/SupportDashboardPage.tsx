@@ -1,22 +1,18 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useSupport } from '@/hooks/useSupport';
-import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  Send, ArrowLeft, CheckCircle2, MessageCircle, Headset, ImagePlus, X, Loader2,
-  Users, AlertTriangle, Clock, Filter, ArrowUpRight, Forward
+  ArrowLeft, Headset, Users, MessageCircle, LayoutDashboard
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
-import { ar } from 'date-fns/locale';
+import SupportStats from '@/components/support/SupportStats';
+import SupportTicketList from '@/components/support/SupportTicketList';
+import SupportChat from '@/components/support/SupportChat';
+import SupportAgentManager from '@/components/support/SupportAgentManager';
 
 interface Ticket {
   id: string;
@@ -56,60 +52,38 @@ interface Agent {
   is_active: boolean;
 }
 
-const priorityColors: Record<string, string> = {
-  low: 'bg-muted text-muted-foreground',
-  normal: 'bg-primary/20 text-primary',
-  high: 'bg-orange-500/20 text-orange-500',
-  urgent: 'bg-destructive/20 text-destructive',
-};
-
-const priorityLabels: Record<string, string> = {
-  low: 'منخفضة',
-  normal: 'عادية',
-  high: 'عالية',
-  urgent: 'عاجلة',
-};
-
 const SupportDashboardPage = () => {
   const navigate = useNavigate();
   const { user, isAdmin, loading: authLoading } = useAuth();
-  const { isSupportAgent, uploadAttachment } = useSupport();
+  const { isSupportAgent } = useSupport();
 
   const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [allTickets, setAllTickets] = useState<Ticket[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [agents, setAgents] = useState<Agent[]>([]);
   const [agentProfiles, setAgentProfiles] = useState<Record<string, Profile>>({});
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState('');
-  const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'open' | 'closed'>('open');
-  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const [showAgentManager, setShowAgentManager] = useState(false);
-  const [newAgentEmail, setNewAgentEmail] = useState('');
-  const [showTransferDialog, setShowTransferDialog] = useState(false);
-  const [transferTarget, setTransferTarget] = useState('');
-  const [transferReason, setTransferReason] = useState('');
-  const [transferType, setTransferType] = useState<'transfer' | 'escalate'>('transfer');
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  useEffect(() => { scrollToBottom(); }, [messages]);
+  const [activeTab, setActiveTab] = useState<'tickets' | 'agents'>('tickets');
 
   const fetchTickets = useCallback(async () => {
     setLoading(true);
-    // Auto-close stale tickets (48h inactive)
     await supabase.rpc('close_stale_support_tickets');
-    let query = supabase.from('support_tickets').select('*').order('updated_at', { ascending: false });
-    if (filter !== 'all') query = query.eq('status', filter);
-    const { data } = await query;
-    const ticketList = (data || []) as Ticket[];
-    setTickets(ticketList);
+    
+    // Fetch all tickets for stats
+    const { data: allData } = await supabase.from('support_tickets').select('*').order('updated_at', { ascending: false });
+    const all = (allData || []) as Ticket[];
+    setAllTickets(all);
 
-    const userIds = [...new Set(ticketList.map(t => t.user_id))];
+    // Apply filter
+    let filtered = all;
+    if (filter !== 'all') filtered = all.filter(t => t.status === filter);
+    setTickets(filtered);
+
+    // Fetch profiles
+    const userIds = [...new Set(all.map(t => t.user_id).concat(all.filter(t => t.assigned_to).map(t => t.assigned_to!)))];
     if (userIds.length > 0) {
       const { data: profileData } = await supabase.from('profiles').select('user_id, display_name, username, avatar_url').in('user_id', userIds);
       const map: Record<string, Profile> = {};
@@ -123,7 +97,6 @@ const SupportDashboardPage = () => {
     const { data } = await supabase.from('support_agents').select('*');
     const agentList = (data || []) as Agent[];
     setAgents(agentList);
-
     const agentUserIds = agentList.map(a => a.user_id);
     if (agentUserIds.length > 0) {
       const { data: profileData } = await supabase.from('profiles').select('user_id, display_name, username, avatar_url').in('user_id', agentUserIds);
@@ -134,7 +107,7 @@ const SupportDashboardPage = () => {
   }, []);
 
   useEffect(() => { fetchTickets(); }, [fetchTickets]);
-  useEffect(() => { if (isAdmin) fetchAgents(); }, [isAdmin, fetchAgents]);
+  useEffect(() => { fetchAgents(); }, [fetchAgents]);
 
   useEffect(() => {
     const channel = supabase.channel('dashboard-support-tickets')
@@ -143,7 +116,6 @@ const SupportDashboardPage = () => {
     return () => { supabase.removeChannel(channel); };
   }, [fetchTickets]);
 
-  // Redirect if not agent/admin
   useEffect(() => {
     if (!authLoading && !isSupportAgent && !isAdmin) navigate('/');
   }, [authLoading, isSupportAgent, isAdmin, navigate]);
@@ -163,26 +135,9 @@ const SupportDashboardPage = () => {
     return () => { supabase.removeChannel(channel); };
   }, [selectedTicket]);
 
-  const handleSend = async () => {
-    if ((!input.trim() && pendingFiles.length === 0) || !selectedTicket || !user) return;
-    setSending(true);
-    let attachmentUrls: string[] = [];
-    if (pendingFiles.length > 0) {
-      setUploading(true);
-      for (const file of pendingFiles) {
-        const url = await uploadAttachment(file, selectedTicket.id);
-        if (url) attachmentUrls.push(url);
-      }
-      setUploading(false);
-    }
-    await supabase.from('support_messages').insert({
-      ticket_id: selectedTicket.id, sender_id: user.id,
-      content: input.trim() || '📎 مرفق', is_admin: true, attachments: attachmentUrls,
-    } as any);
-    await supabase.from('support_tickets').update({ updated_at: new Date().toISOString() } as any).eq('id', selectedTicket.id);
-    setInput('');
-    setPendingFiles([]);
-    setSending(false);
+  const getUserName = (userId: string) => {
+    const p = profiles[userId] || agentProfiles[userId];
+    return p?.display_name || p?.username || 'مستخدم';
   };
 
   const handleClose = async (ticketId: string) => {
@@ -210,380 +165,159 @@ const SupportDashboardPage = () => {
     fetchTickets();
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    setPendingFiles(prev => [...prev, ...files].slice(0, 5));
-    e.target.value = '';
-  };
-
-  const openTransferDialog = (type: 'transfer' | 'escalate') => {
-    setTransferType(type);
-    setTransferTarget('');
-    setTransferReason('');
-    setShowTransferDialog(true);
-  };
-
-  const handleTransfer = async () => {
-    if (!selectedTicket || !transferTarget || !user) return;
+  const handleTransfer = async (data: { type: 'transfer' | 'escalate'; target: string; reason: string }) => {
+    if (!selectedTicket || !user) return;
     const updateData: any = {
-      escalation_reason: transferReason || null,
+      escalation_reason: data.reason || null,
       escalated_at: new Date().toISOString(),
       escalated_by: user.id,
     };
-    if (transferType === 'escalate') {
-      updateData.escalated_to = transferTarget;
+    if (data.type === 'escalate') {
+      updateData.escalated_to = data.target;
     } else {
-      updateData.assigned_to = transferTarget;
+      updateData.assigned_to = data.target;
     }
     await supabase.from('support_tickets').update(updateData).eq('id', selectedTicket.id);
 
-    // Add system message about the transfer
-    const targetName = getUserName(transferTarget);
-    const actionText = transferType === 'escalate' ? `تم تصعيد التذكرة إلى ${targetName}` : `تم تحويل التذكرة إلى ${targetName}`;
-    const fullMsg = transferReason ? `${actionText}\nالسبب: ${transferReason}` : actionText;
+    const targetName = getUserName(data.target);
+    const actionText = data.type === 'escalate' ? `تم تصعيد التذكرة إلى ${targetName}` : `تم تحويل التذكرة إلى ${targetName}`;
+    const fullMsg = data.reason ? `${actionText}\nالسبب: ${data.reason}` : actionText;
     await supabase.from('support_messages').insert({
       ticket_id: selectedTicket.id, sender_id: user.id,
       content: `⚡ ${fullMsg}`, is_admin: true, attachments: [],
     } as any);
 
-    setShowTransferDialog(false);
     setSelectedTicket(prev => prev ? { ...prev, ...updateData } : null);
     fetchTickets();
   };
 
-  const removeFile = (index: number) => setPendingFiles(prev => prev.filter((_, i) => i !== index));
+  // Stats
+  const openCount = allTickets.filter(t => t.status === 'open').length;
+  const closedCount = allTickets.filter(t => t.status === 'closed').length;
+  const urgentCount = allTickets.filter(t => (t.priority === 'urgent' || t.priority === 'high') && t.status === 'open').length;
+  const escalatedCount = allTickets.filter(t => t.escalated_to && t.status === 'open').length;
 
-  const addAgent = async () => {
-    if (!newAgentEmail.trim()) return;
-    // Find user by username or display_name
-    const { data } = await supabase.from('profiles').select('user_id').or(`username.eq.${newAgentEmail.trim()},display_name.eq.${newAgentEmail.trim()}`).limit(1);
-    if (data && data.length > 0) {
-      await supabase.from('support_agents').insert({ user_id: data[0].user_id } as any);
-      setNewAgentEmail('');
-      fetchAgents();
-    }
-  };
-
-  const removeAgent = async (agentId: string) => {
-    await supabase.from('support_agents').delete().eq('id', agentId);
-    fetchAgents();
-  };
-
-  const getUserName = (userId: string) => {
-    const p = profiles[userId] || agentProfiles[userId];
-    return p?.display_name || p?.username || 'مستخدم';
-  };
-
-  const openCount = tickets.filter(t => t.status === 'open').length;
-  const urgentCount = tickets.filter(t => t.priority === 'urgent' || t.priority === 'high').length;
-
-  if (authLoading) return <AppLayout><div className="flex-1 flex items-center justify-center text-muted-foreground">جاري التحميل...</div></AppLayout>;
+  if (authLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-2">
+          <Headset className="w-8 h-8 mx-auto text-primary animate-pulse" />
+          <p className="text-sm text-muted-foreground">جاري تحميل لوحة الدعم...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <AppLayout showNotifications={false}>
-      <header className="sticky top-0 z-40 glass-card border-b border-border/30">
-        <div className="flex items-center gap-3 px-4 py-3">
-          <Button variant="ghost" size="icon" onClick={() => {
-            if (selectedTicket) { setSelectedTicket(null); setPendingFiles([]); }
-            else if (showAgentManager) setShowAgentManager(false);
-            else navigate(-1);
-          }}>
-            <ArrowLeft className="w-5 h-5 rtl:rotate-180" />
+    <div className="h-screen flex flex-col bg-background overflow-hidden">
+      {/* Top Header */}
+      <header className="shrink-0 border-b border-border/30 bg-card/50 backdrop-blur-sm">
+        <div className="flex items-center gap-3 px-4 py-2.5">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="h-8 w-8">
+            <ArrowLeft className="w-4 h-4 rtl:rotate-180" />
           </Button>
-          <div className="flex-1 flex items-center gap-2">
-            <Headset className="w-5 h-5 text-primary" />
-            <h1 className="text-lg font-bold">
-              {selectedTicket ? selectedTicket.subject : showAgentManager ? 'إدارة الموظفين' : 'لوحة الدعم الفني'}
-            </h1>
-          </div>
-          {!selectedTicket && !showAgentManager && isAdmin && (
-            <Button size="sm" variant="outline" onClick={() => setShowAgentManager(true)} className="gap-1">
-              <Users className="w-4 h-4" /> الموظفين
-            </Button>
+          <Headset className="w-5 h-5 text-primary" />
+          <h1 className="font-bold text-base">لوحة الدعم الفني</h1>
+          <div className="flex-1" />
+          
+          {isAdmin && (
+            <Tabs value={activeTab} onValueChange={v => setActiveTab(v as any)}>
+              <TabsList className="h-8">
+                <TabsTrigger value="tickets" className="text-xs h-7 gap-1.5 px-3">
+                  <MessageCircle className="w-3.5 h-3.5" /> التذاكر
+                </TabsTrigger>
+                <TabsTrigger value="agents" className="text-xs h-7 gap-1.5 px-3">
+                  <Users className="w-3.5 h-3.5" /> الموظفين
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           )}
         </div>
       </header>
 
-      {/* Agent Manager */}
-      {showAgentManager && (
-        <div className="flex-1 overflow-auto p-4 space-y-4">
-          <div className="flex gap-2">
-            <Input value={newAgentEmail} onChange={e => setNewAgentEmail(e.target.value)}
-              placeholder="اسم المستخدم (username)..." className="flex-1" />
-            <Button onClick={addAgent} disabled={!newAgentEmail.trim()}>إضافة</Button>
-          </div>
-          <div className="space-y-2">
-            {agents.map(agent => (
-              <div key={agent.id} className="flex items-center justify-between p-3 rounded-xl bg-card/50 border border-border/30">
-                <div className="flex items-center gap-3">
-                  {agentProfiles[agent.user_id]?.avatar_url && (
-                    <img src={agentProfiles[agent.user_id].avatar_url!} className="w-8 h-8 rounded-full object-cover" />
-                  )}
-                  <div>
-                    <p className="font-semibold text-sm">{getUserName(agent.user_id)}</p>
-                    <Badge variant={agent.is_active ? 'default' : 'secondary'} className="text-xs">
-                      {agent.is_active ? 'نشط' : 'غير نشط'}
-                    </Badge>
-                  </div>
-                </div>
-                <Button size="sm" variant="destructive" onClick={() => removeAgent(agent.id)}>حذف</Button>
-              </div>
-            ))}
-            {agents.length === 0 && <p className="text-center text-muted-foreground py-8">لم يتم إضافة موظفين بعد</p>}
-          </div>
-        </div>
+      {/* Agent Manager Tab */}
+      {activeTab === 'agents' && isAdmin && (
+        <SupportAgentManager
+          agents={agents}
+          agentProfiles={agentProfiles}
+          onRefresh={fetchAgents}
+          getUserName={getUserName}
+        />
       )}
 
-      {/* Ticket Chat */}
-      {selectedTicket && !showAgentManager && (
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Ticket info bar */}
-          <div className="px-4 py-2 border-b border-border/30 flex flex-wrap items-center gap-2 bg-card/30">
-            <Badge className={cn("text-xs", priorityColors[selectedTicket.priority])}>
-              {priorityLabels[selectedTicket.priority]}
-            </Badge>
-            <Badge variant={selectedTicket.status === 'open' ? 'default' : 'secondary'} className="text-xs">
-              {selectedTicket.status === 'open' ? 'مفتوحة' : 'مغلقة'}
-            </Badge>
-            <span className="text-xs text-muted-foreground">{getUserName(selectedTicket.user_id)}</span>
-            <div className="flex-1" />
-            <Select value={selectedTicket.priority} onValueChange={v => handlePriorityChange(selectedTicket.id, v)}>
-              <SelectTrigger className="w-24 h-7 text-xs"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {Object.entries(priorityLabels).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            {agents.length > 0 && (
-              <Select value={selectedTicket.assigned_to || 'unassigned'} onValueChange={v => handleAssign(selectedTicket.id, v)}>
-                <SelectTrigger className="w-28 h-7 text-xs"><SelectValue placeholder="تعيين" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="unassigned">غير معيّن</SelectItem>
-                  {agents.map(a => <SelectItem key={a.user_id} value={a.user_id}>{getUserName(a.user_id)}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            )}
-            {selectedTicket.status === 'open' && (
-              <>
-                <Button size="sm" variant="outline" onClick={() => openTransferDialog('transfer')} className="h-7 text-xs gap-1">
-                  <Forward className="w-3 h-3" /> تحويل
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => openTransferDialog('escalate')} className="h-7 text-xs gap-1 text-orange-500 border-orange-500/30 hover:bg-orange-500/10">
-                  <ArrowUpRight className="w-3 h-3" /> تصعيد
-                </Button>
-              </>
-            )}
-            {selectedTicket.status === 'open' ? (
-              <Button size="sm" variant="outline" onClick={() => handleClose(selectedTicket.id)} className="h-7 text-xs gap-1">
-                <CheckCircle2 className="w-3 h-3" /> إغلاق
-              </Button>
-            ) : (
-              <Button size="sm" variant="outline" onClick={() => handleReopen(selectedTicket.id)} className="h-7 text-xs gap-1">
-                إعادة فتح
-              </Button>
-            )}
+      {/* Tickets Tab */}
+      {activeTab === 'tickets' && (
+        <>
+          {/* Stats Bar */}
+          <div className="shrink-0 border-b border-border/30 bg-card/20">
+            <SupportStats
+              openCount={openCount}
+              urgentCount={urgentCount}
+              agentCount={agents.filter(a => a.is_active).length}
+              closedCount={closedCount}
+              escalatedCount={escalatedCount}
+            />
           </div>
 
-          {/* Escalation info */}
-          {selectedTicket.escalated_to && (
-            <div className="px-4 py-1.5 bg-orange-500/5 border-b border-orange-500/20 flex items-center gap-2">
-              <ArrowUpRight className="w-3.5 h-3.5 text-orange-500" />
-              <span className="text-xs text-orange-500 font-medium">
-                تم التصعيد إلى: {getUserName(selectedTicket.escalated_to)}
-              </span>
-              {selectedTicket.escalation_reason && (
-                <span className="text-xs text-muted-foreground">- {selectedTicket.escalation_reason}</span>
-              )}
-            </div>
-          )}
-
-          {/* Messages */}
-          <div className="flex-1 overflow-auto p-4 space-y-3">
-            {messages.map(msg => (
-              <div key={msg.id} className={cn("max-w-[80%] p-3 rounded-2xl",
-                msg.is_admin ? "bg-primary/10 border border-primary/20 ms-auto" : "bg-card border border-border/30 me-auto")}>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-semibold">{msg.is_admin ? '🛡️ الدعم' : getUserName(selectedTicket.user_id)}</span>
-                  <span className="text-[10px] text-muted-foreground">{format(new Date(msg.created_at), 'HH:mm', { locale: ar })}</span>
-                </div>
-                {msg.content && msg.content !== '📎 مرفق' && <p className="text-sm whitespace-pre-wrap">{msg.content}</p>}
-                {msg.attachments && msg.attachments.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {msg.attachments.map((url, i) => (
-                      <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                        <img src={url} alt="مرفق" className="w-24 h-24 object-cover rounded-lg border border-border/30 hover:opacity-80 transition-opacity" />
-                      </a>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Input */}
-          {selectedTicket.status === 'open' && (
-            <div className="p-3 border-t border-border/30 space-y-2">
-              {pendingFiles.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {pendingFiles.map((file, i) => (
-                    <div key={i} className="relative w-12 h-12 rounded-lg overflow-hidden border border-border/50">
-                      <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
-                      <button onClick={() => removeFile(i)} className="absolute top-0 end-0 p-0.5 bg-destructive text-destructive-foreground rounded-bl-lg">
-                        <X className="w-2.5 h-2.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div className="flex gap-2">
-                <Button variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} className="shrink-0">
-                  <ImagePlus className="w-4 h-4" />
-                </Button>
-                <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileSelect} />
-                <Input value={input} onChange={e => setInput(e.target.value)} placeholder="اكتب ردك..."
-                  onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()} disabled={sending} />
-                <Button size="icon" onClick={handleSend} disabled={(!input.trim() && pendingFiles.length === 0) || sending}>
-                  {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Tickets List */}
-      {!selectedTicket && !showAgentManager && (
-        <div className="flex-1 overflow-auto">
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-3 p-4">
-            <div className="p-3 rounded-xl bg-card/50 border border-border/30 text-center">
-              <Clock className="w-5 h-5 mx-auto mb-1 text-primary" />
-              <p className="text-xl font-bold">{openCount}</p>
-              <p className="text-xs text-muted-foreground">مفتوحة</p>
-            </div>
-            <div className="p-3 rounded-xl bg-card/50 border border-border/30 text-center">
-              <AlertTriangle className="w-5 h-5 mx-auto mb-1 text-destructive" />
-              <p className="text-xl font-bold">{urgentCount}</p>
-              <p className="text-xs text-muted-foreground">عالية/عاجلة</p>
-            </div>
-            <div className="p-3 rounded-xl bg-card/50 border border-border/30 text-center">
-              <Users className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
-              <p className="text-xl font-bold">{agents.length}</p>
-              <p className="text-xs text-muted-foreground">موظفين</p>
-            </div>
-          </div>
-
-          {/* Filter */}
-          <div className="flex items-center gap-2 px-4 pb-3">
-            <Filter className="w-4 h-4 text-muted-foreground" />
-            {(['open', 'all', 'closed'] as const).map(f => (
-              <Button key={f} size="sm" variant={filter === f ? 'default' : 'outline'} onClick={() => setFilter(f)}>
-                {f === 'open' ? 'مفتوحة' : f === 'closed' ? 'مغلقة' : 'الكل'}
-              </Button>
-            ))}
-          </div>
-
-          {/* List */}
-          <div className="px-4 pb-4 space-y-2">
-            {loading ? (
-              <div className="text-center py-8 text-muted-foreground">جاري التحميل...</div>
-            ) : tickets.length === 0 ? (
-              <div className="text-center py-12 space-y-3">
-                <MessageCircle className="w-12 h-12 mx-auto text-muted-foreground/50" />
-                <p className="text-muted-foreground">لا توجد تذاكر</p>
-              </div>
-            ) : tickets.map(ticket => (
-              <button key={ticket.id} onClick={() => openChat(ticket)}
-                className="w-full text-start p-4 rounded-xl bg-card/50 border border-border/30 hover:bg-card/80 transition-colors">
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-2">
-                    {profiles[ticket.user_id]?.avatar_url && (
-                      <img src={profiles[ticket.user_id].avatar_url!} className="w-6 h-6 rounded-full object-cover" />
-                    )}
-                    <span className="font-semibold text-sm">{getUserName(ticket.user_id)}</span>
-                  </div>
-                  <span className="text-xs text-muted-foreground">{format(new Date(ticket.updated_at), 'dd/MM HH:mm', { locale: ar })}</span>
-                </div>
-                <p className="text-sm text-foreground truncate mb-1">{ticket.subject}</p>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Badge variant={ticket.status === 'open' ? 'default' : 'secondary'} className="text-xs">
-                    {ticket.status === 'open' ? 'مفتوحة' : 'مغلقة'}
-                  </Badge>
-                  <Badge className={cn("text-xs", priorityColors[ticket.priority])}>
-                    {priorityLabels[ticket.priority]}
-                  </Badge>
-                  {ticket.status === 'open' && (() => {
-                    const hoursLeft = Math.max(0, 4 - (Date.now() - new Date(ticket.updated_at).getTime()) / 3600000);
-                    return (
-                      <span className={cn("text-xs", hoursLeft < 6 ? "text-destructive" : "text-muted-foreground")}>
-                        ⏱ {hoursLeft < 1 ? 'أقل من ساعة' : `${Math.floor(hoursLeft)} ساعة`}
-                      </span>
-                    );
-                  })()}
-                  {ticket.assigned_to && (
-                    <span className="text-xs text-muted-foreground">← {getUserName(ticket.assigned_to)}</span>
-                  )}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Transfer/Escalation Dialog */}
-      <Dialog open={showTransferDialog} onOpenChange={setShowTransferDialog}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              {transferType === 'escalate' ? (
-                <><ArrowUpRight className="w-5 h-5 text-orange-500" /> تصعيد التذكرة</>
-              ) : (
-                <><Forward className="w-5 h-5 text-primary" /> تحويل التذكرة</>
-              )}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 mt-2">
-            <div>
-              <label className="text-sm font-medium mb-2 block">
-                {transferType === 'escalate' ? 'تصعيد إلى' : 'تحويل إلى'}
-              </label>
-              <Select value={transferTarget} onValueChange={setTransferTarget}>
-                <SelectTrigger><SelectValue placeholder="اختر الشخص..." /></SelectTrigger>
-                <SelectContent>
-                  {transferType === 'escalate' ? (
-                    // Show admins for escalation
-                    agents.filter(a => a.user_id !== user?.id).map(a => (
-                      <SelectItem key={a.user_id} value={a.user_id}>{getUserName(a.user_id)}</SelectItem>
-                    ))
-                  ) : (
-                    // Show all agents for transfer
-                    agents.filter(a => a.user_id !== user?.id).map(a => (
-                      <SelectItem key={a.user_id} value={a.user_id}>{getUserName(a.user_id)}</SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">سبب {transferType === 'escalate' ? 'التصعيد' : 'التحويل'}</label>
-              <Textarea
-                value={transferReason}
-                onChange={e => setTransferReason(e.target.value)}
-                placeholder="اكتب السبب هنا..."
-                rows={3}
+          {/* Main Content - Split Panel */}
+          <div className="flex-1 flex overflow-hidden">
+            {/* Ticket List Sidebar */}
+            <div className={cn(
+              "border-e border-border/30 bg-card/20 overflow-hidden transition-all duration-200",
+              selectedTicket ? "hidden md:flex md:w-80 lg:w-96 flex-col" : "w-full md:w-80 lg:w-96 flex flex-col"
+            )}>
+              <SupportTicketList
+                tickets={tickets}
+                loading={loading}
+                filter={filter}
+                onFilterChange={setFilter}
+                selectedTicketId={selectedTicket?.id || null}
+                onSelectTicket={openChat}
+                getUserName={getUserName}
+                profiles={profiles}
               />
             </div>
-            <Button onClick={handleTransfer} disabled={!transferTarget} className="w-full gap-2">
-              {transferType === 'escalate' ? (
-                <><ArrowUpRight className="w-4 h-4" /> تصعيد</>
-              ) : (
-                <><Forward className="w-4 h-4" /> تحويل</>
-              )}
-            </Button>
+
+            {/* Chat Area */}
+            {selectedTicket ? (
+              <div className="flex-1 flex flex-col overflow-hidden">
+                {/* Mobile back button */}
+                <div className="md:hidden shrink-0 border-b border-border/30 px-2 py-1.5">
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedTicket(null)} className="text-xs gap-1">
+                    <ArrowLeft className="w-3 h-3 rtl:rotate-180" /> رجوع للقائمة
+                  </Button>
+                </div>
+                <SupportChat
+                  ticket={selectedTicket}
+                  messages={messages}
+                  agents={agents}
+                  userId={user?.id || ''}
+                  getUserName={getUserName}
+                  onClose={handleClose}
+                  onReopen={handleReopen}
+                  onPriorityChange={handlePriorityChange}
+                  onAssign={handleAssign}
+                  onTransfer={handleTransfer}
+                  onTicketUpdate={setSelectedTicket}
+                />
+              </div>
+            ) : (
+              <div className="hidden md:flex flex-1 items-center justify-center bg-muted/5">
+                <div className="text-center space-y-3">
+                  <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
+                    <LayoutDashboard className="w-8 h-8 text-primary/50" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-muted-foreground">اختر تذكرة</p>
+                    <p className="text-xs text-muted-foreground/70">اختر تذكرة من القائمة لعرض المحادثة</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-        </DialogContent>
-      </Dialog>
-    </AppLayout>
+        </>
+      )}
+    </div>
   );
 };
 
