@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Edit, Trash2, Eye, EyeOff, ChevronDown, ChevronUp,
-  BookOpen, GraduationCap, Save, X, ArrowUp, ArrowDown, Crown, Video, FileText
+  BookOpen, GraduationCap, Save, X, ArrowUp, ArrowDown, Crown, Video, FileText, Upload, Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -70,6 +70,7 @@ export const CoursesManagement = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
 
   // Expanded states
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
@@ -519,16 +520,73 @@ export const CoursesManagement = () => {
                 </div>
               </div>
 
-              {/* Video URL */}
+              {/* Video URL or Upload */}
               {(lessonForm.content_type === 'video' || lessonForm.content_type === 'both') && (
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">{isArabic ? 'رابط الفيديو' : 'Video URL'}</label>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">{isArabic ? 'الفيديو' : 'Video'}</label>
+                  
+                  {/* Upload Button */}
+                  <div className="flex gap-2">
+                    <label className={cn(
+                      "flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-dashed cursor-pointer transition-colors",
+                      uploadingVideo ? "border-primary/50 bg-primary/5" : "border-border/50 hover:border-primary/40 hover:bg-muted/30"
+                    )}>
+                      <input
+                        type="file"
+                        accept="video/mp4,video/webm,video/ogg,video/quicktime"
+                        className="hidden"
+                        disabled={uploadingVideo}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          if (file.size > 100 * 1024 * 1024) {
+                            toast({ title: isArabic ? 'خطأ' : 'Error', description: isArabic ? 'الحد الأقصى 100 ميجا' : 'Max 100MB', variant: 'destructive' });
+                            return;
+                          }
+                          setUploadingVideo(true);
+                          const ext = file.name.split('.').pop();
+                          const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+                          const { error } = await supabase.storage.from('lesson-videos').upload(path, file);
+                          if (error) {
+                            toast({ title: isArabic ? 'خطأ بالرفع' : 'Upload error', description: error.message, variant: 'destructive' });
+                            setUploadingVideo(false);
+                            return;
+                          }
+                          const { data: urlData } = supabase.storage.from('lesson-videos').getPublicUrl(path);
+                          setLessonForm(p => ({ ...p, video_url: urlData.publicUrl }));
+                          setUploadingVideo(false);
+                          toast({ title: isArabic ? 'تم رفع الفيديو ✅' : 'Video uploaded ✅' });
+                        }}
+                      />
+                      {uploadingVideo ? (
+                        <><Loader2 className="w-4 h-4 animate-spin" /><span className="text-sm">{isArabic ? 'جاري الرفع...' : 'Uploading...'}</span></>
+                      ) : (
+                        <><Upload className="w-4 h-4" /><span className="text-sm">{isArabic ? 'رفع فيديو' : 'Upload Video'}</span></>
+                      )}
+                    </label>
+                  </div>
+
+                  {/* Or paste URL */}
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="flex-1 h-px bg-border/30" />
+                    {isArabic ? 'أو أدخل رابط' : 'or paste URL'}
+                    <div className="flex-1 h-px bg-border/30" />
+                  </div>
                   <Input 
                     placeholder={isArabic ? 'رابط يوتيوب أو فيميو أو رابط مباشر' : 'YouTube, Vimeo, or direct video URL'} 
                     value={lessonForm.video_url} 
                     onChange={e => setLessonForm(p => ({ ...p, video_url: e.target.value }))} 
                   />
-                  <p className="text-[10px] text-muted-foreground">{isArabic ? 'يدعم يوتيوب، فيميو، أو رابط فيديو مباشر' : 'Supports YouTube, Vimeo, or direct video links'}</p>
+                  
+                  {/* Preview */}
+                  {lessonForm.video_url && (
+                    <div className="rounded-lg overflow-hidden border border-border/30 bg-muted/20 p-2">
+                      <p className="text-[10px] text-muted-foreground truncate mb-1">✅ {lessonForm.video_url}</p>
+                      <Button size="sm" variant="ghost" className="text-xs text-destructive h-6" onClick={() => setLessonForm(p => ({ ...p, video_url: '' }))}>
+                        {isArabic ? 'إزالة' : 'Remove'}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
 
