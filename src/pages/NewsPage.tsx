@@ -4,173 +4,29 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Newspaper, TrendingUp, Globe, Clock, Search, 
   Bookmark, BookmarkCheck, ChevronLeft, ChevronRight,
-  Flame, Star, Eye, ExternalLink, Sparkles, ArrowUpRight
+  Flame, Star, Eye, ExternalLink, Sparkles, ArrowUpRight,
+  RefreshCw, Loader2, AlertCircle, Wifi
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 type NewsCategory = 'all' | 'forex' | 'crypto' | 'economy' | 'stocks';
 
 interface NewsArticle {
   id: string;
   title: string;
-  titleAr: string;
   summary: string;
-  summaryAr: string;
-  category: NewsCategory;
+  link: string;
   source: string;
+  category: string;
+  pubDate: string;
   imageUrl: string;
-  timeAgo: string;
-  timeAgoAr: string;
-  isFeatured: boolean;
-  isHot: boolean;
-  readTime: string;
-  readTimeAr: string;
-  views: number;
 }
-
-// Mock news data - in production this would come from an API
-const mockNews: NewsArticle[] = [
-  {
-    id: '1',
-    title: 'Gold Surges Past $2,800 as Global Uncertainty Rises',
-    titleAr: 'الذهب يقفز فوق 2,800$ مع تصاعد حالة عدم اليقين العالمية',
-    summary: 'Gold prices hit new all-time highs as investors flock to safe-haven assets amid escalating geopolitical tensions and inflation concerns.',
-    summaryAr: 'أسعار الذهب تسجل مستويات قياسية جديدة مع لجوء المستثمرين إلى أصول الملاذ الآمن وسط تصاعد التوترات الجيوسياسية ومخاوف التضخم.',
-    category: 'forex',
-    source: 'Reuters',
-    imageUrl: 'https://images.unsplash.com/photo-1610375461246-83df859d849d?w=800&q=80',
-    timeAgo: '2h ago',
-    timeAgoAr: 'منذ ساعتين',
-    isFeatured: true,
-    isHot: true,
-    readTime: '4 min',
-    readTimeAr: '4 دقائق',
-    views: 12400,
-  },
-  {
-    id: '2',
-    title: 'Bitcoin Breaks $120K Barrier in Historic Rally',
-    titleAr: 'البيتكوين يكسر حاجز 120 ألف دولار في ارتفاع تاريخي',
-    summary: 'The world\'s largest cryptocurrency reaches unprecedented levels, driven by institutional adoption and ETF inflows.',
-    summaryAr: 'أكبر عملة رقمية في العالم تصل إلى مستويات غير مسبوقة مدفوعة بتبني المؤسسات وتدفقات صناديق ETF.',
-    category: 'crypto',
-    source: 'CoinDesk',
-    imageUrl: 'https://images.unsplash.com/photo-1518546305927-5a555bb7020d?w=800&q=80',
-    timeAgo: '4h ago',
-    timeAgoAr: 'منذ 4 ساعات',
-    isFeatured: true,
-    isHot: true,
-    readTime: '5 min',
-    readTimeAr: '5 دقائق',
-    views: 28300,
-  },
-  {
-    id: '3',
-    title: 'Federal Reserve Signals Rate Cuts Ahead',
-    titleAr: 'الفيدرالي الأمريكي يلمّح لخفض أسعار الفائدة',
-    summary: 'Fed Chair hints at potential rate cuts in upcoming meetings as inflation shows signs of cooling.',
-    summaryAr: 'رئيس الاحتياطي الفيدرالي يلمّح لإمكانية خفض أسعار الفائدة في الاجتماعات القادمة مع تراجع التضخم.',
-    category: 'economy',
-    source: 'Bloomberg',
-    imageUrl: 'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=800&q=80',
-    timeAgo: '5h ago',
-    timeAgoAr: 'منذ 5 ساعات',
-    isFeatured: false,
-    isHot: false,
-    readTime: '3 min',
-    readTimeAr: '3 دقائق',
-    views: 8900,
-  },
-  {
-    id: '4',
-    title: 'EUR/USD Hits 6-Month High on Dollar Weakness',
-    titleAr: 'اليورو/دولار يبلغ أعلى مستوى في 6 أشهر مع ضعف الدولار',
-    summary: 'The euro strengthens significantly against the dollar as diverging monetary policies take effect.',
-    summaryAr: 'اليورو يرتفع بشكل ملحوظ مقابل الدولار مع تأثير السياسات النقدية المتباينة.',
-    category: 'forex',
-    source: 'FXStreet',
-    imageUrl: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&q=80',
-    timeAgo: '6h ago',
-    timeAgoAr: 'منذ 6 ساعات',
-    isFeatured: false,
-    isHot: false,
-    readTime: '3 min',
-    readTimeAr: '3 دقائق',
-    views: 5600,
-  },
-  {
-    id: '5',
-    title: 'Oil Prices Drop as OPEC+ Considers Output Increase',
-    titleAr: 'أسعار النفط تتراجع مع دراسة أوبك+ زيادة الإنتاج',
-    summary: 'Crude oil falls as OPEC+ members discuss potential production increases to stabilize the market.',
-    summaryAr: 'النفط الخام ينخفض مع مناقشة أعضاء أوبك+ زيادة محتملة في الإنتاج لتحقيق استقرار السوق.',
-    category: 'economy',
-    source: 'CNBC',
-    imageUrl: 'https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=800&q=80',
-    timeAgo: '8h ago',
-    timeAgoAr: 'منذ 8 ساعات',
-    isFeatured: false,
-    isHot: false,
-    readTime: '4 min',
-    readTimeAr: '4 دقائق',
-    views: 7200,
-  },
-  {
-    id: '6',
-    title: 'Ethereum 2.0 Staking Rewards Hit Record High',
-    titleAr: 'عوائد تخزين إيثريوم 2.0 تسجل مستويات قياسية',
-    summary: 'ETH staking yields surge as network activity reaches new peaks, attracting more validators.',
-    summaryAr: 'عوائد تخزين ETH ترتفع بشكل حاد مع وصول نشاط الشبكة لمستويات جديدة.',
-    category: 'crypto',
-    source: 'The Block',
-    imageUrl: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=800&q=80',
-    timeAgo: '10h ago',
-    timeAgoAr: 'منذ 10 ساعات',
-    isFeatured: false,
-    isHot: false,
-    readTime: '3 min',
-    readTimeAr: '3 دقائق',
-    views: 4100,
-  },
-  {
-    id: '7',
-    title: 'S&P 500 Reaches New All-Time High',
-    titleAr: 'مؤشر S&P 500 يسجل قمة تاريخية جديدة',
-    summary: 'US stock market continues its bull run with tech sector leading the rally.',
-    summaryAr: 'سوق الأسهم الأمريكي يواصل ارتفاعه مع قيادة قطاع التكنولوجيا للصعود.',
-    category: 'stocks',
-    source: 'WSJ',
-    imageUrl: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=800&q=80',
-    timeAgo: '12h ago',
-    timeAgoAr: 'منذ 12 ساعة',
-    isFeatured: false,
-    isHot: false,
-    readTime: '4 min',
-    readTimeAr: '4 دقائق',
-    views: 9800,
-  },
-  {
-    id: '8',
-    title: 'Japanese Yen Weakens as BOJ Maintains Ultra-Low Rates',
-    titleAr: 'الين الياباني يتراجع مع إبقاء بنك اليابان على معدلات فائدة منخفضة',
-    summary: 'USD/JPY climbs as the Bank of Japan continues its accommodative monetary policy stance.',
-    summaryAr: 'الدولار/ين يرتفع مع استمرار بنك اليابان في سياسته النقدية التيسيرية.',
-    category: 'forex',
-    source: 'Nikkei',
-    imageUrl: 'https://images.unsplash.com/photo-1480796927426-f609979314bd?w=800&q=80',
-    timeAgo: '14h ago',
-    timeAgoAr: 'منذ 14 ساعة',
-    isFeatured: false,
-    isHot: false,
-    readTime: '3 min',
-    readTimeAr: '3 دقائق',
-    views: 3400,
-  },
-];
 
 const categoryConfig: Record<NewsCategory, { icon: typeof Globe; color: string; gradient: string }> = {
   all: { icon: Globe, color: 'text-primary', gradient: 'from-primary/20 to-primary/5' },
@@ -180,20 +36,64 @@ const categoryConfig: Record<NewsCategory, { icon: typeof Globe; color: string; 
   stocks: { icon: TrendingUp, color: 'text-purple-400', gradient: 'from-purple-500/20 to-purple-500/5' },
 };
 
+const categoryImages: Record<string, string> = {
+  forex: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=400&q=60',
+  crypto: 'https://images.unsplash.com/photo-1518546305927-5a555bb7020d?w=400&q=60',
+  economy: 'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=400&q=60',
+  stocks: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=400&q=60',
+};
+
 const NewsPage = () => {
   const { t, i18n } = useTranslation();
+  const { toast } = useToast();
   const isArabic = i18n.language === 'ar';
   const [activeCategory, setActiveCategory] = useState<NewsCategory>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [savedArticles, setSavedArticles] = useState<string[]>([]);
   const [featuredIndex, setFeaturedIndex] = useState(0);
+  const [articles, setArticles] = useState<NewsArticle[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [lastFetched, setLastFetched] = useState<Date | null>(null);
 
-  const featuredArticles = mockNews.filter(n => n.isFeatured);
-  const filteredNews = mockNews.filter(n => {
-    const matchesCategory = activeCategory === 'all' || n.category === activeCategory;
-    const title = isArabic ? n.titleAr : n.title;
-    const matchesSearch = title.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch && !n.isFeatured;
+  const fetchNews = useCallback(async (category: NewsCategory = 'all') => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke('fetch-news', {
+        body: { category },
+      });
+
+      if (fnError) throw fnError;
+
+      if (data?.success && data?.data) {
+        setArticles(data.data);
+        setLastFetched(new Date());
+      } else {
+        throw new Error(data?.error || 'Failed to fetch news');
+      }
+    } catch (err: any) {
+      console.error('Error fetching news:', err);
+      setError(err.message || 'Failed to load news');
+      toast({
+        title: isArabic ? 'خطأ في تحميل الأخبار' : 'Error loading news',
+        description: isArabic ? 'سيتم عرض الأخبار المحفوظة' : 'Cached news will be shown',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast, isArabic]);
+
+  useEffect(() => {
+    fetchNews(activeCategory);
+  }, [activeCategory]);
+
+  const featuredArticles = articles.slice(0, 3);
+  const filteredNews = articles.filter((n, idx) => {
+    if (idx < 3) return false; // Skip featured
+    const matchesSearch = n.title.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch;
   });
 
   const toggleSave = (id: string) => {
@@ -217,9 +117,25 @@ const NewsPage = () => {
     { key: 'stocks', labelAr: 'أسهم', labelEn: 'Stocks' },
   ];
 
-  const formatViews = (views: number) => {
-    if (views >= 1000) return `${(views / 1000).toFixed(1)}K`;
-    return views.toString();
+  const timeAgo = (dateStr: string) => {
+    if (!dateStr) return '';
+    try {
+      const diff = Date.now() - new Date(dateStr).getTime();
+      const mins = Math.floor(diff / 60000);
+      if (mins < 1) return isArabic ? 'الآن' : 'now';
+      if (mins < 60) return isArabic ? `منذ ${mins} د` : `${mins}m ago`;
+      const hours = Math.floor(mins / 60);
+      if (hours < 24) return isArabic ? `منذ ${hours} س` : `${hours}h ago`;
+      const days = Math.floor(hours / 24);
+      return isArabic ? `منذ ${days} ي` : `${days}d ago`;
+    } catch {
+      return '';
+    }
+  };
+
+  const getArticleImage = (article: NewsArticle) => {
+    if (article.imageUrl) return article.imageUrl;
+    return categoryImages[article.category] || categoryImages.economy;
   };
 
   return (
@@ -238,6 +154,19 @@ const NewsPage = () => {
               </div>
             </div>
             <div className="flex items-center gap-1.5">
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 rounded-lg"
+                onClick={() => fetchNews(activeCategory)}
+                disabled={loading}
+              >
+                {loading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-4 h-4" />
+                )}
+              </Button>
               <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-profit/10 border border-profit/20">
                 <div className="w-1.5 h-1.5 rounded-full bg-profit animate-pulse" />
                 <span className="text-[10px] font-medium text-profit">LIVE</span>
@@ -266,7 +195,7 @@ const NewsPage = () => {
             return (
               <button
                 key={cat.key}
-                onClick={() => setActiveCategory(cat.key)}
+                onClick={() => { setActiveCategory(cat.key); setFeaturedIndex(0); }}
                 className={cn(
                   "flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap border",
                   activeCategory === cat.key
@@ -283,8 +212,31 @@ const NewsPage = () => {
       </header>
 
       <div className="px-4 py-4 space-y-5">
+        {/* Loading State */}
+        {loading && articles.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-20">
+            <Loader2 className="w-8 h-8 animate-spin text-primary mb-3" />
+            <p className="text-sm text-muted-foreground">{isArabic ? 'جاري تحميل الأخبار...' : 'Loading news...'}</p>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && articles.length === 0 && !loading && (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="p-4 rounded-2xl bg-destructive/10 mb-4">
+              <AlertCircle className="w-8 h-8 text-destructive" />
+            </div>
+            <p className="text-sm font-medium text-foreground mb-1">{isArabic ? 'تعذر تحميل الأخبار' : 'Failed to load news'}</p>
+            <p className="text-xs text-muted-foreground mb-4">{isArabic ? 'تحقق من اتصالك بالإنترنت' : 'Check your connection'}</p>
+            <Button onClick={() => fetchNews(activeCategory)} size="sm" className="gap-2">
+              <RefreshCw className="w-3.5 h-3.5" />
+              {isArabic ? 'إعادة المحاولة' : 'Retry'}
+            </Button>
+          </div>
+        )}
+
         {/* Featured News Carousel */}
-        {activeCategory === 'all' && featuredArticles.length > 0 && (
+        {!loading && featuredArticles.length > 0 && (
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Flame className="w-4 h-4 text-orange-400" />
@@ -293,30 +245,32 @@ const NewsPage = () => {
             <div className="relative">
               <AnimatePresence mode="wait">
                 {featuredArticles.map((article, idx) => idx === featuredIndex && (
-                  <motion.div
+                  <motion.a
                     key={article.id}
+                    href={article.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     initial={{ opacity: 0, x: 30 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -30 }}
                     transition={{ duration: 0.4 }}
-                    className="relative overflow-hidden rounded-2xl border border-border/25 group"
+                    className="block relative overflow-hidden rounded-2xl border border-border/25 group"
                   >
                     {/* Image */}
                     <div className="relative h-52 overflow-hidden">
                       <img
-                        src={article.imageUrl}
-                        alt={isArabic ? article.titleAr : article.title}
+                        src={getArticleImage(article)}
+                        alt={article.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                        onError={(e) => { (e.target as HTMLImageElement).src = categoryImages[article.category] || categoryImages.economy; }}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
                       
                       {/* Top badges */}
                       <div className="absolute top-3 start-3 flex items-center gap-2">
-                        {article.isHot && (
-                          <Badge className="bg-orange-500/90 text-white border-none gap-1 rounded-lg text-[10px] backdrop-blur-sm">
-                            <Flame className="w-3 h-3" /> {isArabic ? 'رائج' : 'Hot'}
-                          </Badge>
-                        )}
+                        <Badge className="bg-orange-500/90 text-white border-none gap-1 rounded-lg text-[10px] backdrop-blur-sm">
+                          <Flame className="w-3 h-3" /> {isArabic ? 'رائج' : 'Hot'}
+                        </Badge>
                         <Badge variant="outline" className="bg-background/60 backdrop-blur-md border-border/30 rounded-lg text-[10px]">
                           {article.source}
                         </Badge>
@@ -324,7 +278,7 @@ const NewsPage = () => {
 
                       {/* Save */}
                       <button
-                        onClick={() => toggleSave(article.id)}
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleSave(article.id); }}
                         className="absolute top-3 end-3 p-2 rounded-xl bg-background/40 backdrop-blur-md border border-border/20 hover:bg-background/60 transition-all"
                       >
                         {savedArticles.includes(article.id)
@@ -335,26 +289,26 @@ const NewsPage = () => {
 
                     {/* Content */}
                     <div className="absolute bottom-0 start-0 end-0 p-4">
-                      <h3 className="text-base font-bold text-foreground leading-snug mb-2">
-                        {isArabic ? article.titleAr : article.title}
+                      <h3 className="text-base font-bold text-foreground leading-snug mb-2 line-clamp-2">
+                        {article.title}
                       </h3>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3 text-[11px] text-muted-foreground/70">
                           <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
-                            {isArabic ? article.timeAgoAr : article.timeAgo}
+                            {timeAgo(article.pubDate)}
                           </span>
                           <span className="flex items-center gap-1">
-                            <Eye className="w-3 h-3" />
-                            <span className="trading-number">{formatViews(article.views)}</span>
+                            <ExternalLink className="w-3 h-3" />
+                            {article.source}
                           </span>
                         </div>
-                        <Button size="sm" variant="ghost" className="h-7 text-xs gap-1 text-primary hover:text-primary">
+                        <span className="h-7 text-xs gap-1 text-primary flex items-center">
                           {isArabic ? 'اقرأ المزيد' : 'Read more'} <ArrowUpRight className="w-3 h-3" />
-                        </Button>
+                        </span>
                       </div>
                     </div>
-                  </motion.div>
+                  </motion.a>
                 ))}
               </AnimatePresence>
 
@@ -378,124 +332,138 @@ const NewsPage = () => {
         )}
 
         {/* Latest News */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-muted-foreground" />
-            <h2 className="text-sm font-bold text-foreground">{t('news.latest')}</h2>
-          </div>
-
-          {filteredNews.length > 0 ? (
-            <div className="space-y-3">
-              {filteredNews.map((article, index) => {
-                const config = categoryConfig[article.category];
-                return (
-                  <motion.div
-                    key={article.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="group flex gap-3 p-3 rounded-2xl border border-border/25 bg-card/50 backdrop-blur-sm hover:border-border/40 hover:scale-[1.01] transition-all cursor-pointer"
-                  >
-                    {/* Thumbnail */}
-                    <div className="relative w-24 h-24 rounded-xl overflow-hidden shrink-0">
-                      <img
-                        src={article.imageUrl}
-                        alt={isArabic ? article.titleAr : article.title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-background/40 to-transparent" />
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
-                      <div>
-                        <div className="flex items-center gap-1.5 mb-1.5">
-                          <Badge 
-                            variant="outline" 
-                            className={cn(
-                              "text-[9px] px-1.5 py-0 rounded-md border-current/20",
-                              config.color
-                            )}
-                          >
-                            {isArabic ? categories.find(c => c.key === article.category)?.labelAr : categories.find(c => c.key === article.category)?.labelEn}
-                          </Badge>
-                          <span className="text-[10px] text-muted-foreground/60">{article.source}</span>
-                        </div>
-                        <h3 className="text-sm font-bold text-foreground leading-snug line-clamp-2">
-                          {isArabic ? article.titleAr : article.title}
-                        </h3>
-                      </div>
-
-                      <div className="flex items-center justify-between mt-1.5">
-                        <div className="flex items-center gap-3 text-[10px] text-muted-foreground/60">
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {isArabic ? article.timeAgoAr : article.timeAgo}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Eye className="w-3 h-3" />
-                            <span className="trading-number">{formatViews(article.views)}</span>
-                          </span>
-                        </div>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); toggleSave(article.id); }}
-                          className="p-1 rounded-lg hover:bg-muted/50 transition-colors"
-                        >
-                          {savedArticles.includes(article.id)
-                            ? <BookmarkCheck className="w-3.5 h-3.5 text-primary" />
-                            : <Bookmark className="w-3.5 h-3.5 text-muted-foreground/50" />}
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          ) : (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex flex-col items-center justify-center py-16 text-center"
-            >
-              <div className="p-4 rounded-2xl bg-muted/30 mb-4">
-                <Newspaper className="w-10 h-10 text-muted-foreground/40" />
+        {!loading && articles.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-muted-foreground" />
+                <h2 className="text-sm font-bold text-foreground">{t('news.latest')}</h2>
               </div>
-              <p className="text-muted-foreground font-medium">{t('news.noArticles')}</p>
-              <p className="text-sm text-muted-foreground/60 mt-1">{t('news.checkLater')}</p>
-            </motion.div>
-          )}
-        </div>
+              {lastFetched && (
+                <span className="text-[10px] text-muted-foreground/50">
+                  {isArabic ? 'آخر تحديث: ' : 'Updated: '}{timeAgo(lastFetched.toISOString())}
+                </span>
+              )}
+            </div>
+
+            {filteredNews.length > 0 ? (
+              <div className="space-y-3">
+                {filteredNews.map((article, index) => {
+                  const catKey = (article.category as NewsCategory) || 'economy';
+                  const config = categoryConfig[catKey] || categoryConfig.economy;
+                  return (
+                    <motion.a
+                      key={article.id}
+                      href={article.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      className="group flex gap-3 p-3 rounded-2xl border border-border/25 bg-card/50 backdrop-blur-sm hover:border-border/40 hover:scale-[1.01] transition-all cursor-pointer"
+                    >
+                      {/* Thumbnail */}
+                      <div className="relative w-24 h-24 rounded-xl overflow-hidden shrink-0">
+                        <img
+                          src={getArticleImage(article)}
+                          alt={article.title}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                          onError={(e) => { (e.target as HTMLImageElement).src = categoryImages[article.category] || categoryImages.economy; }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-background/40 to-transparent" />
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+                        <div>
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <Badge 
+                              variant="outline" 
+                              className={cn(
+                                "text-[9px] px-1.5 py-0 rounded-md border-current/20",
+                                config.color
+                              )}
+                            >
+                              {categories.find(c => c.key === catKey)
+                                ? (isArabic ? categories.find(c => c.key === catKey)?.labelAr : categories.find(c => c.key === catKey)?.labelEn)
+                                : article.category}
+                            </Badge>
+                            <span className="text-[10px] text-muted-foreground/60">{article.source}</span>
+                          </div>
+                          <h3 className="text-sm font-bold text-foreground leading-snug line-clamp-2">
+                            {article.title}
+                          </h3>
+                        </div>
+
+                        <div className="flex items-center justify-between mt-1.5">
+                          <div className="flex items-center gap-3 text-[10px] text-muted-foreground/60">
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {timeAgo(article.pubDate)}
+                            </span>
+                          </div>
+                          <button
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleSave(article.id); }}
+                            className="p-1 rounded-lg hover:bg-muted/50 transition-colors"
+                          >
+                            {savedArticles.includes(article.id)
+                              ? <BookmarkCheck className="w-3.5 h-3.5 text-primary" />
+                              : <Bookmark className="w-3.5 h-3.5 text-muted-foreground/50" />}
+                          </button>
+                        </div>
+                      </div>
+                    </motion.a>
+                  );
+                })}
+              </div>
+            ) : searchQuery ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex flex-col items-center justify-center py-16 text-center"
+              >
+                <div className="p-4 rounded-2xl bg-muted/30 mb-4">
+                  <Search className="w-10 h-10 text-muted-foreground/40" />
+                </div>
+                <p className="text-muted-foreground font-medium">{t('news.noArticles')}</p>
+                <p className="text-sm text-muted-foreground/60 mt-1">{t('news.checkLater')}</p>
+              </motion.div>
+            ) : null}
+          </div>
+        )}
 
         {/* Market Pulse */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/15"
-        >
-          <div className="absolute top-0 end-0 w-24 h-24 bg-primary/10 rounded-full blur-3xl" />
-          <div className="relative">
-            <div className="flex items-center gap-2 mb-3">
-              <Sparkles className="w-4 h-4 text-primary" />
-              <h3 className="text-sm font-bold text-foreground">{t('news.marketPulse')}</h3>
+        {!loading && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/15"
+          >
+            <div className="absolute top-0 end-0 w-24 h-24 bg-primary/10 rounded-full blur-3xl" />
+            <div className="relative">
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="w-4 h-4 text-primary" />
+                <h3 className="text-sm font-bold text-foreground">{t('news.marketPulse')}</h3>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { label: 'XAU/USD', value: '2,847', change: '+1.8%', up: true },
+                  { label: 'BTC/USD', value: '120,450', change: '+4.2%', up: true },
+                  { label: 'EUR/USD', value: '1.1245', change: '+0.3%', up: true },
+                ].map((item, i) => (
+                  <div key={i} className="p-2.5 rounded-xl bg-background/50 backdrop-blur-sm border border-border/20 text-center">
+                    <p className="text-[10px] text-muted-foreground/70 mb-0.5">{item.label}</p>
+                    <p className="text-xs font-bold trading-number text-foreground">{item.value}</p>
+                    <p className={cn("text-[10px] font-semibold trading-number", item.up ? "text-profit" : "text-loss")}>
+                      {item.change}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { label: 'XAU/USD', value: '2,847', change: '+1.8%', up: true },
-                { label: 'BTC/USD', value: '120,450', change: '+4.2%', up: true },
-                { label: 'EUR/USD', value: '1.1245', change: '+0.3%', up: true },
-              ].map((item, i) => (
-                <div key={i} className="p-2.5 rounded-xl bg-background/50 backdrop-blur-sm border border-border/20 text-center">
-                  <p className="text-[10px] text-muted-foreground/70 mb-0.5">{item.label}</p>
-                  <p className="text-xs font-bold trading-number text-foreground">{item.value}</p>
-                  <p className={cn("text-[10px] font-semibold trading-number", item.up ? "text-profit" : "text-loss")}>
-                    {item.change}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        )}
 
         {/* Disclaimer */}
         <p className="text-center text-[10px] text-muted-foreground/40 pb-2">
