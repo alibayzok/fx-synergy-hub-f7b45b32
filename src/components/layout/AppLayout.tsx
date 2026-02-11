@@ -24,7 +24,7 @@ interface AppLayoutProps {
 
 export const AppLayout = ({ children, showNotifications = true }: AppLayoutProps) => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { unreadTotal } = useConversations();
   const { profile } = useProfile();
   const { getSetting, getBoolean } = useAppSettings();
@@ -33,6 +33,8 @@ export const AppLayout = ({ children, showNotifications = true }: AppLayoutProps
   const [popupShown, setPopupShown] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
 
+  const maintenanceMode = getBoolean('maintenance_mode');
+  const maintenanceMessage = getSetting('maintenance_message', 'التطبيق تحت الصيانة، يرجى المحاولة لاحقاً');
   const bannerActive = getBoolean('banner_active');
   const bannerText = getSetting('banner_text');
   const bannerColor = getSetting('banner_color', '#f59e0b');
@@ -59,6 +61,23 @@ export const AppLayout = ({ children, showNotifications = true }: AppLayoutProps
     }
     return <User className="w-4 h-4" />;
   };
+
+  // Maintenance mode - block non-admin users
+
+  // Maintenance mode - block non-admin users
+  if (maintenanceMode && !isAdmin) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="text-center space-y-4 max-w-md">
+          <div className="w-16 h-16 mx-auto rounded-full bg-yellow-500/20 flex items-center justify-center">
+            <Megaphone className="w-8 h-8 text-yellow-500" />
+          </div>
+          <h1 className="text-2xl font-bold text-foreground">وضع الصيانة</h1>
+          <p className="text-muted-foreground">{maintenanceMessage}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background transition-colors duration-300">

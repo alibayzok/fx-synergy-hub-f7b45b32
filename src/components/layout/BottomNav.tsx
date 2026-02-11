@@ -3,19 +3,26 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Home, TrendingUp, Users, BarChart3, Briefcase } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAppSettings } from '@/hooks/useAppSettings';
 
-const navItems = [
-  { key: 'home', path: '/', icon: Home },
-  { key: 'trades', path: '/trades', icon: TrendingUp },
-  { key: 'community', path: '/community', icon: Users },
-  { key: 'markets', path: '/markets', icon: BarChart3 },
-  { key: 'services', path: '/services', icon: Briefcase },
+const allNavItems = [
+  { key: 'home', path: '/', icon: Home, settingKey: null },
+  { key: 'trades', path: '/trades', icon: TrendingUp, settingKey: null },
+  { key: 'community', path: '/community', icon: Users, settingKey: 'enable_community' },
+  { key: 'markets', path: '/markets', icon: BarChart3, settingKey: null },
+  { key: 'services', path: '/services', icon: Briefcase, settingKey: null },
 ];
 
 export const BottomNav = () => {
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
+  const { getBoolean } = useAppSettings();
+
+  const navItems = allNavItems.filter(item => {
+    if (!item.settingKey) return true;
+    return getBoolean(item.settingKey, true);
+  });
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 glass-card border-t border-border/50 pb-safe">

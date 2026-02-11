@@ -14,6 +14,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTrades } from '@/hooks/useTrades';
 import { useMarketData } from '@/hooks/useMarketData';
 import { useProfile } from '@/hooks/useProfile';
+import { useAppSettings } from '@/hooks/useAppSettings';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Static news for now - could be moved to database later
@@ -47,6 +48,8 @@ const HomePage = () => {
   const { trades, loading: tradesLoading, getStats } = useTrades();
   const { symbols } = useMarketData();
   const { profile, loading: profileLoading } = useProfile();
+  const { getSetting } = useAppSettings();
+  const appName = getSetting('app_name', 'ASSASSIN FX');
 
   // Redirect to onboarding if not completed
   useEffect(() => {
@@ -96,7 +99,7 @@ const HomePage = () => {
       <header className="sticky top-0 z-40 glass-premium border-b border-border/20">
         <div className="flex items-center justify-between px-4 py-3">
           <div>
-            <h1 className="text-xl font-bold gold-gradient">ASSASSIN FX</h1>
+            <h1 className="text-xl font-bold gold-gradient">{appName}</h1>
             <p className="text-xs text-muted-foreground">{t('app.tagline')}</p>
           </div>
           {user ? (

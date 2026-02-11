@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
+import { useAppSettings } from '@/hooks/useAppSettings';
 
 interface SplashScreenProps {
   onComplete: () => void;
@@ -7,6 +8,8 @@ interface SplashScreenProps {
 
 export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
   const [isVisible, setIsVisible] = useState(true);
+  const { getSetting } = useAppSettings();
+  const appName = getSetting('app_name', 'ASSASSIN FX');
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -115,7 +118,7 @@ export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
               transition={{ delay: 0.5, duration: 0.5 }}
               className="text-center"
             >
-              <h1 className="text-3xl font-bold gold-gradient mb-2">ASSASSIN FX</h1>
+              <h1 className="text-3xl font-bold gold-gradient mb-2">{appName}</h1>
               <p className="text-muted-foreground text-sm">مجتمع التداول الاحترافي</p>
             </motion.div>
 
