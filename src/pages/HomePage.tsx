@@ -80,6 +80,8 @@ const HomePage = () => {
       case 'aiAssistant': navigate('/ai-chat'); break;
       case 'viewAnalyses': navigate('/analyses'); break;
       case 'viewSignals': navigate('/trades'); break;
+      case 'gamification': navigate('/gamification'); break;
+      case 'liveSession': navigate('/live'); break;
       default: break;
     }
   };

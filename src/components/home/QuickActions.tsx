@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { Bot, Radio, BarChart3 } from 'lucide-react';
+import { Bot, Radio, BarChart3, Trophy, Video } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAppSettings } from '@/hooks/useAppSettings';
 
@@ -8,6 +8,8 @@ const actions = [
   { key: 'aiAssistant', icon: Bot, gradient: 'from-blue-500 to-cyan-400', glow: 'shadow-blue-500/20', settingKey: 'enable_ai_chat' },
   { key: 'viewAnalyses', icon: BarChart3, gradient: 'from-purple-500 to-pink-400', glow: 'shadow-purple-500/20', settingKey: 'enable_analyses' },
   { key: 'viewSignals', icon: Radio, gradient: 'from-emerald-500 to-teal-400', glow: 'shadow-emerald-500/20', adminOnly: false, settingKey: null },
+  { key: 'gamification', icon: Trophy, gradient: 'from-amber-500 to-yellow-400', glow: 'shadow-amber-500/20', settingKey: null },
+  { key: 'liveSession', icon: Video, gradient: 'from-red-500 to-rose-400', glow: 'shadow-red-500/20', settingKey: null },
 ];
 
 interface QuickActionsProps {
