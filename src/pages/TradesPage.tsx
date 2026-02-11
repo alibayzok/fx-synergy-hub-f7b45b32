@@ -1,65 +1,79 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, Crown, LogIn } from 'lucide-react';
+import { Radio, Clock, Eye, Heart, Lock, Image as ImageIcon, Share2, MessageSquare, LogIn, Crown } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { TradeCard } from '@/components/trades/TradeCard';
-import { TradeStats } from '@/components/trades/TradeStats';
-import { TradeDetailSheet } from '@/components/trades/TradeDetailSheet';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { cn } from '@/lib/utils';
+import { useAnalyses } from '@/hooks/useAnalyses';
 import { useAuth } from '@/hooks/useAuth';
-import { useTrades } from '@/hooks/useTrades';
+import { useAppSettings } from '@/hooks/useAppSettings';
 import { useNavigate } from 'react-router-dom';
-import { Trade } from '@/types';
+import { formatDistanceToNow } from 'date-fns';
+import { ar, enUS } from 'date-fns/locale';
 
-type FilterTab = 'all' | 'running' | 'pending' | 'closed';
-type VisibilityFilter = 'all' | 'free' | 'vip';
-
-const TradesPage = () => {
-  const { t } = useTranslation();
+const SignalsPage = () => {
+  const { t, i18n } = useTranslation();
+  const { analyses, loading, likeAnalysis, unlikeAnalysis } = useAnalyses();
+  const { user, isVip, isAdmin } = useAuth();
+  const { getSetting } = useAppSettings();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<FilterTab>('all');
-  const [visibilityFilter, setVisibilityFilter] = useState<VisibilityFilter>('all');
-  const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<string>('all');
 
-  const { user, isVip, isAdmin, loading: authLoading } = useAuth();
-  const { trades, loading: tradesLoading, filterTrades, getStats } = useTrades();
-
-  const stats = getStats();
+  const appName = getSetting('app_name', 'ASSASSIN FX');
+  const locale = i18n.language === 'ar' ? ar : enUS;
   const isVipUser = isVip || isAdmin;
-  const filteredTrades = filterTrades(activeTab, visibilityFilter);
 
-  const tabs: { key: FilterTab; count: number }[] = [
-    { key: 'all', count: stats.totalTrades },
-    { key: 'running', count: stats.runningCount },
-    { key: 'pending', count: stats.pendingCount },
-    { key: 'closed', count: stats.closedCount },
-  ];
+  const filteredAnalyses = analyses.filter(analysis => {
+    if (activeFilter === 'all') return true;
+    return analysis.asset_type === activeFilter;
+  });
 
-  const handleTradeClick = (trade: Trade) => {
-    setSelectedTrade(trade);
-    setSheetOpen(true);
+  const handleLike = async (id: string) => {
+    if (likedPosts.has(id)) {
+      await unlikeAnalysis(id);
+      setLikedPosts(prev => { const s = new Set(prev); s.delete(id); return s; });
+    } else {
+      await likeAnalysis(id);
+      setLikedPosts(prev => new Set(prev).add(id));
+    }
   };
 
-  // Show login prompt if not authenticated
-  if (!authLoading && !user) {
+  const handleShare = (analysis: { title: string; content: string }) => {
+    const text = `${analysis.title}\n${analysis.content.substring(0, 100)}...`;
+    if (navigator.share) {
+      navigator.share({ title: analysis.title, text });
+    } else {
+      navigator.clipboard.writeText(text);
+    }
+  };
+
+  // Login prompt
+  if (!user) {
     return (
       <AppLayout>
         <header className="sticky top-0 z-30 glass-card border-b border-border/30">
-          <div className="px-4 py-3">
-            <h1 className="text-xl font-bold text-foreground">{t('trades.title')}</h1>
+          <div className="px-4 py-3 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
+              <Radio className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold">{appName}</h1>
+              <p className="text-xs text-muted-foreground">بث الإشارات</p>
+            </div>
           </div>
         </header>
-
         <div className="flex-1 flex flex-col items-center justify-center p-8 space-y-6">
           <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center">
             <LogIn className="w-10 h-10 text-primary" />
           </div>
           <div className="text-center space-y-2">
-            <h2 className="text-xl font-bold text-foreground">{t('auth.login')}</h2>
+            <h2 className="text-xl font-bold">{t('auth.login')}</h2>
             <p className="text-muted-foreground">{t('auth.loginPrompt')}</p>
           </div>
           <Button onClick={() => navigate('/auth')} className="gap-2">
@@ -73,120 +87,203 @@ const TradesPage = () => {
 
   return (
     <AppLayout>
-      {/* Header */}
-      <header className="sticky top-0 z-30 glass-card border-b border-border/30">
-        <div className="flex items-center justify-between px-4 py-3">
-          <h1 className="text-xl font-bold text-foreground">{t('trades.title')}</h1>
-          <Button variant="ghost" size="sm" className="h-9 gap-2 me-20">
-            <Filter className="w-4 h-4" />
-          </Button>
+      {/* Telegram-style Channel Header */}
+      <header className="sticky top-0 z-30 bg-gradient-to-b from-primary/10 to-background border-b border-border/30">
+        <div className="px-4 py-3 flex items-center gap-3">
+          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg">
+            <Radio className="w-6 h-6 text-primary-foreground" />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-bold">{appName}</h1>
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">VIP Signals</Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {analyses.length} منشور • بث مباشر
+            </p>
+          </div>
         </div>
-
-        {/* Stats Section */}
-        <TradeStats stats={stats} />
-
-        {/* Filter Tabs */}
-        <div className="flex gap-1 px-4 pb-3 overflow-x-auto scrollbar-hide">
-          {tabs.map((tab) => (
+        
+        {/* Filter chips */}
+        <div className="flex gap-2 px-4 pb-3 overflow-x-auto scrollbar-hide">
+          {[
+            { key: 'all', label: 'الكل' },
+            { key: 'forex', label: 'فوركس' },
+            { key: 'crypto', label: 'كريبتو' },
+            { key: 'metals', label: 'معادن' },
+          ].map(filter => (
             <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap",
-                activeTab === tab.key
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
-              )}
+              key={filter.key}
+              onClick={() => setActiveFilter(filter.key)}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
+                activeFilter === filter.key 
+                  ? 'bg-primary text-primary-foreground shadow-md' 
+                  : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+              }`}
             >
-              {t(`trades.${tab.key}`)}
-              <span className={cn(
-                "text-xs px-1.5 py-0.5 rounded-full trading-number",
-                activeTab === tab.key ? "bg-primary-foreground/20" : "bg-background/50"
-              )}>
-                {tab.count}
-              </span>
+              {filter.label}
             </button>
           ))}
         </div>
-
-        {/* VIP Filter (only for VIP users) */}
-        {isVipUser && (
-          <div className="flex gap-2 px-4 pb-3">
-            {(['all', 'free', 'vip'] as VisibilityFilter[]).map((filter) => (
-              <button
-                key={filter}
-                onClick={() => setVisibilityFilter(filter)}
-                className={cn(
-                  "flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors",
-                  visibilityFilter === filter
-                    ? filter === 'vip' 
-                      ? "bg-vip/20 text-vip border border-vip/30"
-                      : "bg-secondary text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {filter === 'vip' && <Crown className="w-3 h-3" />}
-                {t(`trades.${filter}`)}
-              </button>
-            ))}
-          </div>
-        )}
       </header>
 
-      {/* Trades List */}
-      <div className="px-4 py-4 space-y-3">
-        {tradesLoading ? (
-          <>
-            <Skeleton className="h-40 w-full rounded-2xl" />
-            <Skeleton className="h-40 w-full rounded-2xl" />
-            <Skeleton className="h-40 w-full rounded-2xl" />
-          </>
+      {/* Broadcast Messages Feed */}
+      <div className="px-3 py-3 space-y-3 pb-24">
+        {loading ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="rounded-2xl bg-card/50 p-4 space-y-3">
+              <Skeleton className="h-5 w-2/3" />
+              <Skeleton className="h-40 w-full rounded-xl" />
+              <Skeleton className="h-4 w-full" />
+              <div className="flex gap-4">
+                <Skeleton className="h-6 w-12" />
+                <Skeleton className="h-6 w-12" />
+              </div>
+            </div>
+          ))
+        ) : filteredAnalyses.length === 0 ? (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16">
+            <Radio className="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" />
+            <p className="text-muted-foreground">لا توجد إشارات حالياً</p>
+            <p className="text-xs text-muted-foreground/60 mt-1">ترقب البث القادم...</p>
+          </motion.div>
         ) : (
           <AnimatePresence mode="popLayout">
-            {filteredTrades.length > 0 ? (
-              filteredTrades.map((trade, index) => (
+            {filteredAnalyses.map((post, index) => {
+              const isLocked = post.visibility === 'vip' && !isVipUser;
+
+              return (
                 <motion.div
-                  key={trade.id}
-                  initial={{ opacity: 0, y: 10 }}
+                  key={post.id}
+                  initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ delay: index * 0.03 }}
+                  exit={{ opacity: 0, y: -15 }}
+                  transition={{ delay: index * 0.04 }}
                 >
-                  <TradeCard 
-                    trade={{
-                      ...trade,
-                      created_by: trade.created_by || 'admin',
-                      followers_count: trade.followers_count || 0
-                    }}
-                    onClick={() => handleTradeClick({
-                      ...trade,
-                      created_by: trade.created_by || 'admin',
-                      followers_count: trade.followers_count || 0
-                    })}
-                  />
+                  <div className="relative rounded-2xl bg-card/60 backdrop-blur-sm border border-border/40 overflow-hidden shadow-sm">
+                    {/* VIP indicator */}
+                    {post.visibility === 'vip' && (
+                      <div className="bg-gradient-to-r from-amber-500/20 to-yellow-500/20 px-4 py-1.5 flex items-center gap-2">
+                        <Crown className="w-3.5 h-3.5 text-amber-400" />
+                        <span className="text-xs font-medium text-amber-400">VIP</span>
+                      </div>
+                    )}
+
+                    <div className="p-4 space-y-3">
+                      {/* Badges row */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {post.symbol && (
+                          <Badge variant="outline" className="font-mono text-xs bg-primary/10 border-primary/30 text-primary">
+                            {post.symbol}
+                          </Badge>
+                        )}
+                        {post.asset_type && (
+                          <Badge variant="secondary" className="text-[10px]">
+                            {post.asset_type === 'forex' ? 'فوركس' : post.asset_type === 'crypto' ? 'كريبتو' : 'معادن'}
+                          </Badge>
+                        )}
+                        {post.timeframe && (
+                          <Badge variant="outline" className="text-[10px]">
+                            {post.timeframe}
+                          </Badge>
+                        )}
+                      </div>
+
+                      {/* Title */}
+                      <h3 className="font-bold text-base leading-snug">{post.title}</h3>
+
+                      {/* Chart images - Telegram style */}
+                      {!isLocked && post.attachments && post.attachments.length > 0 && (
+                        <div className={`${post.attachments.length === 1 ? '' : 'grid grid-cols-2 gap-1.5'}`}>
+                          {post.attachments.map((url, imgIdx) => (
+                            <div
+                              key={imgIdx}
+                              className="relative rounded-xl overflow-hidden bg-muted cursor-pointer group aspect-video"
+                              onClick={() => setSelectedImage(url)}
+                            >
+                              <img
+                                src={url}
+                                alt={`Chart ${imgIdx + 1}`}
+                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                loading="lazy"
+                              />
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Content */}
+                      <div className={`relative ${isLocked ? 'max-h-16 overflow-hidden' : ''}`}>
+                        <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
+                          {isLocked ? post.content.substring(0, 80) + '...' : post.content}
+                        </p>
+                        {isLocked && (
+                          <div className="absolute inset-0 bg-gradient-to-t from-card via-card/80 to-transparent flex items-end justify-center pb-2">
+                            <Button size="sm" className="bg-gradient-to-r from-amber-500 to-yellow-500 text-black text-xs h-7">
+                              <Lock className="w-3 h-3 ml-1" />
+                              ترقية لـ VIP
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Footer - Telegram style reactions */}
+                      <div className="flex items-center justify-between pt-1">
+                        <div className="flex items-center gap-1">
+                          {/* Like button */}
+                          <button
+                            onClick={() => !isLocked && handleLike(post.id)}
+                            disabled={isLocked}
+                            className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs transition-all ${
+                              likedPosts.has(post.id)
+                                ? 'bg-red-500/15 text-red-500'
+                                : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                            }`}
+                          >
+                            <Heart className={`w-3.5 h-3.5 ${likedPosts.has(post.id) ? 'fill-current' : ''}`} />
+                            {(post.likes_count || 0) > 0 && <span>{post.likes_count}</span>}
+                          </button>
+
+                          {/* Share */}
+                          <button
+                            onClick={() => handleShare(post)}
+                            className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-muted/50 text-muted-foreground hover:bg-muted transition-all"
+                          >
+                            <Share2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        {/* Meta */}
+                        <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Eye className="w-3 h-3" />
+                            {post.views_count || 0}
+                          </span>
+                          <span>
+                            {formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale })}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </motion.div>
-              ))
-            ) : (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="flex flex-col items-center justify-center py-12 text-center"
-              >
-                <p className="text-muted-foreground">{t('admin.noTrades')}</p>
-              </motion.div>
-            )}
+              );
+            })}
           </AnimatePresence>
         )}
       </div>
 
-      {/* Trade Detail Sheet */}
-      <TradeDetailSheet
-        trade={selectedTrade}
-        open={sheetOpen}
-        onOpenChange={setSheetOpen}
-      />
+      {/* Image Lightbox */}
+      <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
+        <DialogContent className="max-w-4xl p-2 bg-black/95 border-none">
+          {selectedImage && (
+            <img src={selectedImage} alt="Chart" className="w-full h-auto max-h-[85vh] object-contain rounded-lg" />
+          )}
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 };
 
-export default TradesPage;
+export default SignalsPage;

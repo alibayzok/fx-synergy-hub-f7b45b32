@@ -1,42 +1,8 @@
-// Trade Types
-export type AssetType = 'forex' | 'metals' | 'crypto';
-export type TradeDirection = 'buy' | 'sell';
-export type EntryType = 'market' | 'limit' | 'stop';
-export type Timeframe = 'M5' | 'M15' | 'H1' | 'H4' | 'D1';
-export type TradeStatus = 'pending' | 'running' | 'tp_hit' | 'sl_hit' | 'cancelled' | 'closed_manual';
-export type TradeVisibility = 'free' | 'vip';
-
-export interface Trade {
-  id: string;
-  created_at: string;
-  created_by: string;
-  symbol: string;
-  asset_type: AssetType;
-  direction: TradeDirection;
-  entry_type: EntryType;
-  entry_price: number;
-  sl_price: number;
-  tp_prices: number[];
-  timeframe: Timeframe;
-  risk_note?: string;
-  reason: string;
-  alternative_scenario?: string;
-  status: TradeStatus;
-  visibility: TradeVisibility;
-  attachments?: string[];
-  last_update_note?: string;
-  followers_count: number;
-}
-
-export interface TradeUpdate {
-  id: string;
-  trade_id: string;
-  created_at: string;
-  note: string;
-  new_status?: TradeStatus;
-}
-
 // Market Types
+export type AssetType = 'forex' | 'metals' | 'crypto';
+export type Timeframe = 'M5' | 'M15' | 'H1' | 'H4' | 'D1';
+export type ContentVisibility = 'free' | 'vip';
+
 export interface MarketSymbol {
   symbol: string;
   name: string;
@@ -102,7 +68,6 @@ export interface User {
   language: 'ar' | 'en';
   joined_at: string;
   watchlist: string[];
-  followed_trades: string[];
 }
 
 // Service Types
@@ -140,7 +105,6 @@ export interface PriceAlert {
   symbol: string;
   condition: AlertCondition;
   target_price: number;
-  trade_id?: string;
   is_triggered: boolean;
   created_at: string;
 }

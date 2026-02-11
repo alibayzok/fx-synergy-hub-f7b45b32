@@ -1,4 +1,4 @@
-import { Trade, MarketSymbol, Room, Thread, NewsItem, User, ServiceRequest } from '@/types';
+import { MarketSymbol, Room, Thread, NewsItem, User, ServiceRequest } from '@/types';
 
 export const currentUser: User = {
   id: 'user-1',
@@ -9,81 +9,7 @@ export const currentUser: User = {
   language: 'ar',
   joined_at: '2024-01-15',
   watchlist: ['XAUUSD', 'EURUSD', 'BTCUSD'],
-  followed_trades: ['trade-1', 'trade-2'],
 };
-
-export const mockTrades: Trade[] = [
-  {
-    id: 'trade-1',
-    created_at: '2025-02-07T10:30:00Z',
-    created_by: 'admin',
-    symbol: 'XAUUSD',
-    asset_type: 'metals',
-    direction: 'buy',
-    entry_type: 'limit',
-    entry_price: 2845.50,
-    sl_price: 2830.00,
-    tp_prices: [2860.00, 2875.00, 2890.00],
-    timeframe: 'H4',
-    risk_note: 'مخاطر متوسطة - حجم اللوت 0.5%',
-    reason: 'ارتداد من مستوى دعم قوي مع تأكيد من مؤشر RSI',
-    status: 'running',
-    visibility: 'free',
-    followers_count: 156,
-  },
-  {
-    id: 'trade-2',
-    created_at: '2025-02-07T09:15:00Z',
-    created_by: 'admin',
-    symbol: 'EURUSD',
-    asset_type: 'forex',
-    direction: 'sell',
-    entry_type: 'market',
-    entry_price: 1.0385,
-    sl_price: 1.0420,
-    tp_prices: [1.0350, 1.0320],
-    timeframe: 'H1',
-    reason: 'كسر خط الترند الصاعد مع زخم سلبي',
-    status: 'running',
-    visibility: 'vip',
-    followers_count: 89,
-  },
-  {
-    id: 'trade-3',
-    created_at: '2025-02-06T14:00:00Z',
-    created_by: 'admin',
-    symbol: 'BTCUSD',
-    asset_type: 'crypto',
-    direction: 'buy',
-    entry_type: 'limit',
-    entry_price: 96500,
-    sl_price: 94000,
-    tp_prices: [99000, 102000],
-    timeframe: 'D1',
-    reason: 'اختبار دعم رئيسي مع تراكم إيجابي',
-    alternative_scenario: 'في حال الكسر تحت 94000، نبحث عن 91000',
-    status: 'tp_hit',
-    visibility: 'free',
-    followers_count: 234,
-  },
-  {
-    id: 'trade-4',
-    created_at: '2025-02-07T08:00:00Z',
-    created_by: 'admin',
-    symbol: 'GBPUSD',
-    asset_type: 'forex',
-    direction: 'buy',
-    entry_type: 'stop',
-    entry_price: 1.2480,
-    sl_price: 1.2440,
-    tp_prices: [1.2520, 1.2560],
-    timeframe: 'M15',
-    reason: 'كسر مقاومة فرعية مع زخم إيجابي',
-    status: 'pending',
-    visibility: 'vip',
-    followers_count: 67,
-  },
-];
 
 export const mockMarketSymbols: MarketSymbol[] = [
   {

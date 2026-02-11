@@ -58,6 +58,7 @@ export type Database = {
           title: string
           updated_at: string
           views_count: number | null
+          visibility: Database["public"]["Enums"]["content_visibility"]
         }
         Insert: {
           asset_type?: Database["public"]["Enums"]["asset_type"] | null
@@ -72,6 +73,7 @@ export type Database = {
           title: string
           updated_at?: string
           views_count?: number | null
+          visibility?: Database["public"]["Enums"]["content_visibility"]
         }
         Update: {
           asset_type?: Database["public"]["Enums"]["asset_type"] | null
@@ -86,6 +88,7 @@ export type Database = {
           title?: string
           updated_at?: string
           views_count?: number | null
+          visibility?: Database["public"]["Enums"]["content_visibility"]
         }
         Relationships: []
       }
@@ -1365,6 +1368,10 @@ export type Database = {
         Args: { user1_id: string; user2_id: string }
         Returns: boolean
       }
+      can_access_content: {
+        Args: { content_vis: Database["public"]["Enums"]["content_visibility"] }
+        Returns: boolean
+      }
       can_access_room: {
         Args: { p_room_id: string; p_user_id?: string }
         Returns: boolean
@@ -1429,6 +1436,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "vip" | "free"
       asset_type: "forex" | "metals" | "crypto"
+      content_visibility: "free" | "vip"
       conversation_type: "direct" | "group"
       course_level: "beginner" | "intermediate" | "advanced"
       friend_request_status: "pending" | "accepted" | "rejected"
@@ -1579,6 +1587,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "vip", "free"],
       asset_type: ["forex", "metals", "crypto"],
+      content_visibility: ["free", "vip"],
       conversation_type: ["direct", "group"],
       course_level: ["beginner", "intermediate", "advanced"],
       friend_request_status: ["pending", "accepted", "rejected"],
