@@ -91,8 +91,13 @@ serve(async (req) => {
     let endpoint: string;
     let modelToUse: string = aiModel;
 
-    if (aiProvider === 'custom' && customApiKey) {
-      apiKey = customApiKey;
+    if (aiProvider === 'custom') {
+      // Use custom API key from settings, or fallback to GOOGLE_AI_API_KEY env var
+      const resolvedKey = customApiKey || Deno.env.get("GOOGLE_AI_API_KEY") || '';
+      if (!resolvedKey) {
+        throw new Error("لم يتم تكوين مفتاح API مخصص. أدخل المفتاح في إعدادات CMS أو أضف GOOGLE_AI_API_KEY.");
+      }
+      apiKey = resolvedKey;
       endpoint = customEndpoint || 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
       // For custom providers, strip provider prefix from model name if present
       modelToUse = aiModel.includes('/') ? aiModel.split('/').pop()! : aiModel;
