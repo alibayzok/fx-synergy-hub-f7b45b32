@@ -29,7 +29,7 @@ import VipPage from "./pages/VipPage";
 import SubscriptionsPage from "./pages/SubscriptionsPage";
 import CardDetailsPage from "./pages/CardDetailsPage";
 import GamificationPage from "./pages/GamificationPage";
-import LiveSessionsPage from "./pages/LiveSessionsPage";
+
 import NotFound from "./pages/NotFound";
 import "./i18n";
 
@@ -88,7 +88,7 @@ const App = () => {
                 <Route path="/admin/subscriptions" element={<SubscriptionsPage />} />
                 <Route path="/card/:cardId" element={<CardDetailsPage />} />
                 <Route path="/gamification" element={<GamificationPage />} />
-                <Route path="/live" element={<LiveSessionsPage />} />
+                
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
