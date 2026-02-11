@@ -24,6 +24,11 @@ import SCHEMA_SQL from '../../../scripts/export-schema.sql?raw';
 const TABLES = [
   'profiles',
   'user_roles',
+  'user_privacy_settings',
+  'user_notifications',
+  'user_posts',
+  'post_likes',
+  'post_comments',
   'trades',
   'trade_comments',
   'trade_comment_likes',
@@ -31,9 +36,6 @@ const TABLES = [
   'trade_shares',
   'analyses',
   'analysis_likes',
-  'user_posts',
-  'post_likes',
-  'post_comments',
   'community_rooms',
   'room_members',
   'room_join_requests',
@@ -53,8 +55,10 @@ const TABLES = [
   'usdt_listings',
   'flagged_content',
   'admin_notifications',
-  'user_notifications',
-  'user_privacy_settings',
+  'app_settings',
+  'support_tickets',
+  'support_messages',
+  'support_agents',
 ] as const;
 
 type TableName = typeof TABLES[number];
