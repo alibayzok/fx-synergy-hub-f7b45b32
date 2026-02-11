@@ -30,7 +30,8 @@ const AIChatPage = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { getBoolean } = useAppSettings();
+  const { getBoolean, getSetting } = useAppSettings();
+  const assistantName = getSetting('ai_assistant_name', t('ai.title'));
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -217,7 +218,7 @@ const AIChatPage = () => {
                 <Bot className="w-5 h-5 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-foreground">{t('ai.title')}</h1>
+                <h1 className="text-lg font-bold text-foreground">{assistantName}</h1>
                 <p className="text-xs text-muted-foreground">{t('ai.subtitle')}</p>
               </div>
             </div>
