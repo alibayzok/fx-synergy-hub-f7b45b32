@@ -1,7 +1,8 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { AUTH_CONFIG } from '@/config/environment';
+import { useToast } from '@/hooks/use-toast';
 
 type AppRole = 'admin' | 'vip' | 'free';
 
@@ -27,6 +28,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [roles, setRoles] = useState<AppRole[]>([]);
+  const prevRolesRef = useRef<AppRole[]>([]);
+  const { toast } = useToast();
 
   const fetchRoles = async (userId: string) => {
     try {
@@ -67,6 +70,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // Defer role fetching to avoid blocking
           setTimeout(async () => {
             const userRoles = await fetchRoles(session.user.id);
+            prevRolesRef.current = userRoles;
             setRoles(userRoles);
           }, 0);
 
@@ -86,6 +90,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               },
               async () => {
                 const userRoles = await fetchRoles(session.user.id);
+                // Show toast for VIP changes
+                const wasVip = prevRolesRef.current.includes('vip');
+                const isNowVip = userRoles.includes('vip');
+                if (!wasVip && isNowVip) {
+                  toast({ title: 'تم تفعيل VIP 👑', description: 'مبروك! تم ترقيتك إلى عضوية VIP' });
+                } else if (wasVip && !isNowVip) {
+                  toast({ title: 'انتهى اشتراك VIP', description: 'انتهت عضويتك VIP. يمكنك التجديد من صفحة الاشتراكات', variant: 'destructive' });
+                }
+                prevRolesRef.current = userRoles;
                 setRoles(userRoles);
               }
             )
@@ -109,6 +122,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (session?.user) {
         const userRoles = await fetchRoles(session.user.id);
+        prevRolesRef.current = userRoles;
         setRoles(userRoles);
 
         // Subscribe to role changes
@@ -124,6 +138,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             },
             async () => {
               const userRoles = await fetchRoles(session.user.id);
+              const wasVip = prevRolesRef.current.includes('vip');
+              const isNowVip = userRoles.includes('vip');
+              if (!wasVip && isNowVip) {
+                toast({ title: 'تم تفعيل VIP 👑', description: 'مبروك! تم ترقيتك إلى عضوية VIP' });
+              } else if (wasVip && !isNowVip) {
+                toast({ title: 'انتهى اشتراك VIP', description: 'انتهت عضويتك VIP. يمكنك التجديد من صفحة الاشتراكات', variant: 'destructive' });
+              }
+              prevRolesRef.current = userRoles;
               setRoles(userRoles);
             }
           )
