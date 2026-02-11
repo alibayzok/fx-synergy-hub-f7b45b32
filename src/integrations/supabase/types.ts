@@ -1827,6 +1827,7 @@ export type Database = {
         | "usdt_buy"
         | "usdt_sell"
         | "broker_account"
+        | "card_fund"
       signal_type: "signal" | "tip"
       timeframe: "M5" | "M15" | "H1" | "H4" | "D1"
       usdt_listing_type: "buy" | "sell"
@@ -1980,6 +1981,7 @@ export const Constants = {
         "usdt_buy",
         "usdt_sell",
         "broker_account",
+        "card_fund",
       ],
       signal_type: ["signal", "tip"],
       timeframe: ["M5", "M15", "H1", "H4", "D1"],

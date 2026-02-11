@@ -334,6 +334,57 @@ Deno.serve(async (req) => {
         break;
       }
 
+      case 'fund_card': {
+        // Admin-only: Fund a card via GPA Orders (called after admin approves funding request)
+        const { data: card, error } = await supabase
+          .from('virtual_cards')
+          .select('*')
+          .eq('id', params.card_id)
+          .single();
+        if (error) throw error;
+
+        if (!card.marqeta_user_token) {
+          throw new Error('Card has no Marqeta user token');
+        }
+
+        // Create GPA Order to fund the card
+        const gpaOrder = await marqetaFetch('/gpaorders', {
+          method: 'POST',
+          body: JSON.stringify({
+            user_token: card.marqeta_user_token,
+            amount: params.amount,
+            currency_code: card.currency || 'USD',
+            funding_source_token: params.funding_source_token || undefined,
+            memo: params.memo || `Card funding - ${params.amount} USD via USDT`,
+          }),
+        });
+
+        result = { success: true, gpa_order: gpaOrder };
+        break;
+      }
+
+      case 'get_balance': {
+        const { data: card, error } = await supabase
+          .from('virtual_cards')
+          .select('*')
+          .eq('id', params.card_id)
+          .eq('user_id', userId)
+          .single();
+        if (error) throw error;
+
+        let balance = null;
+        if (card.marqeta_user_token) {
+          try {
+            balance = await marqetaFetch(`/balances/${card.marqeta_user_token}`);
+          } catch (e) {
+            console.error('Failed to get balance:', e);
+          }
+        }
+
+        result = { balance };
+        break;
+      }
+
       default:
         throw new Error(`Unknown action: ${action}`);
     }

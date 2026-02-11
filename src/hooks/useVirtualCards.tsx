@@ -129,6 +129,40 @@ export function useVirtualCards() {
     }
   };
 
+  const requestFundCard = async (cardId: string, amount: number, walletAddress?: string) => {
+    if (!user) throw new Error('Not authenticated');
+    setActionLoading(true);
+    try {
+      const { error } = await supabase
+        .from('service_requests')
+        .insert({
+          user_id: user.id,
+          type: 'card_fund' as any,
+          amount,
+          wallet_address: walletAddress || null,
+          notes: `card_id:${cardId}`,
+          payment_method: 'USDT',
+        });
+      if (error) throw error;
+      toast.success('تم إرسال طلب شحن البطاقة بنجاح! سيتم مراجعته من قبل الإدارة');
+      return true;
+    } catch (err: any) {
+      toast.error(err.message || 'فشل إرسال طلب الشحن');
+      throw err;
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const getBalance = async (cardId: string) => {
+    try {
+      return await callEdgeFunction('get_balance', { card_id: cardId });
+    } catch (err: any) {
+      toast.error(err.message || 'فشل تحميل الرصيد');
+      return null;
+    }
+  };
+
   return {
     cards,
     loading,
@@ -139,6 +173,8 @@ export function useVirtualCards() {
     cancelCard,
     getCardDetails,
     getTransactions,
+    requestFundCard,
+    getBalance,
     refetch: fetchCards,
   };
 }
