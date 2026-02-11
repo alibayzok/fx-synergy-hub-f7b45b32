@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import {
   Settings, Globe, Type, Link2, ToggleRight, Megaphone,
-  Save, Plus, Trash2, Check, X, Palette, ImageIcon, Upload, Loader2
+  Save, Plus, Trash2, Check, X, Palette, ImageIcon, Upload, Loader2, RotateCcw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +12,8 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -59,6 +60,40 @@ export const CMSManagement = () => {
     label_en: '',
     description_ar: '',
   });
+
+  const DEFAULTS: Record<string, string> = {
+    app_name: 'ASSASSIN FX',
+    app_description: 'منصة تداول احترافية',
+    welcome_message: 'مرحباً بك في منصة التداول الاحترافية',
+    maintenance_mode: 'false',
+    maintenance_message: 'التطبيق تحت الصيانة، يرجى المحاولة لاحقاً',
+    home_hero_title: 'أهلاً بك في عالم التداول',
+    home_hero_subtitle: 'تداول بذكاء مع فريق من المحترفين',
+    footer_text: '© جميع الحقوق محفوظة',
+    about_text: '', terms_text: '',
+    telegram_url: '', facebook_url: '', instagram_url: '', whatsapp_url: '', support_email: '',
+    enable_usdt_service: 'true', enable_broker_service: 'true', enable_community: 'true',
+    enable_ai_chat: 'true', enable_analyses: 'true',
+    banner_text: '', banner_active: 'false', banner_color: '#f59e0b',
+    popup_title: '', popup_message: '', popup_active: 'false',
+    logo_url: '', logo_dark_url: '', hero_bg_url: '', splash_bg_url: '', auth_bg_url: '', favicon_url: '',
+  };
+
+  const handleRestoreDefaults = async () => {
+    setSaving('all');
+    for (const setting of settings) {
+      const defaultVal = DEFAULTS[setting.setting_key];
+      if (defaultVal !== undefined) {
+        await supabase
+          .from('app_settings')
+          .update({ setting_value: defaultVal, updated_at: new Date().toISOString(), updated_by: user?.id })
+          .eq('id', setting.id);
+      }
+    }
+    toast({ title: 'تم استعادة الافتراضيات ✅', description: 'تم إعادة جميع الإعدادات إلى قيمها الافتراضية' });
+    await fetchSettings();
+    setSaving(null);
+  };
 
   useEffect(() => {
     fetchSettings();
@@ -417,70 +452,93 @@ export const CMSManagement = () => {
           <Palette className="w-5 h-5 text-primary" />
           <h2 className="text-lg font-bold">إدارة المحتوى (CMS)</h2>
         </div>
-        <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-          <DialogTrigger asChild>
-            <Button size="sm" variant="outline" className="gap-1">
-              <Plus className="w-4 h-4" />
-              إضافة إعداد
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>إضافة إعداد جديد</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3">
-              <div>
-                <Label>القسم</Label>
-                <Select value={newSetting.category} onValueChange={(v) => setNewSetting(p => ({ ...p, category: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {CATEGORIES.map(c => (
-                      <SelectItem key={c.key} value={c.key}>{c.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+        <div className="flex items-center gap-2">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button size="sm" variant="outline" className="gap-1 text-muted-foreground">
+                <RotateCcw className="w-4 h-4" />
+                استعادة الافتراضيات
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>استعادة الإعدادات الافتراضية؟</AlertDialogTitle>
+                <AlertDialogDescription>
+                  سيتم إعادة جميع الإعدادات إلى قيمها الافتراضية. هذا الإجراء لا يمكن التراجع عنه.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                <AlertDialogAction onClick={handleRestoreDefaults} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  استعادة
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+            <DialogTrigger asChild>
+              <Button size="sm" variant="outline" className="gap-1">
+                <Plus className="w-4 h-4" />
+                إضافة إعداد
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>إضافة إعداد جديد</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3">
+                <div>
+                  <Label>القسم</Label>
+                  <Select value={newSetting.category} onValueChange={(v) => setNewSetting(p => ({ ...p, category: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIES.map(c => (
+                        <SelectItem key={c.key} value={c.key}>{c.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>المفتاح (بالإنجليزية)</Label>
+                  <Input
+                    value={newSetting.setting_key}
+                    onChange={(e) => setNewSetting(p => ({ ...p, setting_key: e.target.value }))}
+                    dir="ltr"
+                    placeholder="my_setting_key"
+                  />
+                </div>
+                <div>
+                  <Label>الاسم بالعربية *</Label>
+                  <Input
+                    value={newSetting.label_ar}
+                    onChange={(e) => setNewSetting(p => ({ ...p, label_ar: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label>النوع</Label>
+                  <Select value={newSetting.setting_type} onValueChange={(v) => setNewSetting(p => ({ ...p, setting_type: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="text">نص</SelectItem>
+                      <SelectItem value="url">رابط</SelectItem>
+                      <SelectItem value="boolean">تبديل (نعم/لا)</SelectItem>
+                      <SelectItem value="color">لون</SelectItem>
+                      <SelectItem value="image">صورة</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>القيمة الافتراضية</Label>
+                  <Input
+                    value={newSetting.setting_value}
+                    onChange={(e) => setNewSetting(p => ({ ...p, setting_value: e.target.value }))}
+                  />
+                </div>
+                <Button onClick={handleAddSetting} className="w-full">إضافة</Button>
               </div>
-              <div>
-                <Label>المفتاح (بالإنجليزية)</Label>
-                <Input
-                  value={newSetting.setting_key}
-                  onChange={(e) => setNewSetting(p => ({ ...p, setting_key: e.target.value }))}
-                  dir="ltr"
-                  placeholder="my_setting_key"
-                />
-              </div>
-              <div>
-                <Label>الاسم بالعربية *</Label>
-                <Input
-                  value={newSetting.label_ar}
-                  onChange={(e) => setNewSetting(p => ({ ...p, label_ar: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label>النوع</Label>
-                <Select value={newSetting.setting_type} onValueChange={(v) => setNewSetting(p => ({ ...p, setting_type: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="text">نص</SelectItem>
-                    <SelectItem value="url">رابط</SelectItem>
-                    <SelectItem value="boolean">تبديل (نعم/لا)</SelectItem>
-                    <SelectItem value="color">لون</SelectItem>
-                    <SelectItem value="color">لون</SelectItem>
-                    <SelectItem value="image">صورة</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>القيمة الافتراضية</Label>
-                <Input
-                  value={newSetting.setting_value}
-                  onChange={(e) => setNewSetting(p => ({ ...p, setting_value: e.target.value }))}
-                />
-              </div>
-              <Button onClick={handleAddSetting} className="w-full">إضافة</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <p className="text-sm text-muted-foreground">
