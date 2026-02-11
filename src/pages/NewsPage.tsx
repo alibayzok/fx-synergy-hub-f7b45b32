@@ -58,6 +58,8 @@ const NewsPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [lastFetched, setLastFetched] = useState<Date | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<NewsArticle | null>(null);
+  const [articleContent, setArticleContent] = useState<string>('');
+  const [loadingContent, setLoadingContent] = useState(false);
 
   const fetchNews = useCallback(async (category: NewsCategory = 'all') => {
     setLoading(true);
@@ -91,6 +93,25 @@ const NewsPage = () => {
   useEffect(() => {
     fetchNews(activeCategory);
   }, [activeCategory]);
+
+  const openArticle = useCallback(async (article: NewsArticle) => {
+    setSelectedArticle(article);
+    setArticleContent('');
+    setLoadingContent(true);
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke('fetch-article', {
+        body: { url: article.link, language: i18n.language },
+      });
+      if (fnError) throw fnError;
+      if (data?.success && data?.content) {
+        setArticleContent(data.content);
+      }
+    } catch (err) {
+      console.error('Error fetching article:', err);
+    } finally {
+      setLoadingContent(false);
+    }
+  }, [i18n.language]);
 
   const getTitle = (article: NewsArticle) => isArabic && article.title_ar ? article.title_ar : article.title;
   const getSummary = (article: NewsArticle) => isArabic && article.summary_ar ? article.summary_ar : article.summary;
@@ -242,12 +263,30 @@ const NewsPage = () => {
             {/* Divider */}
             <div className="h-px bg-border/30 mb-6" />
 
-            {/* Summary/Content */}
-            <div className="prose prose-sm dark:prose-invert max-w-none">
-              <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-line">
-                {getSummary(selectedArticle)}
-              </p>
-            </div>
+            {/* Article Content */}
+            {loadingContent ? (
+              <div className="flex flex-col items-center py-8 gap-3">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                <p className="text-xs text-muted-foreground">{isArabic ? 'جاري تحميل المقال...' : 'Loading article...'}</p>
+              </div>
+            ) : articleContent ? (
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-line">
+                  {articleContent}
+                </p>
+              </div>
+            ) : (
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-line">
+                  {getSummary(selectedArticle)}
+                </p>
+                {!getSummary(selectedArticle) && (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    {isArabic ? 'لم يتم العثور على محتوى المقال. يمكنك قراءته من المصدر أدناه.' : 'Article content not available. Read from the source below.'}
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Source Link */}
             <div className="mt-8 p-4 rounded-2xl bg-muted/30 border border-border/20">
@@ -379,7 +418,7 @@ const NewsPage = () => {
                 {featuredArticles.map((article, idx) => idx === featuredIndex && (
                   <motion.div
                     key={article.id}
-                    onClick={() => setSelectedArticle(article)}
+                    onClick={() => openArticle(article)}
                     initial={{ opacity: 0, x: 30 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -30 }}
@@ -476,7 +515,7 @@ const NewsPage = () => {
                   return (
                     <motion.div
                       key={article.id}
-                      onClick={() => setSelectedArticle(article)}
+                      onClick={() => openArticle(article)}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.05 }}
