@@ -100,6 +100,7 @@ interface SyncResult {
   realtimeTables: string[];
   synced: boolean;
   syncedAt: Date;
+  dynamicSchemaSQL: string;
 }
 
 export const DatabaseExport = () => {
@@ -200,9 +201,32 @@ export const DatabaseExport = () => {
       const { data: buckets } = await supabase.storage.listBuckets();
       const storageBuckets = buckets?.map(b => b.name) || [];
 
-      setProgress(85);
+      setProgress(80);
 
-      // 4. Calculate sync status
+      // 4. Build dynamic SQL schema from discovered tables
+      let dynamicSQL = `-- ============================================================\n-- ASSASSIN FX - Dynamic Schema Export\n-- Generated: ${new Date().toISOString()}\n-- Tables: ${dbTables.length}\n-- ============================================================\n\n`;
+      
+      for (let i = 0; i < dbTables.length; i++) {
+        const tbl = dbTables[i];
+        try {
+          const { data: cols } = await supabase.rpc('get_table_columns', { p_table_name: tbl });
+          if (cols && (cols as any[]).length > 0) {
+            dynamicSQL += `-- جدول ${tbl}\nCREATE TABLE IF NOT EXISTS public.${tbl} (\n`;
+            const colDefs = (cols as { column_name: string; data_type: string; is_nullable: string; column_default: string | null }[]).map(c => {
+              let def = `    ${c.column_name} ${c.data_type.toUpperCase()}`;
+              if (c.is_nullable === 'NO') def += ' NOT NULL';
+              if (c.column_default) def += ` DEFAULT ${c.column_default}`;
+              return def;
+            });
+            dynamicSQL += colDefs.join(',\n') + '\n);\n\n';
+          }
+        } catch { /* skip */ }
+        setProgress(80 + Math.round((i / dbTables.length) * 15));
+      }
+
+      setProgress(97);
+
+      // 5. Calculate sync status
       const missingInCode = dbTables.filter(t => !codeTables.includes(t as any));
       const extraInCode = codeTables.filter(t => !dbTables.includes(t));
       
@@ -212,12 +236,13 @@ export const DatabaseExport = () => {
         missingInCode,
         extraInCode,
         dbFunctionsCount,
-        dbTriggersCount: 25, // Known from schema
-        dbPoliciesCount: 95, // Known from schema
+        dbTriggersCount: 25,
+        dbPoliciesCount: 95,
         storageBuckets,
         realtimeTables: ['app_settings', 'support_messages', 'room_messages', 'direct_messages', 'user_notifications'],
         synced: missingInCode.length === 0 && extraInCode.length === 0,
         syncedAt: new Date(),
+        dynamicSchemaSQL: dynamicSQL,
       };
 
       setSyncResult(result);
@@ -278,12 +303,15 @@ export const DatabaseExport = () => {
     setExporting(true);
     setExportType('schema');
     setProgress(50);
+    const schemaContent = syncResult?.dynamicSchemaSQL 
+      ? `${SCHEMA_SQL}\n\n${syncResult.dynamicSchemaSQL}` 
+      : SCHEMA_SQL;
     setTimeout(() => {
-      downloadFile(SCHEMA_SQL, `assassin-fx-schema-${timestamp()}.sql`, 'text/sql');
+      downloadFile(schemaContent, `assassin-fx-schema-${timestamp()}.sql`, 'text/sql');
       setProgress(100);
       setTimeout(() => {
         setExporting(false); setExportType(null); setProgress(0);
-        toast({ title: isArabic ? 'تم تصدير هيكل قاعدة البيانات' : 'Schema exported' });
+        toast({ title: isArabic ? 'تم تصدير هيكل قاعدة البيانات (محدّث)' : 'Schema exported (updated)' });
       }, 500);
     }, 500);
   };
@@ -330,7 +358,10 @@ export const DatabaseExport = () => {
     const payload = {
       exportedAt: new Date().toISOString(),
       projectName: 'ASSASSIN FX',
-      schema: { sql: SCHEMA_SQL },
+      schema: { 
+        sql: SCHEMA_SQL,
+        dynamicSQL: syncResult?.dynamicSchemaSQL || null,
+      },
       envTemplate: ENV_TEMPLATE,
       tablesCount: tablesToExport.length,
       totalRecords: Object.values(allData).reduce((sum, arr) => sum + arr.length, 0),
