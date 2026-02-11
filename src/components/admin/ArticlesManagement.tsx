@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -366,11 +367,11 @@ export const ArticlesManagement = () => {
             </div>
             <div className="space-y-2">
               <Label>المحتوى (عربي) *</Label>
-              <Textarea value={form.content_ar} onChange={e => setForm(f => ({ ...f, content_ar: e.target.value }))} dir="rtl" rows={6} />
+              <RichTextEditor value={form.content_ar} onChange={v => setForm(f => ({ ...f, content_ar: v }))} dir="rtl" placeholder="اكتب محتوى المقال هنا..." />
             </div>
             <div className="space-y-2">
               <Label>Content (English)</Label>
-              <Textarea value={form.content_en} onChange={e => setForm(f => ({ ...f, content_en: e.target.value }))} dir="ltr" rows={6} />
+              <RichTextEditor value={form.content_en} onChange={v => setForm(f => ({ ...f, content_en: v }))} dir="ltr" placeholder="Write article content here..." />
             </div>
             <div className="space-y-2">
               <Label>التصنيف</Label>
