@@ -526,12 +526,24 @@ export const CMSManagement = () => {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Palette className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-bold">إدارة المحتوى (CMS)</h2>
-        </div>
+    <div className="space-y-5">
+      {/* Premium Header Banner */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-rose-500/15 via-rose-600/5 to-transparent border border-rose-500/15"
+      >
+        <div className="absolute top-0 end-0 w-32 h-32 bg-rose-500/10 rounded-full blur-3xl" />
+        <div className="relative flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-rose-500/20 border border-rose-500/20">
+              <Palette className="w-5 h-5 text-rose-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-foreground">إدارة المحتوى (CMS)</h2>
+              <p className="text-xs text-muted-foreground/70">{settings.length} إعداد في {CATEGORIES.length} أقسام</p>
+            </div>
+          </div>
         <div className="flex items-center gap-2">
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -619,7 +631,8 @@ export const CMSManagement = () => {
             </DialogContent>
           </Dialog>
         </div>
-      </div>
+        </div>
+      </motion.div>
 
       <p className="text-sm text-muted-foreground">
         تحكم بمحتوى التطبيق بالكامل من هنا. أي تغيير سينعكس فوراً على جميع المستخدمين.
