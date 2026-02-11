@@ -1,17 +1,18 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Crown, Check, Star, Radio, BookOpen, Shield, Zap, 
-  ArrowLeft, Sparkles, Lock, TrendingUp, Users, Clock
+  ArrowLeft, Sparkles, Lock, TrendingUp, Users, Clock, MessageCircle, Send
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import { AppLayout } from '@/components/layout/AppLayout';
 
@@ -20,8 +21,12 @@ const VipPage = () => {
   const navigate = useNavigate();
   const { user, isVip, isAdmin } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('monthly');
   const [requesting, setRequesting] = useState(false);
+  const [chatMessage, setChatMessage] = useState('');
+  const [showChat, setShowChat] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
   const isRTL = i18n.language === 'ar';
 
   // Check if user has a pending subscription request
@@ -42,6 +47,49 @@ const VipPage = () => {
     enabled: !!user,
   });
 
+  // Chat messages for pending subscription
+  const { data: chatMessages = [], refetch: refetchChat } = useQuery({
+    queryKey: ['my-sub-chat', (pendingSub as any)?.id],
+    queryFn: async () => {
+      if (!pendingSub) return [];
+      const { data } = await supabase
+        .from('subscription_messages' as any)
+        .select('*')
+        .eq('subscription_id', (pendingSub as any).id)
+        .order('created_at', { ascending: true });
+      return (data || []) as any[];
+    },
+    enabled: !!(pendingSub as any)?.id,
+    refetchInterval: (pendingSub as any)?.id ? 5000 : false,
+  });
+
+  // Auto-scroll chat
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages]);
+
+  // Send message mutation
+  const sendMessage = useMutation({
+    mutationFn: async () => {
+      if (!pendingSub || !chatMessage.trim() || !user) return;
+      const { error } = await supabase
+        .from('subscription_messages' as any)
+        .insert({
+          subscription_id: (pendingSub as any).id,
+          sender_id: user.id,
+          content: chatMessage.trim(),
+          is_admin: false,
+        } as any);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setChatMessage('');
+      refetchChat();
+    },
+    onError: (err: any) => {
+      toast({ title: 'خطأ', description: err.message, variant: 'destructive' });
+    },
+  });
   const plans = [
     {
       id: 'monthly' as const,
@@ -256,9 +304,92 @@ const VipPage = () => {
             className="space-y-3"
           >
             {pendingSub ? (
-              <div className="w-full h-14 text-lg font-bold rounded-2xl bg-muted flex items-center justify-center gap-2 text-muted-foreground">
-                <Clock className="w-5 h-5" />
-                {isRTL ? 'طلبك قيد المراجعة ⏳' : 'Your request is under review ⏳'}
+              <div className="space-y-3">
+                <div className="w-full h-14 text-lg font-bold rounded-2xl bg-muted flex items-center justify-center gap-2 text-muted-foreground">
+                  <Clock className="w-5 h-5" />
+                  {isRTL ? 'طلبك قيد المراجعة ⏳' : 'Your request is under review ⏳'}
+                </div>
+                
+                {/* Chat toggle */}
+                <Button
+                  variant="outline"
+                  className="w-full gap-2 border-primary/30 text-primary"
+                  onClick={() => setShowChat(!showChat)}
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  {isRTL ? 'محادثة مع الإدارة' : 'Chat with Admin'}
+                  {chatMessages.length > 0 && (
+                    <Badge className="bg-primary text-primary-foreground text-[10px] h-5 px-1.5">{chatMessages.length}</Badge>
+                  )}
+                </Button>
+
+                {/* Chat Section */}
+                {showChat && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="rounded-2xl border border-border/50 bg-card overflow-hidden"
+                  >
+                    <div className="px-4 py-2.5 border-b border-border/30 flex items-center gap-2 bg-muted/30">
+                      <MessageCircle className="w-4 h-4 text-primary" />
+                      <span className="text-sm font-medium">{isRTL ? 'محادثة طلب الاشتراك' : 'Subscription Request Chat'}</span>
+                    </div>
+                    
+                    <div className="overflow-y-auto p-3 space-y-2 min-h-[150px] max-h-[250px]">
+                      {chatMessages.length === 0 ? (
+                        <div className="flex items-center justify-center h-[150px] text-muted-foreground text-xs text-center">
+                          {isRTL ? 'لا توجد رسائل بعد\nيمكنك إرسال رسالة للإدارة بخصوص طلبك' : 'No messages yet\nYou can send a message to admin about your request'}
+                        </div>
+                      ) : (
+                        chatMessages.map((msg: any) => (
+                          <div key={msg.id} className={cn('flex', msg.is_admin ? 'justify-start' : 'justify-end')}>
+                            <div className={cn(
+                              'max-w-[80%] rounded-2xl px-3 py-2 text-sm',
+                              msg.is_admin 
+                                ? 'bg-primary/10 text-foreground rounded-tl-none' 
+                                : 'bg-muted text-foreground rounded-tr-none'
+                            )}>
+                              <div className="flex items-center gap-1 mb-0.5">
+                                <span className={cn('text-[10px] font-medium', msg.is_admin ? 'text-primary' : 'text-muted-foreground')}>
+                                  {msg.is_admin ? '🛡️ الإدارة' : '👤 أنت'}
+                                </span>
+                              </div>
+                              <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                              <span className="text-[9px] text-muted-foreground mt-1 block">
+                                {new Date(msg.created_at).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                      <div ref={chatEndRef} />
+                    </div>
+
+                    <form 
+                      className="flex gap-2 p-2 border-t border-border/30"
+                      onSubmit={(e) => { e.preventDefault(); sendMessage.mutate(); }}
+                    >
+                      <Input
+                        value={chatMessage}
+                        onChange={(e) => setChatMessage(e.target.value)}
+                        placeholder={isRTL ? 'اكتب رسالة...' : 'Type a message...'}
+                        className="flex-1 h-9 text-sm"
+                      />
+                      <Button 
+                        type="submit" 
+                        size="sm" 
+                        disabled={!chatMessage.trim() || sendMessage.isPending}
+                        className="h-9 w-9 p-0 bg-primary"
+                      >
+                        <Send className="w-4 h-4" />
+                      </Button>
+                    </form>
+                  </motion.div>
+                )}
+                
+                <p className="text-center text-xs text-muted-foreground">
+                  {isRTL ? 'سيتم إشعارك فور معالجة طلبك' : 'You will be notified once your request is processed'}
+                </p>
               </div>
             ) : (
               <Button
@@ -276,13 +407,13 @@ const VipPage = () => {
                 )}
               </Button>
             )}
-            <p className="text-center text-xs text-muted-foreground">
-              {pendingSub
-                ? (isRTL ? 'سيتم إشعارك فور معالجة طلبك' : 'You will be notified once your request is processed')
-                : (isRTL 
-                  ? 'سيتم التواصل معك عبر الواتساب لإتمام الدفع وتفعيل اشتراكك'
-                  : 'We will contact you via WhatsApp to complete payment and activate your subscription')}
-            </p>
+            {!pendingSub && (
+              <p className="text-center text-xs text-muted-foreground">
+                {isRTL 
+                  ? 'سيتم التواصل معك عبر التطبيق لإتمام الدفع وتفعيل اشتراكك'
+                  : 'We will contact you through the app to complete payment and activate your subscription'}
+              </p>
+            )}
           </motion.div>
 
           {/* Broker alternative */}
