@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { 
@@ -11,24 +10,21 @@ import {
   Star, 
   Globe, 
   Shield,
-  ArrowUpCircle,
-  ArrowDownCircle,
   UserPlus,
-  CheckCircle
+  CheckCircle,
+  ExternalLink
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { BrokerRequestDialog } from './BrokerRequestDialog';
+import { useAppSettings } from '@/hooks/useAppSettings';
 
 interface BrokerLandingSectionProps {
-  onRequestSubmitted: () => void;
+  onRequestSubmitted?: () => void;
 }
 
 export const BrokerLandingSection = ({ onRequestSubmitted }: BrokerLandingSectionProps) => {
   const { t } = useTranslation();
-  const [showAccountDialog, setShowAccountDialog] = useState(false);
-  const [showDepositDialog, setShowDepositDialog] = useState(false);
-  const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
+  const { getSetting } = useAppSettings();
+  const registrationUrl = getSetting('broker_registration_url', 'https://www.oneroyal.com');
 
   const stats = [
     { icon: TrendingUp, label: t('services.brokerLanding.lowSpread'), value: '0.0', color: 'text-profit' },
@@ -44,6 +40,10 @@ export const BrokerLandingSection = ({ onRequestSubmitted }: BrokerLandingSectio
     { icon: Globe, text: t('services.brokerLanding.features.arabicSupport') },
     { icon: Shield, text: t('services.brokerLanding.features.execution') },
   ];
+
+  const handleOpenRegistration = () => {
+    window.open(registrationUrl, '_blank', 'noopener,noreferrer');
+  };
 
   return (
     <div className="space-y-6">
@@ -108,103 +108,34 @@ export const BrokerLandingSection = ({ onRequestSubmitted }: BrokerLandingSectio
             ))}
           </div>
 
-          {/* CTA Button */}
+          {/* CTA Button - Opens registration link */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
           >
             <Button 
-              onClick={() => setShowAccountDialog(true)}
+              onClick={handleOpenRegistration}
               className="w-full h-12 text-base font-bold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-500/30"
             >
-              <UserPlus className="w-5 h-5 me-2" />
+              <ExternalLink className="w-5 h-5 me-2" />
               {t('services.brokerLanding.openAccount')}
             </Button>
           </motion.div>
         </div>
       </motion.div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-2 gap-4">
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.6 }}
-        >
-          <Card 
-            className="cursor-pointer hover:border-profit/50 transition-colors border-border/50 bg-card/50"
-            onClick={() => setShowDepositDialog(true)}
-          >
-            <CardContent className="p-4 text-center">
-              <div className="w-12 h-12 rounded-full bg-profit/20 flex items-center justify-center mx-auto mb-3">
-                <ArrowDownCircle className="w-6 h-6 text-profit" />
-              </div>
-              <h3 className="font-semibold text-foreground mb-1">
-                {t('services.deposit')}
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                {t('services.brokerLanding.depositDesc')}
-              </p>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.7 }}
-        >
-          <Card 
-            className="cursor-pointer hover:border-loss/50 transition-colors border-border/50 bg-card/50"
-            onClick={() => setShowWithdrawDialog(true)}
-          >
-            <CardContent className="p-4 text-center">
-              <div className="w-12 h-12 rounded-full bg-loss/20 flex items-center justify-center mx-auto mb-3">
-                <ArrowUpCircle className="w-6 h-6 text-loss" />
-              </div>
-              <h3 className="font-semibold text-foreground mb-1">
-                {t('services.withdraw')}
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                {t('services.brokerLanding.withdrawDesc')}
-              </p>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </div>
-
       {/* Partner Info */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.8 }}
+        transition={{ delay: 0.6 }}
         className="p-4 rounded-xl bg-muted/30 border border-border/30 text-center"
       >
         <p className="text-sm text-muted-foreground">
           {t('services.brokerLanding.partnerNote')}
         </p>
       </motion.div>
-
-      {/* Dialogs */}
-      <BrokerRequestDialog
-        open={showAccountDialog}
-        onOpenChange={setShowAccountDialog}
-        type="broker_account"
-        onSuccess={onRequestSubmitted}
-      />
-      <BrokerRequestDialog
-        open={showDepositDialog}
-        onOpenChange={setShowDepositDialog}
-        type="broker_deposit"
-        onSuccess={onRequestSubmitted}
-      />
-      <BrokerRequestDialog
-        open={showWithdrawDialog}
-        onOpenChange={setShowWithdrawDialog}
-        type="broker_withdraw"
-        onSuccess={onRequestSubmitted}
-      />
     </div>
   );
 };
