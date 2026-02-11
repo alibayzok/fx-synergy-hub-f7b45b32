@@ -57,6 +57,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
     }
     const userId = claimsData.claims.sub;
+    const userEmail = claimsData.claims.email || `user_${userId.substring(0, 8)}@placeholder.com`;
 
     const { action, ...params } = await req.json();
 
@@ -70,7 +71,7 @@ Deno.serve(async (req) => {
           body: JSON.stringify({
             first_name: params.first_name || 'User',
             last_name: params.last_name || userId.substring(0, 8),
-            email: params.email,
+            email: params.email || userEmail,
             active: true,
           }),
         });
@@ -89,7 +90,7 @@ Deno.serve(async (req) => {
             body: JSON.stringify({
               first_name: params.first_name || 'User',
               last_name: params.last_name || '',
-              email: params.email || '',
+              email: params.email || userEmail,
               active: true,
             }),
           });
