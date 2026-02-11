@@ -58,7 +58,6 @@ export type Database = {
           title: string
           updated_at: string
           views_count: number | null
-          visibility: Database["public"]["Enums"]["trade_visibility"]
         }
         Insert: {
           asset_type?: Database["public"]["Enums"]["asset_type"] | null
@@ -73,7 +72,6 @@ export type Database = {
           title: string
           updated_at?: string
           views_count?: number | null
-          visibility?: Database["public"]["Enums"]["trade_visibility"]
         }
         Update: {
           asset_type?: Database["public"]["Enums"]["asset_type"] | null
@@ -88,7 +86,6 @@ export type Database = {
           title?: string
           updated_at?: string
           views_count?: number | null
-          visibility?: Database["public"]["Enums"]["trade_visibility"]
         }
         Relationships: []
       }
@@ -1075,213 +1072,6 @@ export type Database = {
         }
         Relationships: []
       }
-      trade_comment_likes: {
-        Row: {
-          comment_id: string
-          created_at: string
-          id: string
-          user_id: string
-        }
-        Insert: {
-          comment_id: string
-          created_at?: string
-          id?: string
-          user_id: string
-        }
-        Update: {
-          comment_id?: string
-          created_at?: string
-          id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "trade_comment_likes_comment_id_fkey"
-            columns: ["comment_id"]
-            isOneToOne: false
-            referencedRelation: "trade_comments"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      trade_comments: {
-        Row: {
-          content: string
-          created_at: string
-          id: string
-          likes_count: number | null
-          parent_id: string | null
-          trade_id: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          content: string
-          created_at?: string
-          id?: string
-          likes_count?: number | null
-          parent_id?: string | null
-          trade_id: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          content?: string
-          created_at?: string
-          id?: string
-          likes_count?: number | null
-          parent_id?: string | null
-          trade_id?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "trade_comments_parent_id_fkey"
-            columns: ["parent_id"]
-            isOneToOne: false
-            referencedRelation: "trade_comments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "trade_comments_trade_id_fkey"
-            columns: ["trade_id"]
-            isOneToOne: false
-            referencedRelation: "trades"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      trade_followers: {
-        Row: {
-          created_at: string
-          id: string
-          trade_id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          trade_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          trade_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "trade_followers_trade_id_fkey"
-            columns: ["trade_id"]
-            isOneToOne: false
-            referencedRelation: "trades"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      trade_shares: {
-        Row: {
-          created_at: string
-          id: string
-          share_type: string
-          trade_id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          share_type: string
-          trade_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          share_type?: string
-          trade_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "trade_shares_trade_id_fkey"
-            columns: ["trade_id"]
-            isOneToOne: false
-            referencedRelation: "trades"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      trades: {
-        Row: {
-          alternative_scenario: string | null
-          asset_type: Database["public"]["Enums"]["asset_type"]
-          attachments: string[] | null
-          created_at: string
-          created_by: string | null
-          direction: Database["public"]["Enums"]["trade_direction"]
-          entry_price: number
-          entry_type: Database["public"]["Enums"]["entry_type"]
-          followers_count: number | null
-          id: string
-          last_update_note: string | null
-          reason: string
-          risk_note: string | null
-          sl_price: number
-          status: Database["public"]["Enums"]["trade_status"]
-          symbol: string
-          timeframe: Database["public"]["Enums"]["timeframe"]
-          tp_prices: number[]
-          updated_at: string
-          visibility: Database["public"]["Enums"]["trade_visibility"]
-        }
-        Insert: {
-          alternative_scenario?: string | null
-          asset_type: Database["public"]["Enums"]["asset_type"]
-          attachments?: string[] | null
-          created_at?: string
-          created_by?: string | null
-          direction: Database["public"]["Enums"]["trade_direction"]
-          entry_price: number
-          entry_type?: Database["public"]["Enums"]["entry_type"]
-          followers_count?: number | null
-          id?: string
-          last_update_note?: string | null
-          reason: string
-          risk_note?: string | null
-          sl_price: number
-          status?: Database["public"]["Enums"]["trade_status"]
-          symbol: string
-          timeframe?: Database["public"]["Enums"]["timeframe"]
-          tp_prices?: number[]
-          updated_at?: string
-          visibility?: Database["public"]["Enums"]["trade_visibility"]
-        }
-        Update: {
-          alternative_scenario?: string | null
-          asset_type?: Database["public"]["Enums"]["asset_type"]
-          attachments?: string[] | null
-          created_at?: string
-          created_by?: string | null
-          direction?: Database["public"]["Enums"]["trade_direction"]
-          entry_price?: number
-          entry_type?: Database["public"]["Enums"]["entry_type"]
-          followers_count?: number | null
-          id?: string
-          last_update_note?: string | null
-          reason?: string
-          risk_note?: string | null
-          sl_price?: number
-          status?: Database["public"]["Enums"]["trade_status"]
-          symbol?: string
-          timeframe?: Database["public"]["Enums"]["timeframe"]
-          tp_prices?: number[]
-          updated_at?: string
-          visibility?: Database["public"]["Enums"]["trade_visibility"]
-        }
-        Relationships: []
-      }
       usdt_listings: {
         Row: {
           commission: number
@@ -1579,12 +1369,6 @@ export type Database = {
         Args: { p_room_id: string; p_user_id?: string }
         Returns: boolean
       }
-      can_access_trade: {
-        Args: {
-          trade_visibility: Database["public"]["Enums"]["trade_visibility"]
-        }
-        Returns: boolean
-      }
       can_message_user: { Args: { target_user_id: string }; Returns: boolean }
       can_view_post: {
         Args: {
@@ -1647,7 +1431,6 @@ export type Database = {
       asset_type: "forex" | "metals" | "crypto"
       conversation_type: "direct" | "group"
       course_level: "beginner" | "intermediate" | "advanced"
-      entry_type: "market" | "limit" | "stop"
       friend_request_status: "pending" | "accepted" | "rejected"
       post_visibility: "everyone" | "friends_only" | "followers_only" | "nobody"
       privacy_setting: "everyone" | "friends_only" | "followers_only" | "nobody"
@@ -1666,15 +1449,6 @@ export type Database = {
         | "usdt_sell"
         | "broker_account"
       timeframe: "M5" | "M15" | "H1" | "H4" | "D1"
-      trade_direction: "buy" | "sell"
-      trade_status:
-        | "pending"
-        | "running"
-        | "tp_hit"
-        | "sl_hit"
-        | "cancelled"
-        | "closed_manual"
-      trade_visibility: "free" | "vip"
       usdt_listing_type: "buy" | "sell"
     }
     CompositeTypes: {
@@ -1807,7 +1581,6 @@ export const Constants = {
       asset_type: ["forex", "metals", "crypto"],
       conversation_type: ["direct", "group"],
       course_level: ["beginner", "intermediate", "advanced"],
-      entry_type: ["market", "limit", "stop"],
       friend_request_status: ["pending", "accepted", "rejected"],
       post_visibility: ["everyone", "friends_only", "followers_only", "nobody"],
       privacy_setting: ["everyone", "friends_only", "followers_only", "nobody"],
@@ -1828,16 +1601,6 @@ export const Constants = {
         "broker_account",
       ],
       timeframe: ["M5", "M15", "H1", "H4", "D1"],
-      trade_direction: ["buy", "sell"],
-      trade_status: [
-        "pending",
-        "running",
-        "tp_hit",
-        "sl_hit",
-        "cancelled",
-        "closed_manual",
-      ],
-      trade_visibility: ["free", "vip"],
       usdt_listing_type: ["buy", "sell"],
     },
   },
