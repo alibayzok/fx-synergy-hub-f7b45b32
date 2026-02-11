@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { LogIn, Briefcase, ClipboardList, ExternalLink, CheckCircle, Star, ChevronRight, Loader2 } from 'lucide-react';
+import { LogIn, Briefcase, ClipboardList, ExternalLink, CheckCircle, Star, ChevronRight, Loader2, Coins } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useServiceRequests } from '@/hooks/useServiceRequests';
 import { MyRequestsSection } from '@/components/services/MyRequestsSection';
+import { UsdtServiceSection } from '@/components/services/UsdtServiceSection';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
@@ -111,16 +112,20 @@ const ServicesPage = () => {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
         <div className="px-4 py-3 border-b border-border/30">
-          <TabsList className="w-full grid grid-cols-3 h-11">
-            <TabsTrigger value="main" className="gap-2 text-xs sm:text-sm">
+          <TabsList className="w-full grid grid-cols-4 h-11">
+            <TabsTrigger value="main" className="gap-1.5 text-xs sm:text-sm">
               <Briefcase className="w-4 h-4" />
               {isRTL ? 'الخدمات' : 'Services'}
             </TabsTrigger>
-            <TabsTrigger value="brokers" className="gap-2 text-xs sm:text-sm">
+            <TabsTrigger value="usdt" className="gap-1.5 text-xs sm:text-sm">
+              <Coins className="w-4 h-4" />
+              USDT
+            </TabsTrigger>
+            <TabsTrigger value="brokers" className="gap-1.5 text-xs sm:text-sm">
               <Star className="w-4 h-4" />
               {isRTL ? 'البروكرات' : 'Brokers'}
             </TabsTrigger>
-            <TabsTrigger value="requests" className="gap-2 text-xs sm:text-sm relative">
+            <TabsTrigger value="requests" className="gap-1.5 text-xs sm:text-sm relative">
               <ClipboardList className="w-4 h-4" />
               <span className="hidden sm:inline">{t('services.myRequests')}</span>
               <span className="sm:hidden">{isRTL ? 'طلباتي' : 'Requests'}</span>
@@ -184,6 +189,11 @@ const ServicesPage = () => {
                 </motion.div>
               ))
             )}
+          </TabsContent>
+
+          {/* USDT Tab */}
+          <TabsContent value="usdt" className="mt-0">
+            <UsdtServiceSection onRequestSubmitted={() => setActiveTab('requests')} />
           </TabsContent>
 
           {/* Brokers Tab */}
