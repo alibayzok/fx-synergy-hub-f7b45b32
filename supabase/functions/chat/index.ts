@@ -67,31 +67,52 @@ serve(async (req) => {
       }
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
+    // Use service role client to read settings (including secret ones like API keys)
+    const adminClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
 
-    // Read AI model from app_settings
-    let aiModel = "google/gemini-3-flash-preview";
-    const { data: modelSetting } = await supabase
+    // Read AI configuration from app_settings
+    const { data: aiSettings } = await adminClient
       .from('app_settings')
-      .select('setting_value')
-      .eq('setting_key', 'ai_model')
-      .single();
-    if (modelSetting?.setting_value) {
-      aiModel = modelSetting.setting_value;
+      .select('setting_key, setting_value')
+      .in('setting_key', ['ai_provider', 'ai_model', 'custom_ai_api_key', 'custom_ai_endpoint']);
+
+    const settingsMap: Record<string, string> = {};
+    aiSettings?.forEach((s: any) => { settingsMap[s.setting_key] = s.setting_value || ''; });
+
+    const aiProvider = settingsMap['ai_provider'] || 'lovable';
+    const aiModel = settingsMap['ai_model'] || 'google/gemini-3-flash-preview';
+    const customApiKey = settingsMap['custom_ai_api_key'] || '';
+    const customEndpoint = settingsMap['custom_ai_endpoint'] || '';
+
+    let apiKey: string;
+    let endpoint: string;
+    let modelToUse: string = aiModel;
+
+    if (aiProvider === 'custom' && customApiKey) {
+      apiKey = customApiKey;
+      endpoint = customEndpoint || 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
+      // For custom providers, strip provider prefix from model name if present
+      modelToUse = aiModel.includes('/') ? aiModel.split('/').pop()! : aiModel;
+    } else {
+      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+      if (!LOVABLE_API_KEY) {
+        throw new Error("LOVABLE_API_KEY is not configured");
+      }
+      apiKey = LOVABLE_API_KEY;
+      endpoint = "https://ai.gateway.lovable.dev/v1/chat/completions";
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch(endpoint, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: aiModel,
+        model: modelToUse,
         messages: [
           { 
             role: "system", 
