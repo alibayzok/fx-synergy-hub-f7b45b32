@@ -95,9 +95,14 @@ async function translateToArabic(items: RSSItem[]): Promise<RSSItem[]> {
   try {
     const textsToTranslate = items.map(item => `TITLE: ${item.title}\nSUMMARY: ${item.summary}`).join('\n---\n');
     
-    const response = await fetch('https://bpgpknlqdsmtjlvcjieq.supabase.co/functions/v1/proxy-ai', {
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      console.error('LOVABLE_API_KEY not configured');
+      return items;
+    }
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}` },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${LOVABLE_API_KEY}` },
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash-lite',
         messages: [
