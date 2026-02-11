@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
+import { useAppSettings } from '@/hooks/useAppSettings';
 import { useSupport, SupportTicket, SupportMessage } from '@/hooks/useSupport';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, Send, Plus, MessageCircle, LogIn, CheckCircle2, ImagePlus, X, Loader2 } from 'lucide-react';
@@ -20,6 +21,8 @@ const SupportPage = () => {
   const { i18n } = useTranslation();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const { getBoolean } = useAppSettings();
+  const supportEnabled = getBoolean('enable_support', true);
   const { tickets, loading, createTicket, fetchMessages, sendMessage, closeTicket, uploadAttachment } = useSupport();
 
   const [view, setView] = useState<View>('list');
@@ -38,12 +41,9 @@ const SupportPage = () => {
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   useEffect(() => { scrollToBottom(); }, [messages]);
 
-  const openChat = async (ticket: SupportTicket) => {
-    setSelectedTicket(ticket);
-    setView('chat');
-    const msgs = await fetchMessages(ticket.id);
-    setMessages(msgs);
-  };
+  useEffect(() => {
+    if (!supportEnabled) navigate('/', { replace: true });
+  }, [supportEnabled, navigate]);
 
   useEffect(() => {
     if (!selectedTicket) return;
@@ -58,6 +58,15 @@ const SupportPage = () => {
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [selectedTicket]);
+
+  if (!supportEnabled) return null;
+
+  const openChat = async (ticket: SupportTicket) => {
+    setSelectedTicket(ticket);
+    setView('chat');
+    const msgs = await fetchMessages(ticket.id);
+    setMessages(msgs);
+  };
 
   const handleCreateTicket = async () => {
     if (!newSubject.trim() || !newMessage.trim()) return;

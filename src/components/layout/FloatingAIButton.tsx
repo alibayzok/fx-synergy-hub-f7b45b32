@@ -62,6 +62,7 @@ export const FloatingAIButton = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { getBoolean } = useAppSettings();
   const aiEnabled = getBoolean('enable_ai_chat', true);
+  const supportEnabled = getBoolean('enable_support', true);
 
   if (location.pathname === '/ai-chat') return null;
 
@@ -74,14 +75,14 @@ export const FloatingAIButton = () => {
       icon: <Bot className="w-5 h-5 text-white" />,
       onClick: () => { navigate('/ai-chat'); setIsOpen(false); },
     }] : []),
-    {
+    ...(supportEnabled ? [{
       key: 'support',
       label: 'الدعم الفني',
       color: 'from-emerald-500 to-teal-600',
       shadow: 'shadow-emerald-500/30',
       icon: <Headset className="w-5 h-5 text-white" />,
       onClick: () => { navigate('/support'); setIsOpen(false); },
-    },
+    }] : []),
     ...socialLinks.map(s => ({
       ...s,
       onClick: () => { window.open(s.url, '_blank'); setIsOpen(false); },
