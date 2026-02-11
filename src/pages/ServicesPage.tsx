@@ -148,46 +148,111 @@ const ServicesPage = () => {
                 {isRTL ? 'لا توجد خدمات متاحة حالياً' : 'No services available'}
               </div>
             ) : (
-              services.map((service, index) => (
-                <motion.div
-                  key={service.id}
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="rounded-2xl border border-border/40 bg-card/60 overflow-hidden hover:border-primary/30 transition-all"
-                >
-                  <div className="p-4 space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-lg font-bold shadow-lg"
-                        style={{ backgroundColor: service.color }}>
-                        {service.icon.charAt(0)}
+              services.map((service, index) => {
+                const isUsdt = service.icon === 'Coins' || service.name_en?.toLowerCase().includes('usdt');
+
+                if (isUsdt) {
+                  return (
+                    <motion.div
+                      key={service.id}
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setActiveTab('usdt')}
+                      className="relative cursor-pointer rounded-2xl overflow-hidden border border-emerald-500/30 bg-gradient-to-br from-emerald-500/15 via-teal-500/8 to-transparent hover:border-emerald-400/50 transition-all group"
+                    >
+                      {/* Decorative glow */}
+                      <div className="absolute top-0 end-0 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+                      <div className="absolute bottom-0 start-0 w-24 h-24 bg-teal-500/10 rounded-full blur-2xl pointer-events-none" />
+
+                      <div className="relative p-5 space-y-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/30 group-hover:shadow-emerald-500/50 transition-shadow">
+                            <Coins className="w-7 h-7 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-lg font-bold text-foreground">{isRTL ? service.name_ar : (service.name_en || service.name_ar)}</h3>
+                              <Badge className="text-[10px] bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+                                {isRTL ? 'متاح' : 'Live'}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {isRTL ? service.description_ar : (service.description_en || service.description_ar)}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Quick stats row */}
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="text-center p-2.5 rounded-xl bg-card/40 border border-border/20">
+                            <div className="text-xs text-emerald-400 font-bold">{isRTL ? 'شراء' : 'Buy'}</div>
+                            <div className="text-[10px] text-muted-foreground mt-0.5">{isRTL ? 'بأفضل سعر' : 'Best price'}</div>
+                          </div>
+                          <div className="text-center p-2.5 rounded-xl bg-card/40 border border-border/20">
+                            <div className="text-xs text-red-400 font-bold">{isRTL ? 'بيع' : 'Sell'}</div>
+                            <div className="text-[10px] text-muted-foreground mt-0.5">{isRTL ? 'سعر تنافسي' : 'Competitive'}</div>
+                          </div>
+                          <div className="text-center p-2.5 rounded-xl bg-card/40 border border-border/20">
+                            <div className="text-xs text-primary font-bold">{isRTL ? 'آمن' : 'Secure'}</div>
+                            <div className="text-[10px] text-muted-foreground mt-0.5">{isRTL ? 'تحويل فوري' : 'Instant'}</div>
+                          </div>
+                        </div>
+
+                        <Button
+                          className="w-full h-11 gap-2 text-white font-bold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 shadow-md shadow-emerald-500/20"
+                        >
+                          <Coins className="w-4 h-4" />
+                          {isRTL ? 'ابدأ التداول الآن' : 'Start Trading Now'}
+                          <ChevronRight className="w-4 h-4 rtl:rotate-180" />
+                        </Button>
                       </div>
-                      <div className="flex-1">
-                        <h3 className="font-bold text-foreground">{isRTL ? service.name_ar : (service.name_en || service.name_ar)}</h3>
-                        <p className="text-sm text-muted-foreground line-clamp-2">
-                          {isRTL ? service.description_ar : (service.description_en || service.description_ar)}
-                        </p>
+                    </motion.div>
+                  );
+                }
+
+                return (
+                  <motion.div
+                    key={service.id}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="rounded-2xl border border-border/40 bg-card/60 overflow-hidden hover:border-primary/30 transition-all"
+                  >
+                    <div className="p-4 space-y-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-lg font-bold shadow-lg"
+                          style={{ backgroundColor: service.color }}>
+                          {service.icon.charAt(0)}
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-bold text-foreground">{isRTL ? service.name_ar : (service.name_en || service.name_ar)}</h3>
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {isRTL ? service.description_ar : (service.description_en || service.description_ar)}
+                          </p>
+                        </div>
                       </div>
+                      {service.link_url && (
+                        <Button
+                          onClick={() => {
+                            if (service.is_external_link) {
+                              window.open(service.link_url, '_blank', 'noopener,noreferrer');
+                            } else {
+                              navigate(service.link_url);
+                            }
+                          }}
+                          className="w-full gap-2"
+                          style={{ backgroundColor: service.color }}
+                        >
+                          {service.is_external_link && <ExternalLink className="w-4 h-4" />}
+                          {isRTL ? service.link_label_ar : (service.link_label_en || service.link_label_ar)}
+                        </Button>
+                      )}
                     </div>
-                    {service.link_url && (
-                      <Button
-                        onClick={() => {
-                          if (service.is_external_link) {
-                            window.open(service.link_url, '_blank', 'noopener,noreferrer');
-                          } else {
-                            navigate(service.link_url);
-                          }
-                        }}
-                        className="w-full gap-2"
-                        style={{ backgroundColor: service.color }}
-                      >
-                        {service.is_external_link && <ExternalLink className="w-4 h-4" />}
-                        {isRTL ? service.link_label_ar : (service.link_label_en || service.link_label_ar)}
-                      </Button>
-                    )}
-                  </div>
-                </motion.div>
-              ))
+                  </motion.div>
+                );
+              })
             )}
           </TabsContent>
 
