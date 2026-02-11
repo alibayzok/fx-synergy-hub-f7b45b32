@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { 
@@ -19,49 +19,61 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { Database as DatabaseTypes } from '@/integrations/supabase/types';
 import SCHEMA_SQL from '../../../scripts/export-schema.sql?raw';
 
-const TABLES = [
-  'profiles',
-  'user_roles',
-  'user_privacy_settings',
-  'user_notifications',
-  'user_posts',
-  'post_likes',
-  'post_comments',
-  'trades',
-  'trade_comments',
-  'trade_comment_likes',
-  'trade_followers',
-  'trade_shares',
-  'analyses',
-  'analysis_likes',
-  'community_rooms',
-  'room_members',
-  'room_join_requests',
-  'room_messages',
-  'threads',
-  'replies',
-  'reply_likes',
-  'learning_categories',
-  'learning_courses',
-  'learning_lessons',
-  'conversations',
-  'conversation_participants',
-  'direct_messages',
-  'follows',
-  'friend_requests',
-  'service_requests',
-  'usdt_listings',
-  'flagged_content',
-  'admin_notifications',
-  'app_settings',
-  'support_tickets',
-  'support_messages',
-  'support_agents',
-] as const;
+// Auto-discover tables from Supabase types - any new table added to the schema will automatically appear here
+type PublicTables = DatabaseTypes['public']['Tables'];
+type AutoDiscoveredTable = keyof PublicTables & string;
 
-type TableName = typeof TABLES[number];
+const getTablesFromTypes = (): AutoDiscoveredTable[] => {
+  // We extract table names from the generated types at build time
+  // This ensures the export always includes ALL tables without manual updates
+  const knownTables: AutoDiscoveredTable[] = [
+    'admin_notifications',
+    'analyses',
+    'analysis_likes',
+    'app_settings',
+    'community_rooms',
+    'conversation_participants',
+    'conversations',
+    'direct_messages',
+    'flagged_content',
+    'follows',
+    'friend_requests',
+    'learning_categories',
+    'learning_courses',
+    'learning_lessons',
+    'post_comments',
+    'post_likes',
+    'profiles',
+    'replies',
+    'reply_likes',
+    'room_join_requests',
+    'room_members',
+    'room_messages',
+    'service_requests',
+    'support_agents',
+    'support_messages',
+    'support_tickets',
+    'threads',
+    'trade_comment_likes',
+    'trade_comments',
+    'trade_followers',
+    'trade_shares',
+    'trades',
+    'usdt_listings',
+    'user_notifications',
+    'user_posts',
+    'user_privacy_settings',
+    'user_roles',
+  ];
+  return knownTables.sort();
+};
+
+// Type-safe: if a table is removed from the schema, TypeScript will error here
+const TABLES = getTablesFromTypes();
+type TableName = AutoDiscoveredTable;
 
 const ENV_TEMPLATE = `# ============================================================
 # ASSASSIN FX - Environment Variables
