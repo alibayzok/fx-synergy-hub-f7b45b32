@@ -1,10 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, LogIn, Radio, Clock, Eye, Heart, Megaphone } from 'lucide-react';
+import { ChevronLeft, ChevronRight, LogIn, Radio, Clock, Eye, Heart, Megaphone, BookOpen, TrendingUp, Sparkles } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { QuickActions } from '@/components/home/QuickActions';
-import { NewsCard } from '@/components/home/NewsCard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,29 +12,20 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSignals } from '@/hooks/useSignals';
 import { useProfile } from '@/hooks/useProfile';
 import { useAppSettings } from '@/hooks/useAppSettings';
+import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
 
-const mockNews = [
-  {
-    id: 'news-1',
-    title_ar: 'الذهب يسجل أعلى مستوى في أسبوعين',
-    title_en: 'Gold hits 2-week high',
-    content_ar: 'ارتفع الذهب إلى أعلى مستوياته في أسبوعين مع تراجع الدولار...',
-    content_en: 'Gold rose to its highest level in two weeks as the dollar weakened...',
-    published_at: new Date().toISOString(),
-    is_breaking: true,
-  },
-  {
-    id: 'news-2',
-    title_ar: 'قرار الفيدرالي المرتقب اليوم',
-    title_en: 'Fed decision expected today',
-    content_ar: 'الأسواق تترقب قرار الفيدرالي بشأن أسعار الفائدة...',
-    content_en: 'Markets await Fed decision on interest rates...',
-    published_at: new Date(Date.now() - 3600000).toISOString(),
-    is_breaking: false,
-  },
-];
+interface Article {
+  id: string;
+  title_ar: string;
+  title_en: string;
+  summary_ar: string | null;
+  summary_en: string | null;
+  image_url: string | null;
+  category: string;
+  created_at: string;
+}
 
 const HomePage = () => {
   const { t, i18n } = useTranslation();
@@ -44,7 +34,7 @@ const HomePage = () => {
   const locale = isRTL ? ar : enUS;
   
   const { user, isAdmin, loading: authLoading } = useAuth();
-  const { signals, loading: analysesLoading } = useSignals();
+  const { signals, loading: signalsLoading } = useSignals();
   const { profile, loading: profileLoading } = useProfile();
   const { getSetting, getBoolean } = useAppSettings();
   const appName = getSetting('app_name', 'ASSASSIN FX');
@@ -54,11 +44,34 @@ const HomePage = () => {
   const announcementText = getSetting('home_announcement_text');
   const announcementColor = getSetting('home_announcement_color', '#f59e0b');
 
+  // Real articles
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [articlesLoading, setArticlesLoading] = useState(true);
+
   useEffect(() => {
     if (user && !profileLoading && profile && !profile.onboarding_completed) {
       navigate('/onboarding', { replace: true });
     }
   }, [user, profile, profileLoading, navigate]);
+
+  useEffect(() => {
+    const fetchArticles = async () => {
+      try {
+        const { data } = await supabase
+          .from('articles')
+          .select('id, title_ar, title_en, summary_ar, summary_en, image_url, category, created_at')
+          .eq('is_published', true)
+          .order('created_at', { ascending: false })
+          .limit(4);
+        setArticles(data || []);
+      } catch (e) {
+        console.error('Error fetching articles:', e);
+      } finally {
+        setArticlesLoading(false);
+      }
+    };
+    fetchArticles();
+  }, []);
 
   const latestSignals = signals.slice(0, 3);
 
@@ -76,7 +89,8 @@ const HomePage = () => {
   return (
     <AppLayout>
       <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
-        <div className="absolute top-0 end-0 w-96 h-96 rounded-full blur-3xl opacity-30" style={{ background: 'radial-gradient(circle, hsl(var(--primary) / 0.15) 0%, transparent 70%)' }} />
+        <div className="absolute top-0 end-0 w-96 h-96 rounded-full blur-3xl opacity-20" style={{ background: 'radial-gradient(circle, hsl(var(--primary) / 0.2) 0%, transparent 70%)' }} />
+        <div className="absolute bottom-32 start-0 w-64 h-64 rounded-full blur-3xl opacity-15" style={{ background: 'radial-gradient(circle, hsl(var(--primary) / 0.1) 0%, transparent 70%)' }} />
       </div>
 
       <header className="sticky top-0 z-40 glass-premium border-b border-border/20">
@@ -117,25 +131,12 @@ const HomePage = () => {
           className="relative overflow-hidden border-b border-white/10"
           style={{ background: `linear-gradient(135deg, ${announcementColor}, ${announcementColor}dd, ${announcementColor}bb)` }}
         >
-          {/* Animated shine overlay */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
             <motion.div
               className="absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-[-20deg]"
               animate={{ x: ['-150%', '400%'] }}
               transition={{ duration: 3, repeat: Infinity, repeatDelay: 4, ease: 'easeInOut' }}
             />
-          </div>
-          {/* Sparkle dots */}
-          <div className="absolute inset-0 pointer-events-none">
-            {[...Array(6)].map((_, i) => (
-              <motion.div
-                key={i}
-                className="absolute w-1 h-1 bg-white/40 rounded-full"
-                style={{ top: `${20 + Math.random() * 60}%`, left: `${10 + i * 16}%` }}
-                animate={{ opacity: [0, 1, 0], scale: [0.5, 1.2, 0.5] }}
-                transition={{ duration: 2, repeat: Infinity, delay: i * 0.5, ease: 'easeInOut' }}
-              />
-            ))}
           </div>
           <div className="relative flex items-center gap-3 px-4 py-3">
             <motion.div
@@ -160,6 +161,31 @@ const HomePage = () => {
       )}
 
       <div className="px-4 py-4 space-y-6 page-transition">
+
+        {/* Welcome Section for logged-in users */}
+        {user && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-3"
+          >
+            <div className="flex-1">
+              <h2 className="text-lg font-bold text-foreground">
+                {isRTL ? `أهلاً ${displayName} 👋` : `Hello ${displayName} 👋`}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {isRTL ? 'ما الجديد في الأسواق اليوم؟' : "What's new in the markets today?"}
+              </p>
+            </div>
+            <motion.div
+              animate={{ rotate: [0, 5, -5, 0] }}
+              transition={{ duration: 4, repeat: Infinity }}
+            >
+              <Sparkles className="w-6 h-6 text-primary/60" />
+            </motion.div>
+          </motion.div>
+        )}
+
         {/* Quick Actions */}
         <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
           <h2 className="text-sm font-semibold text-muted-foreground mb-3">{t('home.quickActions')}</h2>
@@ -171,18 +197,18 @@ const HomePage = () => {
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
               <Radio className="w-4 h-4 text-primary" />
-              آخر الإشارات
+              {isRTL ? 'آخر الإشارات' : 'Latest Signals'}
             </h2>
             <Button variant="ghost" size="sm" onClick={() => navigate('/trades')} className="text-primary h-8 gap-1 hover:bg-primary/10">
               {t('home.viewAll')}
               {isRTL ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
             </Button>
           </div>
-          <div className="space-y-3">
-            {analysesLoading ? (
+          <div className="space-y-2.5">
+            {signalsLoading ? (
               <>
-                <Skeleton className="h-32 w-full rounded-xl" />
-                <Skeleton className="h-32 w-full rounded-xl" />
+                <Skeleton className="h-28 w-full rounded-xl" />
+                <Skeleton className="h-28 w-full rounded-xl" />
               </>
             ) : latestSignals.length > 0 ? (
               latestSignals.map((signal, index) => (
@@ -190,11 +216,11 @@ const HomePage = () => {
                   key={signal.id}
                   initial={{ opacity: 0, x: isRTL ? 20 : -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.3 + index * 0.1 }}
+                  transition={{ delay: 0.3 + index * 0.08 }}
                   onClick={() => navigate('/trades')}
-                  className="cursor-pointer"
+                  className="cursor-pointer group"
                 >
-                  <div className="rounded-xl bg-card/60 border border-border/40 p-3 space-y-2 hover:border-primary/30 transition-colors">
+                  <div className="rounded-xl bg-card/60 border border-border/40 p-3.5 space-y-2 group-hover:border-primary/30 group-hover:bg-card/80 transition-all duration-200">
                     <div className="flex items-center gap-2">
                       {signal.symbol && (
                         <Badge variant="outline" className="font-mono text-xs bg-primary/10 border-primary/30 text-primary">
@@ -202,45 +228,95 @@ const HomePage = () => {
                         </Badge>
                       )}
                       {signal.timeframe && <Badge variant="secondary" className="text-[10px]">{signal.timeframe}</Badge>}
-                    </div>
-                    <h3 className="font-semibold text-sm">{signal.title}</h3>
-                    <p className="text-xs text-muted-foreground line-clamp-2">{signal.content}</p>
-                    <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                      <div className="flex items-center gap-3">
-                        <span className="flex items-center gap-1"><Heart className="w-3 h-3" />{signal.likes_count || 0}</span>
-                        <span className="flex items-center gap-1"><Eye className="w-3 h-3" />{signal.views_count || 0}</span>
-                      </div>
-                      <span className="flex items-center gap-1">
+                      <div className="flex-1" />
+                      <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
                         <Clock className="w-3 h-3" />
                         {formatDistanceToNow(new Date(signal.created_at), { addSuffix: true, locale })}
                       </span>
+                    </div>
+                    <h3 className="font-semibold text-sm leading-snug">{signal.title}</h3>
+                    <p className="text-xs text-muted-foreground line-clamp-2">{signal.content}</p>
+                    <div className="flex items-center gap-3 text-[11px] text-muted-foreground pt-1">
+                      <span className="flex items-center gap-1"><Heart className="w-3 h-3" />{signal.likes_count || 0}</span>
+                      <span className="flex items-center gap-1"><Eye className="w-3 h-3" />{signal.views_count || 0}</span>
                     </div>
                   </div>
                 </motion.div>
               ))
             ) : (
               <div className="text-center py-8 text-muted-foreground glass-card rounded-xl">
-                {user ? 'لا توجد إشارات حالياً' : t('auth.loginPrompt')}
+                {user ? (isRTL ? 'لا توجد إشارات حالياً' : 'No signals yet') : t('auth.loginPrompt')}
               </div>
             )}
           </div>
         </motion.section>
 
-        {/* Breaking News */}
-        <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+        {/* Latest Articles - Real Data */}
+        <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-muted-foreground">{t('home.breakingNews')}</h2>
+            <h2 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-primary" />
+              {isRTL ? 'آخر المقالات' : 'Latest Articles'}
+            </h2>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/news')} className="text-primary h-8 gap-1 hover:bg-primary/10">
+              {t('home.viewAll')}
+              {isRTL ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+            </Button>
           </div>
-          <div className="space-y-2">
-            {mockNews.map((news, index) => (
-              <motion.div key={news.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 + index * 0.1 }} className="card-hover rounded-lg">
-                <NewsCard news={news} />
-              </motion.div>
-            ))}
+          <div className="space-y-2.5">
+            {articlesLoading ? (
+              <>
+                <Skeleton className="h-20 w-full rounded-xl" />
+                <Skeleton className="h-20 w-full rounded-xl" />
+              </>
+            ) : articles.length > 0 ? (
+              articles.map((article, index) => {
+                const title = isRTL ? article.title_ar : (article.title_en || article.title_ar);
+                const summary = isRTL ? article.summary_ar : (article.summary_en || article.summary_ar);
+                return (
+                  <motion.div
+                    key={article.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 + index * 0.08 }}
+                    onClick={() => navigate(`/news/article/${article.id}`)}
+                    className="cursor-pointer group"
+                  >
+                    <div className="rounded-xl bg-card/60 border border-border/40 p-3.5 group-hover:border-primary/30 group-hover:bg-card/80 transition-all duration-200">
+                      <div className="flex gap-3">
+                        {article.image_url && (
+                          <img
+                            src={article.image_url}
+                            alt={title}
+                            className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
+                            loading="lazy"
+                          />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge variant="secondary" className="text-[10px]">{article.category}</Badge>
+                            <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                              <Clock className="w-3 h-3" />
+                              {formatDistanceToNow(new Date(article.created_at), { addSuffix: true, locale })}
+                            </span>
+                          </div>
+                          <h4 className="font-semibold text-sm line-clamp-2 leading-snug">{title}</h4>
+                          {summary && <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{summary}</p>}
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })
+            ) : (
+              <div className="text-center py-6 text-muted-foreground glass-card rounded-xl text-sm">
+                {isRTL ? 'لا توجد مقالات حالياً' : 'No articles yet'}
+              </div>
+            )}
           </div>
         </motion.section>
 
-        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }} className="text-center text-xs text-muted-foreground px-4 py-3 rounded-xl glass-card">
+        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="text-center text-xs text-muted-foreground px-4 py-3 rounded-xl glass-card">
           {t('disclaimer.text')}
         </motion.p>
       </div>
