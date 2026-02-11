@@ -97,12 +97,37 @@ Deno.serve(async (req) => {
           marqetaUserToken = marqetaUser.token;
         }
 
+        // Get or create card product token
+        let cardProductToken = params.card_product_token;
+        if (!cardProductToken) {
+          // Try to list existing card products
+          const products = await marqetaFetch('/cardproducts?count=10&sort_by=-created_time', { method: 'GET' });
+          if (products.data && products.data.length > 0) {
+            cardProductToken = products.data[0].token;
+          } else {
+            // Create a default card product
+            const newProduct = await marqetaFetch('/cardproducts', {
+              method: 'POST',
+              body: JSON.stringify({
+                name: 'Virtual Card',
+                start_date: new Date().toISOString().split('T')[0],
+                config: {
+                  fulfillment: { payment_instrument: 'VIRTUAL_PAN' },
+                  poi: { ecommerce: true },
+                  card_life_cycle: { activate_upon_issue: true },
+                },
+              }),
+            });
+            cardProductToken = newProduct.token;
+          }
+        }
+
         // Create virtual card
         const card = await marqetaFetch('/cards', {
           method: 'POST',
           body: JSON.stringify({
             user_token: marqetaUserToken,
-            card_product_token: params.card_product_token || 'default_virtual',
+            card_product_token: cardProductToken,
           }),
         });
 
