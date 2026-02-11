@@ -1030,39 +1030,6 @@ export type Database = {
         }
         Relationships: []
       }
-      test_table: {
-        Row: {
-          created_at: string
-          id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-        }
-        Relationships: []
-      }
-      test_table_2: {
-        Row: {
-          created_at: string
-          id: string
-          name: string | null
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          name?: string | null
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          name?: string | null
-        }
-        Relationships: []
-      }
       threads: {
         Row: {
           content: string
