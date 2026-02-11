@@ -230,7 +230,7 @@ const SignalsPage = () => {
               <span className="flex items-center gap-1"><Zap className="w-3.5 h-3.5" /> أولوية الوصول</span>
               <span className="flex items-center gap-1"><TrendingUp className="w-3.5 h-3.5" /> تحليلات عميقة</span>
             </div>
-            <Button size="sm" className="bg-gradient-to-r from-amber-400 to-yellow-500 text-black font-bold hover:from-amber-500 hover:to-yellow-600 shadow-lg px-6">
+            <Button onClick={() => navigate('/vip')} size="sm" className="bg-gradient-to-r from-amber-400 to-yellow-500 text-black font-bold hover:from-amber-500 hover:to-yellow-600 shadow-lg px-6">
               <Crown className="w-4 h-4 mr-1" />
               اشترك الآن
             </Button>
@@ -370,6 +370,7 @@ const SignalsPage = () => {
                           }}>
                             <Button
                               size="sm"
+                              onClick={() => navigate('/vip')}
                               className="bg-gradient-to-r from-amber-400 to-yellow-500 text-black text-xs h-8 font-bold shadow-lg gap-1.5 px-4"
                               style={{ boxShadow: '0 4px 16px hsl(45 100% 50% / 0.3)' }}
                             >
