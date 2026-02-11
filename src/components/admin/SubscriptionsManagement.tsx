@@ -5,8 +5,10 @@ import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Crown, Check, X, Clock, UserPlus, Search, Filter,
-  Calendar, MoreVertical, RefreshCw, Ban, Eye, ChevronDown
+  Calendar, MoreVertical, RefreshCw, Ban, Eye, ChevronDown, MessageCircle
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -57,6 +59,8 @@ export const SubscriptionsManagement = () => {
   const { i18n } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const isRTL = i18n.language === 'ar';
 
   const [search, setSearch] = useState('');
@@ -217,6 +221,61 @@ export const SubscriptionsManagement = () => {
       s.user_id.includes(search);
     return matchStatus && matchSearch;
   });
+
+  // Message user - create or find existing direct conversation
+  const handleMessageUser = async (targetUserId: string) => {
+    if (!user) return;
+    try {
+      // Check if conversation already exists
+      const { data: existingParticipations } = await supabase
+        .from('conversation_participants')
+        .select('conversation_id')
+        .eq('user_id', user.id);
+
+      if (existingParticipations && existingParticipations.length > 0) {
+        const convIds = existingParticipations.map(p => p.conversation_id);
+        const { data: targetParticipations } = await supabase
+          .from('conversation_participants')
+          .select('conversation_id')
+          .eq('user_id', targetUserId)
+          .in('conversation_id', convIds);
+
+        if (targetParticipations && targetParticipations.length > 0) {
+          // Check it's a direct conversation
+          const { data: conv } = await supabase
+            .from('conversations')
+            .select('id, type')
+            .eq('id', targetParticipations[0].conversation_id)
+            .eq('type', 'direct')
+            .single();
+
+          if (conv) {
+            navigate('/messages');
+            return;
+          }
+        }
+      }
+
+      // Create new conversation
+      const { data: newConv, error: convError } = await supabase
+        .from('conversations')
+        .insert({ created_by: user.id, type: 'direct' as any })
+        .select()
+        .single();
+
+      if (convError || !newConv) throw convError;
+
+      // Add both participants
+      await supabase.from('conversation_participants').insert([
+        { conversation_id: newConv.id, user_id: user.id, is_admin: true },
+        { conversation_id: newConv.id, user_id: targetUserId, is_admin: false },
+      ]);
+
+      navigate('/messages');
+    } catch (err: any) {
+      toast({ title: 'خطأ في فتح المحادثة', description: err?.message, variant: 'destructive' });
+    }
+  };
 
   const formatDate = (d: string | null) => {
     if (!d) return '-';
@@ -391,6 +450,15 @@ export const SubscriptionsManagement = () => {
                             </Button>
                           </>
                         )}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0 text-blue-500 hover:text-blue-600 hover:bg-blue-500/10"
+                          onClick={() => handleMessageUser(sub.user_id)}
+                          title="مراسلة المستخدم"
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                        </Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
