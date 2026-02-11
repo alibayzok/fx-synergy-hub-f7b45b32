@@ -408,6 +408,44 @@ export const CMSManagement = () => {
         );
 
       default:
+        // Handle select:option1,option2,... type
+        if (setting.setting_type.startsWith('select:')) {
+          const selectOptions = setting.setting_type.replace('select:', '').split(',');
+          return (
+            <div className="space-y-1.5">
+              <Label className="text-foreground font-medium">{setting.label_ar}</Label>
+              {setting.description_ar && (
+                <p className="text-xs text-muted-foreground">{setting.description_ar}</p>
+              )}
+              <Select
+                value={value}
+                onValueChange={(newVal) => {
+                  setEditedValues(prev => ({ ...prev, [setting.id]: newVal }));
+                  supabase
+                    .from('app_settings')
+                    .update({ setting_value: newVal, updated_at: new Date().toISOString(), updated_by: user?.id })
+                    .eq('id', setting.id)
+                    .then(({ error }) => {
+                      if (!error) {
+                        setSettings(prev => prev.map(s => s.id === setting.id ? { ...s, setting_value: newVal } : s));
+                        toast({ title: `${setting.label_ar}: ${newVal}` });
+                      }
+                    });
+                }}
+              >
+                <SelectTrigger className="w-full" dir="ltr">
+                  <SelectValue placeholder="اختر..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {selectOptions.map(opt => (
+                    <SelectItem key={opt} value={opt} dir="ltr">{opt}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          );
+        }
+
         const isLong = setting.setting_key.includes('text') || setting.setting_key.includes('message') || setting.setting_key.includes('description') || setting.setting_key.includes('terms') || setting.setting_key.includes('about');
         return (
           <div className="space-y-1.5">
