@@ -1,6 +1,6 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MessageSquare, User } from 'lucide-react';
+import { MessageSquare, User, X, Megaphone } from 'lucide-react';
 import { BottomNav } from './BottomNav';
 import { FloatingAIButton } from './FloatingAIButton';
 import { ThemeToggle } from './ThemeToggle';
@@ -11,9 +11,11 @@ import { SupportNotificationsIcon } from '@/components/notifications/SupportNoti
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useConversations } from '@/hooks/useMessaging';
 import { useProfile } from '@/hooks/useProfile';
+import { useAppSettings } from '@/hooks/useAppSettings';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -25,6 +27,28 @@ export const AppLayout = ({ children, showNotifications = true }: AppLayoutProps
   const { user } = useAuth();
   const { unreadTotal } = useConversations();
   const { profile } = useProfile();
+  const { getSetting, getBoolean } = useAppSettings();
+
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [popupShown, setPopupShown] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
+
+  const bannerActive = getBoolean('banner_active');
+  const bannerText = getSetting('banner_text');
+  const bannerColor = getSetting('banner_color', '#f59e0b');
+  const popupActive = getBoolean('popup_active');
+  const popupTitle = getSetting('popup_title');
+  const popupMessage = getSetting('popup_message');
+
+  useEffect(() => {
+    if (popupActive && popupMessage && !popupShown) {
+      const dismissed = sessionStorage.getItem('cms_popup_dismissed');
+      if (!dismissed) {
+        setShowPopup(true);
+        setPopupShown(true);
+      }
+    }
+  }, [popupActive, popupMessage, popupShown]);
 
   const getInitials = () => {
     if (profile?.display_name) {
@@ -38,6 +62,35 @@ export const AppLayout = ({ children, showNotifications = true }: AppLayoutProps
 
   return (
     <div className="min-h-screen bg-background transition-colors duration-300">
+      {/* CMS Announcement Banner */}
+      {bannerActive && bannerText && !bannerDismissed && (
+        <div 
+          className="fixed top-0 start-0 end-0 z-[60] flex items-center justify-between px-4 py-2 text-sm font-medium text-white"
+          style={{ backgroundColor: bannerColor }}
+        >
+          <div className="flex items-center gap-2 flex-1">
+            <Megaphone className="w-4 h-4 shrink-0" />
+            <span>{bannerText}</span>
+          </div>
+          <button onClick={() => setBannerDismissed(true)} className="shrink-0 hover:opacity-70">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* CMS Popup Dialog */}
+      <Dialog open={showPopup} onOpenChange={(open) => {
+        setShowPopup(open);
+        if (!open) sessionStorage.setItem('cms_popup_dismissed', 'true');
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{popupTitle || 'إعلان'}</DialogTitle>
+          </DialogHeader>
+          <p className="text-muted-foreground whitespace-pre-wrap">{popupMessage}</p>
+        </DialogContent>
+      </Dialog>
+
       {/* Header Bar - Facebook style */}
       {showNotifications && user && (
         <div className="fixed top-0 start-0 end-0 z-50 bg-card/95 backdrop-blur-md border-b border-border/30 shadow-sm">
@@ -93,7 +146,7 @@ export const AppLayout = ({ children, showNotifications = true }: AppLayoutProps
         </div>
       )}
       
-      <main className={`pb-20 ${showNotifications && user ? 'pt-[52px]' : ''}`}>
+      <main className={`pb-20 ${showNotifications && user ? (bannerActive && bannerText && !bannerDismissed ? 'pt-[88px]' : 'pt-[52px]') : (bannerActive && bannerText && !bannerDismissed ? 'pt-[36px]' : '')}`}>
         {children}
       </main>
       <FloatingAIButton />

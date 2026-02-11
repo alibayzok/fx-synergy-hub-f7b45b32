@@ -17,7 +17,8 @@ import {
   Database,
   FileText,
   AlertTriangle,
-  GraduationCap
+  GraduationCap,
+  Settings2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -36,6 +37,7 @@ import { DatabaseExport } from '@/components/admin/DatabaseExport';
 import { AnalysesManagement } from '@/components/admin/AnalysesManagement';
 import FlaggedContentManagement from '@/components/admin/FlaggedContentManagement';
 import { CoursesManagement } from '@/components/admin/CoursesManagement';
+import { CMSManagement } from '@/components/admin/CMSManagement';
 interface Trade {
   id: string;
   symbol: string;
@@ -143,7 +145,7 @@ const AdminPage = () => {
 
       <div className="p-4">
         <Tabs defaultValue="dashboard" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-8">
+          <TabsList className="grid w-full grid-cols-9">
             <TabsTrigger value="dashboard" className="gap-1 text-xs sm:text-sm">
               <LayoutDashboard className="w-4 h-4" />
               <span className="hidden sm:inline">{t('admin.dashboard')}</span>
@@ -171,6 +173,10 @@ const AdminPage = () => {
             <TabsTrigger value="users" className="gap-1 text-xs sm:text-sm">
               <Users className="w-4 h-4" />
               <span className="hidden sm:inline">{t('admin.users')}</span>
+            </TabsTrigger>
+            <TabsTrigger value="cms" className="gap-1 text-xs sm:text-sm">
+              <Settings2 className="w-4 h-4" />
+              <span className="hidden sm:inline">CMS</span>
             </TabsTrigger>
             <TabsTrigger value="export" className="gap-1 text-xs sm:text-sm">
               <Database className="w-4 h-4" />
@@ -294,6 +300,11 @@ const AdminPage = () => {
             <UserManagement />
           </TabsContent>
 
+
+          {/* CMS Tab */}
+          <TabsContent value="cms">
+            <CMSManagement />
+          </TabsContent>
 
           {/* Export Tab */}
           <TabsContent value="export">

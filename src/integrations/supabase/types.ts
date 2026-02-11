@@ -121,6 +121,48 @@ export type Database = {
           },
         ]
       }
+      app_settings: {
+        Row: {
+          category: string
+          description_ar: string | null
+          id: string
+          label_ar: string
+          label_en: string
+          setting_key: string
+          setting_type: string
+          setting_value: string | null
+          sort_order: number | null
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          category: string
+          description_ar?: string | null
+          id?: string
+          label_ar: string
+          label_en?: string
+          setting_key: string
+          setting_type?: string
+          setting_value?: string | null
+          sort_order?: number | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          category?: string
+          description_ar?: string | null
+          id?: string
+          label_ar?: string
+          label_en?: string
+          setting_key?: string
+          setting_type?: string
+          setting_value?: string | null
+          sort_order?: number | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       community_rooms: {
         Row: {
           color: string | null
