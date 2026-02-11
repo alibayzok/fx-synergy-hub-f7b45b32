@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { useAnalyses } from '@/hooks/useAnalyses';
+import { useSignals } from '@/hooks/useSignals';
 import { useMarketData } from '@/hooks/useMarketData';
 import { useProfile } from '@/hooks/useProfile';
 import { useAppSettings } from '@/hooks/useAppSettings';
@@ -46,7 +46,7 @@ const HomePage = () => {
   const locale = isRTL ? ar : enUS;
   
   const { user, isAdmin, loading: authLoading } = useAuth();
-  const { analyses, loading: analysesLoading } = useAnalyses();
+  const { signals, loading: analysesLoading } = useSignals();
   const { symbols } = useMarketData();
   const { profile, loading: profileLoading } = useProfile();
   const { getSetting } = useAppSettings();
@@ -58,7 +58,7 @@ const HomePage = () => {
     }
   }, [user, profile, profileLoading, navigate]);
 
-  const latestSignals = analyses.slice(0, 3);
+  const latestSignals = signals.slice(0, 3);
 
   const handleQuickAction = (action: string) => {
     switch (action) {
