@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CreditCard, Plus, Snowflake, Play, X, Eye, EyeOff, Loader2, Receipt, ChevronRight } from 'lucide-react';
+import { CreditCard, Plus, Snowflake, Play, X, Eye, EyeOff, Loader2, Receipt, ChevronRight, Wallet, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -16,10 +16,14 @@ const VirtualCardsSection = () => {
   const { i18n } = useTranslation();
   const navigate = useNavigate();
   const isRTL = i18n.language === 'ar';
-  const { cards, loading, actionLoading, createCard, freezeCard, unfreezeCard, cancelCard } = useVirtualCards();
+  const { cards, loading, actionLoading, createCard, freezeCard, unfreezeCard, cancelCard, requestFundCard } = useVirtualCards();
   const { profile } = useProfile();
   const { user } = useAuth();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showFundDialog, setShowFundDialog] = useState(false);
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [fundAmount, setFundAmount] = useState('');
+  const [walletAddress, setWalletAddress] = useState('');
   const [nickname, setNickname] = useState('');
   const [spendingLimit, setSpendingLimit] = useState('1000');
   const [revealedCards, setRevealedCards] = useState<Set<string>>(new Set());
@@ -37,6 +41,23 @@ const VirtualCardsSection = () => {
       setNickname('');
       setSpendingLimit('1000');
     } catch {}
+  };
+
+  const handleFundCard = async () => {
+    if (!selectedCardId || !fundAmount) return;
+    try {
+      await requestFundCard(selectedCardId, parseFloat(fundAmount), walletAddress || undefined);
+      setShowFundDialog(false);
+      setFundAmount('');
+      setWalletAddress('');
+      setSelectedCardId(null);
+    } catch {}
+  };
+
+  const openFundDialog = (cardId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedCardId(cardId);
+    setShowFundDialog(true);
   };
 
   const toggleReveal = (cardId: string) => {
@@ -114,6 +135,59 @@ const VirtualCardsSection = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Fund Card Dialog */}
+        <Dialog open={showFundDialog} onOpenChange={setShowFundDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Wallet className="w-5 h-5 text-emerald-500" />
+                {isRTL ? 'شحن البطاقة عبر USDT' : 'Fund Card via USDT'}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-sm text-foreground">
+                <p className="font-medium mb-1">{isRTL ? 'كيف تتم العملية؟' : 'How it works?'}</p>
+                <ol className="list-decimal list-inside space-y-1 text-muted-foreground text-xs">
+                  <li>{isRTL ? 'أدخل المبلغ وعنوان محفظة USDT' : 'Enter amount and USDT wallet address'}</li>
+                  <li>{isRTL ? 'أرسل USDT إلى عنوان الإدارة' : 'Send USDT to admin address'}</li>
+                  <li>{isRTL ? 'بعد تأكيد الإدارة، يتم شحن البطاقة تلقائياً' : 'After admin confirms, card is funded automatically'}</li>
+                </ol>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>{isRTL ? 'المبلغ (USD)' : 'Amount (USD)'}</Label>
+                <Input
+                  type="number"
+                  value={fundAmount}
+                  onChange={e => setFundAmount(e.target.value)}
+                  placeholder={isRTL ? 'مثال: 100' : 'e.g. 100'}
+                  min="10"
+                  max="50000"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label>{isRTL ? 'عنوان محفظة USDT (TRC20/ERC20)' : 'USDT Wallet Address (TRC20/ERC20)'}</Label>
+                <Input
+                  value={walletAddress}
+                  onChange={e => setWalletAddress(e.target.value)}
+                  placeholder={isRTL ? 'عنوان المحفظة التي أرسلت منها' : 'Wallet address you sent from'}
+                  dir="ltr"
+                />
+              </div>
+              
+              <Button 
+                onClick={handleFundCard} 
+                disabled={actionLoading || !fundAmount || parseFloat(fundAmount) < 10} 
+                className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700"
+              >
+                {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <DollarSign className="w-4 h-4" />}
+                {isRTL ? 'إرسال طلب الشحن' : 'Submit Funding Request'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Cards List */}
@@ -186,7 +260,20 @@ const VirtualCardsSection = () => {
                     {/* Actions */}
                     <div className="flex items-center justify-between pt-2">
                       {card.card_status !== 'cancelled' && (
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-wrap">
+                          {/* Fund Card Button */}
+                          {card.card_status === 'active' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => openFundDialog(card.id, e)}
+                              disabled={actionLoading}
+                              className="gap-1.5 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                            >
+                              <Wallet className="w-3.5 h-3.5" />
+                              {isRTL ? 'شحن' : 'Fund'}
+                            </Button>
+                          )}
                           {card.card_status === 'active' ? (
                             <Button
                               variant="outline"
