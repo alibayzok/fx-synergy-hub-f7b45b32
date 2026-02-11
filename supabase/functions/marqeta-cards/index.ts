@@ -136,7 +136,7 @@ Deno.serve(async (req) => {
         let cardProductToken = params.card_product_token;
         if (!cardProductToken) {
           // Try to list existing card products
-          const products = await marqetaFetch('/cardproducts?count=10&sort_by=-created_time', { method: 'GET' });
+          const products = await marqetaFetch('/cardproducts?count=10', { method: 'GET' });
           if (products.data && products.data.length > 0) {
             cardProductToken = products.data[0].token;
           } else {
