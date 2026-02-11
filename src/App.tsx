@@ -27,6 +27,7 @@ import SupportPage from "./pages/SupportPage";
 import SupportDashboardPage from "./pages/SupportDashboardPage";
 import VipPage from "./pages/VipPage";
 import SubscriptionsPage from "./pages/SubscriptionsPage";
+import CardDetailsPage from "./pages/CardDetailsPage";
 import NotFound from "./pages/NotFound";
 import "./i18n";
 
@@ -83,6 +84,7 @@ const App = () => {
                 <Route path="/support-dashboard" element={<SupportDashboardPage />} />
                 <Route path="/vip" element={<VipPage />} />
                 <Route path="/admin/subscriptions" element={<SubscriptionsPage />} />
+                <Route path="/card/:cardId" element={<CardDetailsPage />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
