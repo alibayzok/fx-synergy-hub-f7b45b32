@@ -7,7 +7,8 @@
     "home": "Home",
     "trades": "Trades",
     "community": "Community",
-    "markets": "Markets",
+    "news": "News",
+    "markets": "News",
     "services": "Services",
     "profile": "Profile",
     "aiAssistant": "AI"
@@ -183,6 +184,18 @@
     "lastUpdate": "Last Update",
     "noWatchlist": "No symbols in your watchlist",
     "noSymbols": "No symbols found"
+  },
+  "news": {
+    "title": "News & Articles",
+    "subtitle": "Latest Financial Market News",
+    "search": "Search news...",
+    "trending": "Trending Now",
+    "latest": "Latest News",
+    "noArticles": "No articles found",
+    "checkLater": "Check back later for more news",
+    "marketPulse": "Market Pulse",
+    "readMore": "Read More",
+    "saved": "Saved"
   },
   "services": {
     "title": "Services",
