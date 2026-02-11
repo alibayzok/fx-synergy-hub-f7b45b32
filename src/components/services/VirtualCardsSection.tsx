@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CreditCard, Plus, Snowflake, Play, X, Eye, EyeOff, Loader2, Receipt } from 'lucide-react';
+import { CreditCard, Plus, Snowflake, Play, X, Eye, EyeOff, Loader2, Receipt, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -12,6 +13,7 @@ import { useProfile } from '@/hooks/useProfile';
 
 const VirtualCardsSection = () => {
   const { i18n } = useTranslation();
+  const navigate = useNavigate();
   const isRTL = i18n.language === 'ar';
   const { cards, loading, actionLoading, createCard, freezeCard, unfreezeCard, cancelCard } = useVirtualCards();
   const { profile } = useProfile();
@@ -138,7 +140,8 @@ const VirtualCardsSection = () => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -15 }}
                 transition={{ delay: index * 0.08 }}
-                className="relative overflow-hidden rounded-2xl border border-border/40"
+                className="relative overflow-hidden rounded-2xl border border-border/40 cursor-pointer"
+                onClick={() => navigate(`/card/${card.id}`)}
               >
                 {/* Card Visual */}
                 <div className="relative p-5 bg-gradient-to-br from-violet-600/20 via-purple-500/10 to-indigo-600/15">
@@ -179,43 +182,46 @@ const VirtualCardsSection = () => {
                     </div>
 
                     {/* Actions */}
-                    {card.card_status !== 'cancelled' && (
-                      <div className="flex gap-2 pt-2">
-                        {card.card_status === 'active' ? (
+                    <div className="flex items-center justify-between pt-2">
+                      {card.card_status !== 'cancelled' && (
+                        <div className="flex gap-2">
+                          {card.card_status === 'active' ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => { e.stopPropagation(); freezeCard(card.id); }}
+                              disabled={actionLoading}
+                              className="gap-1.5 border-blue-500/30 text-blue-400 hover:bg-blue-500/10"
+                            >
+                              <Snowflake className="w-3.5 h-3.5" />
+                              {isRTL ? 'تجميد' : 'Freeze'}
+                            </Button>
+                          ) : card.card_status === 'frozen' ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => { e.stopPropagation(); unfreezeCard(card.id); }}
+                              disabled={actionLoading}
+                              className="gap-1.5 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                            >
+                              <Play className="w-3.5 h-3.5" />
+                              {isRTL ? 'تفعيل' : 'Activate'}
+                            </Button>
+                          ) : null}
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => freezeCard(card.id)}
+                            onClick={(e) => { e.stopPropagation(); cancelCard(card.id); }}
                             disabled={actionLoading}
-                            className="flex-1 gap-1.5 border-blue-500/30 text-blue-400 hover:bg-blue-500/10"
+                            className="gap-1.5 border-red-500/30 text-red-400 hover:bg-red-500/10"
                           >
-                            <Snowflake className="w-3.5 h-3.5" />
-                            {isRTL ? 'تجميد' : 'Freeze'}
+                            <X className="w-3.5 h-3.5" />
+                            {isRTL ? 'إلغاء' : 'Cancel'}
                           </Button>
-                        ) : card.card_status === 'frozen' ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => unfreezeCard(card.id)}
-                            disabled={actionLoading}
-                            className="flex-1 gap-1.5 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
-                          >
-                            <Play className="w-3.5 h-3.5" />
-                            {isRTL ? 'تفعيل' : 'Activate'}
-                          </Button>
-                        ) : null}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => cancelCard(card.id)}
-                          disabled={actionLoading}
-                          className="gap-1.5 border-red-500/30 text-red-400 hover:bg-red-500/10"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                          {isRTL ? 'إلغاء' : 'Cancel'}
-                        </Button>
-                      </div>
-                    )}
+                        </div>
+                      )}
+                      <ChevronRight className="w-5 h-5 text-muted-foreground rtl:rotate-180" />
+                    </div>
                   </div>
                 </div>
               </motion.div>
