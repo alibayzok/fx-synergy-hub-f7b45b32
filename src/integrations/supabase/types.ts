@@ -1640,6 +1640,12 @@ export type Database = {
       }
       is_support_agent: { Args: { p_user_id?: string }; Returns: boolean }
       is_vip: { Args: never; Returns: boolean }
+      list_public_tables: {
+        Args: never
+        Returns: {
+          table_name: string
+        }[]
+      }
       mask_phone_number: { Args: { phone: string }; Returns: string }
     }
     Enums: {
