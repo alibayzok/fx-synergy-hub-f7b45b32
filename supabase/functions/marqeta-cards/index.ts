@@ -65,13 +65,24 @@ Deno.serve(async (req) => {
 
     switch (action) {
       case 'create_user': {
-        // Create a Marqeta user first
+        const emailToUse = params.email || userEmail;
+
+        // Try to find existing user by email first
+        const existing = await marqetaFetch(`/users?email=${encodeURIComponent(emailToUse)}&count=1`, { method: 'GET' });
+        const existingUser = existing?.data?.[0];
+
+        if (existingUser?.token) {
+          result = { user_token: existingUser.token };
+          break;
+        }
+
+        // Create a Marqeta user
         const marqetaUser = await marqetaFetch('/users', {
           method: 'POST',
           body: JSON.stringify({
             first_name: params.first_name || 'User',
             last_name: params.last_name || userId.substring(0, 8),
-            email: params.email || userEmail,
+            email: emailToUse,
             active: true,
           }),
         });
@@ -83,18 +94,42 @@ Deno.serve(async (req) => {
         // Get or create marqeta user
         let marqetaUserToken = params.marqeta_user_token;
 
+        // Try to reuse existing token from our database
         if (!marqetaUserToken) {
-          // Create user in Marqeta
-          const marqetaUser = await marqetaFetch('/users', {
-            method: 'POST',
-            body: JSON.stringify({
-              first_name: params.first_name || 'User',
-              last_name: params.last_name || '',
-              email: params.email || userEmail,
-              active: true,
-            }),
-          });
-          marqetaUserToken = marqetaUser.token;
+          const { data: existingCards } = await supabase
+            .from('virtual_cards')
+            .select('marqeta_user_token')
+            .eq('user_id', userId)
+            .not('marqeta_user_token', 'is', null)
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+          const existingToken = existingCards?.[0]?.marqeta_user_token as string | undefined;
+          if (existingToken) marqetaUserToken = existingToken;
+        }
+
+        if (!marqetaUserToken) {
+          const emailToUse = params.email || userEmail;
+
+          // Find existing Marqeta user by email (avoids duplicate-email error)
+          const existing = await marqetaFetch(`/users?email=${encodeURIComponent(emailToUse)}&count=1`, { method: 'GET' });
+          const existingUser = existing?.data?.[0];
+
+          if (existingUser?.token) {
+            marqetaUserToken = existingUser.token;
+          } else {
+            // Create user in Marqeta
+            const marqetaUser = await marqetaFetch('/users', {
+              method: 'POST',
+              body: JSON.stringify({
+                first_name: params.first_name || 'User',
+                last_name: params.last_name || '',
+                email: emailToUse,
+                active: true,
+              }),
+            });
+            marqetaUserToken = marqetaUser.token;
+          }
         }
 
         // Get or create card product token
