@@ -211,6 +211,51 @@ export type Database = {
         }
         Relationships: []
       }
+      badges: {
+        Row: {
+          badge_type: string
+          color: string
+          created_at: string
+          description_ar: string
+          description_en: string
+          icon: string
+          id: string
+          is_active: boolean
+          name_ar: string
+          name_en: string
+          points_required: number
+          sort_order: number
+        }
+        Insert: {
+          badge_type?: string
+          color?: string
+          created_at?: string
+          description_ar?: string
+          description_en?: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          name_ar: string
+          name_en?: string
+          points_required?: number
+          sort_order?: number
+        }
+        Update: {
+          badge_type?: string
+          color?: string
+          created_at?: string
+          description_ar?: string
+          description_en?: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          name_ar?: string
+          name_en?: string
+          points_required?: number
+          sort_order?: number
+        }
+        Relationships: []
+      }
       brokers: {
         Row: {
           color: string
@@ -662,6 +707,134 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      live_session_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_pinned: boolean
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_pinned?: boolean
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_pinned?: boolean
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_session_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "live_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      live_sessions: {
+        Row: {
+          created_at: string
+          current_viewers: number | null
+          description_ar: string
+          description_en: string
+          ended_at: string | null
+          host_id: string
+          id: string
+          is_vip: boolean
+          max_viewers: number | null
+          scheduled_at: string | null
+          started_at: string | null
+          status: string
+          stream_url: string | null
+          thumbnail_url: string | null
+          title_ar: string
+          title_en: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_viewers?: number | null
+          description_ar?: string
+          description_en?: string
+          ended_at?: string | null
+          host_id: string
+          id?: string
+          is_vip?: boolean
+          max_viewers?: number | null
+          scheduled_at?: string | null
+          started_at?: string | null
+          status?: string
+          stream_url?: string | null
+          thumbnail_url?: string | null
+          title_ar: string
+          title_en?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_viewers?: number | null
+          description_ar?: string
+          description_en?: string
+          ended_at?: string | null
+          host_id?: string
+          id?: string
+          is_vip?: boolean
+          max_viewers?: number | null
+          scheduled_at?: string | null
+          started_at?: string | null
+          status?: string
+          stream_url?: string | null
+          thumbnail_url?: string | null
+          title_ar?: string
+          title_en?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      point_transactions: {
+        Row: {
+          action_type: string
+          created_at: string
+          description_ar: string
+          description_en: string
+          id: string
+          points: number
+          reference_id: string | null
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          description_ar?: string
+          description_en?: string
+          id?: string
+          points: number
+          reference_id?: string | null
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          description_ar?: string
+          description_en?: string
+          id?: string
+          points?: number
+          reference_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       post_comments: {
         Row: {
@@ -1394,6 +1567,35 @@ export type Database = {
         }
         Relationships: []
       }
+      user_badges: {
+        Row: {
+          badge_id: string
+          earned_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          badge_id: string
+          earned_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          badge_id?: string
+          earned_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_notifications: {
         Row: {
           created_at: string | null
@@ -1423,6 +1625,39 @@ export type Database = {
           read?: boolean | null
           title?: string
           type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_points: {
+        Row: {
+          created_at: string
+          id: string
+          level: number
+          level_name_ar: string
+          level_name_en: string
+          total_points: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          level?: number
+          level_name_ar?: string
+          level_name_en?: string
+          total_points?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          level?: number
+          level_name_ar?: string
+          level_name_en?: string
+          total_points?: number
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -1724,6 +1959,17 @@ export type Database = {
     Functions: {
       activate_vip_subscription: {
         Args: { p_duration_days?: number; p_subscription_id: string }
+        Returns: undefined
+      }
+      add_user_points: {
+        Args: {
+          p_action_type: string
+          p_description_ar?: string
+          p_description_en?: string
+          p_points: number
+          p_reference_id?: string
+          p_user_id: string
+        }
         Returns: undefined
       }
       are_friends: {
