@@ -151,27 +151,35 @@ export const DatabaseExport = () => {
     setProgress(0);
     
     try {
-      // 1. Discover all tables from DB via RPC or direct query
+      // 1. Discover ALL tables from DB dynamically via RPC
       setProgress(10);
-      const dbTables: string[] = [];
-      
-      // Try fetching counts from all known + potentially new tables
-      // We use the known TABLES list and try to discover more by probing
+      let dbTables: string[] = [];
       const codeTables = [...TABLES];
       
-      // Fetch actual record counts for all known tables
+      // Call the database function to get real table list
+      const { data: dbTableList, error: rpcError } = await supabase.rpc('list_public_tables');
+      
+      if (!rpcError && dbTableList) {
+        dbTables = (dbTableList as { table_name: string }[]).map(t => t.table_name).sort();
+      } else {
+        // Fallback: use known tables
+        dbTables = [...codeTables];
+      }
+
+      setProgress(30);
+
+      // Fetch actual record counts for ALL discovered tables
       const stats: Record<string, number> = {};
-      for (let i = 0; i < codeTables.length; i++) {
+      for (let i = 0; i < dbTables.length; i++) {
         try {
           const { count } = await supabase
-            .from(codeTables[i] as any)
+            .from(dbTables[i] as any)
             .select('*', { count: 'exact', head: true });
-          stats[codeTables[i]] = count || 0;
-          dbTables.push(codeTables[i]);
+          stats[dbTables[i]] = count || 0;
         } catch {
-          // Table doesn't exist in DB
+          stats[dbTables[i]] = 0;
         }
-        setProgress(10 + Math.round((i / codeTables.length) * 50));
+        setProgress(30 + Math.round((i / dbTables.length) * 35));
       }
 
       setProgress(65);
