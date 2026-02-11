@@ -1344,6 +1344,48 @@ export type Database = {
         }
         Relationships: []
       }
+      vip_subscriptions: {
+        Row: {
+          admin_notes: string | null
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          plan: string
+          starts_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          plan?: string
+          starts_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          plan?: string
+          starts_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       profiles_admin_view: {
@@ -1441,6 +1483,10 @@ export type Database = {
       }
     }
     Functions: {
+      activate_vip_subscription: {
+        Args: { p_duration_days?: number; p_subscription_id: string }
+        Returns: undefined
+      }
       are_friends: {
         Args: { user1_id: string; user2_id: string }
         Returns: boolean
@@ -1462,6 +1508,10 @@ export type Database = {
         Returns: boolean
       }
       close_stale_support_tickets: { Args: never; Returns: number }
+      deactivate_vip_subscription: {
+        Args: { p_subscription_id: string }
+        Returns: undefined
+      }
       get_table_columns: {
         Args: { p_table_name: string }
         Returns: {
@@ -1509,6 +1559,10 @@ export type Database = {
         }[]
       }
       mask_phone_number: { Args: { phone: string }; Returns: string }
+      reject_vip_subscription: {
+        Args: { p_reason?: string; p_subscription_id: string }
+        Returns: undefined
+      }
       request_vip_subscription: { Args: { p_plan: string }; Returns: undefined }
     }
     Enums: {
