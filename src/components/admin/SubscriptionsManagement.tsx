@@ -69,6 +69,23 @@ export const SubscriptionsManagement = () => {
   const [rejectReason, setRejectReason] = useState('');
   const [newSubUserId, setNewSubUserId] = useState('');
   const [newSubPlan, setNewSubPlan] = useState('monthly');
+  const [userSearch, setUserSearch] = useState('');
+  const [selectedUser, setSelectedUser] = useState<{ user_id: string; display_name: string | null; username: string | null; avatar_url: string | null } | null>(null);
+
+  // Search users for manual add
+  const { data: searchResults = [] } = useQuery({
+    queryKey: ['search-users', userSearch],
+    queryFn: async () => {
+      if (!userSearch || userSearch.length < 2) return [];
+      const { data } = await supabase
+        .from('profiles')
+        .select('user_id, display_name, username, avatar_url')
+        .or(`display_name.ilike.%${userSearch}%,username.ilike.%${userSearch}%`)
+        .limit(8);
+      return data || [];
+    },
+    enabled: userSearch.length >= 2 && addDialog,
+  });
 
   // Fetch subscriptions with profiles
   const { data: subscriptions = [], isLoading, refetch } = useQuery({
@@ -548,13 +565,59 @@ export const SubscriptionsManagement = () => {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <label className="text-sm font-medium">معرف المستخدم (User ID)</label>
-              <Input
-                value={newSubUserId}
-                onChange={(e) => setNewSubUserId(e.target.value)}
-                placeholder="أدخل UUID المستخدم..."
-                className="mt-1 font-mono text-xs"
-              />
+              <label className="text-sm font-medium">اختر المستخدم</label>
+              {selectedUser ? (
+                <div className="mt-2 flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/30">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-sm font-bold shrink-0">
+                    {(selectedUser.display_name || selectedUser.username || '?')[0]}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{selectedUser.display_name || selectedUser.username || 'مستخدم'}</p>
+                    <p className="text-[10px] text-muted-foreground font-mono">{selectedUser.user_id.slice(0, 16)}...</p>
+                  </div>
+                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0 shrink-0" onClick={() => { setSelectedUser(null); setNewSubUserId(''); setUserSearch(''); }}>
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="relative mt-2">
+                  <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    value={userSearch}
+                    onChange={(e) => setUserSearch(e.target.value)}
+                    placeholder="ابحث بالاسم أو اسم المستخدم..."
+                    className="ps-9"
+                  />
+                  {searchResults.length > 0 && userSearch.length >= 2 && (
+                    <div className="absolute z-50 top-full mt-1 w-full rounded-lg border border-border bg-popover shadow-lg max-h-48 overflow-y-auto">
+                      {searchResults.map((u) => (
+                        <button
+                          key={u.user_id}
+                          className="w-full flex items-center gap-3 p-2.5 hover:bg-muted/50 transition-colors text-start"
+                          onClick={() => {
+                            setSelectedUser(u);
+                            setNewSubUserId(u.user_id);
+                            setUserSearch('');
+                          }}
+                        >
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                            {(u.display_name || u.username || '?')[0]}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{u.display_name || u.username || 'مستخدم'}</p>
+                            {u.username && <p className="text-[10px] text-muted-foreground">@{u.username}</p>}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {userSearch.length >= 2 && searchResults.length === 0 && (
+                    <div className="absolute z-50 top-full mt-1 w-full rounded-lg border border-border bg-popover shadow-lg p-4 text-center text-sm text-muted-foreground">
+                      لا توجد نتائج
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <div>
               <label className="text-sm font-medium">الباقة</label>
