@@ -108,15 +108,55 @@ const HomePage = () => {
         </div>
       </header>
 
-      {/* Admin Announcement Banner (replaces MarketTicker) */}
+      {/* Admin Announcement Banner */}
       {announcementActive && announcementText && (
-        <div 
-          className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white border-b border-white/10"
-          style={{ backgroundColor: announcementColor }}
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: 'auto', opacity: 1 }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+          className="relative overflow-hidden border-b border-white/10"
+          style={{ background: `linear-gradient(135deg, ${announcementColor}, ${announcementColor}dd, ${announcementColor}bb)` }}
         >
-          <Megaphone className="w-4 h-4 shrink-0" />
-          <span className="flex-1">{announcementText}</span>
-        </div>
+          {/* Animated shine overlay */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <motion.div
+              className="absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-[-20deg]"
+              animate={{ x: ['-150%', '400%'] }}
+              transition={{ duration: 3, repeat: Infinity, repeatDelay: 4, ease: 'easeInOut' }}
+            />
+          </div>
+          {/* Sparkle dots */}
+          <div className="absolute inset-0 pointer-events-none">
+            {[...Array(6)].map((_, i) => (
+              <motion.div
+                key={i}
+                className="absolute w-1 h-1 bg-white/40 rounded-full"
+                style={{ top: `${20 + Math.random() * 60}%`, left: `${10 + i * 16}%` }}
+                animate={{ opacity: [0, 1, 0], scale: [0.5, 1.2, 0.5] }}
+                transition={{ duration: 2, repeat: Infinity, delay: i * 0.5, ease: 'easeInOut' }}
+              />
+            ))}
+          </div>
+          <div className="relative flex items-center gap-3 px-4 py-3">
+            <motion.div
+              animate={{ rotate: [0, -10, 10, -10, 0] }}
+              transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 3 }}
+              className="shrink-0 bg-white/20 backdrop-blur-sm rounded-full p-1.5"
+            >
+              <Megaphone className="w-4 h-4 text-white drop-shadow-sm" />
+            </motion.div>
+            <div className="flex-1 overflow-hidden">
+              <motion.p
+                className="text-sm font-semibold text-white drop-shadow-sm whitespace-nowrap"
+                animate={{ x: announcementText.length > 40 ? ['0%', '-50%'] : '0%' }}
+                transition={announcementText.length > 40 ? { duration: 10, repeat: Infinity, repeatType: 'mirror', ease: 'linear' } : {}}
+              >
+                {announcementText}
+              </motion.p>
+            </div>
+            <div className="shrink-0 w-2 h-2 rounded-full bg-white/60 animate-pulse" />
+          </div>
+        </motion.div>
       )}
 
       <div className="px-4 py-4 space-y-6 page-transition">
