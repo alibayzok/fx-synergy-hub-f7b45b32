@@ -2,31 +2,17 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
-  AlertCircle, 
-  MessageSquare,
-  User,
-  DollarSign,
-  Briefcase,
-  Send
+  Clock, CheckCircle, XCircle, AlertCircle, MessageSquare,
+  User, DollarSign, Briefcase, Send, ClipboardList, Sparkles
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
+  Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -92,7 +78,6 @@ export const ServiceRequestsManagement = () => {
 
       if (error) throw error;
 
-      // Fetch user profiles for each request
       const userIds = [...new Set((requestsData || []).map(r => r.user_id))];
       const { data: profilesData } = await supabase
         .from('profiles')
@@ -111,40 +96,20 @@ export const ServiceRequestsManagement = () => {
       setRequests(enrichedRequests);
     } catch (error) {
       console.error('Error fetching service requests:', error);
-      toast({
-        title: t('common.error'),
-        description: 'Failed to load service requests',
-        variant: 'destructive'
-      });
+      toast({ title: t('common.error'), description: 'Failed to load service requests', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   }, [t, toast]);
 
-  useEffect(() => {
-    fetchRequests();
-  }, [fetchRequests]);
+  useEffect(() => { fetchRequests(); }, [fetchRequests]);
 
-  // Subscribe to realtime updates
   useEffect(() => {
     const channel = supabase
       .channel('admin-service-requests')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'service_requests',
-        },
-        () => {
-          fetchRequests();
-        }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests' }, () => { fetchRequests(); })
       .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [fetchRequests]);
 
   const handleOpenDetail = (request: ServiceRequest) => {
@@ -156,97 +121,100 @@ export const ServiceRequestsManagement = () => {
 
   const handleUpdateRequest = async () => {
     if (!selectedRequest) return;
-
     setUpdating(true);
     try {
       const { error } = await supabase
         .from('service_requests')
-        .update({
-          status: newStatus,
-          admin_notes: adminNotes || null,
-        })
+        .update({ status: newStatus, admin_notes: adminNotes || null })
         .eq('id', selectedRequest.id);
-
       if (error) throw error;
 
-      // Send notification to user about status update
-      await supabase
-        .from('user_notifications')
-        .insert({
-          user_id: selectedRequest.user_id,
-          type: 'service_update',
-          title: t('services.requestUpdated'),
-          message: t(`services.${newStatus}`),
-          data: {
-            request_id: selectedRequest.id,
-            type: selectedRequest.type,
-            status: newStatus
-          }
-        });
-
-      toast({
-        title: t('admin.requestUpdated'),
-        description: t('admin.requestUpdatedDesc'),
+      await supabase.from('user_notifications').insert({
+        user_id: selectedRequest.user_id,
+        type: 'service_update',
+        title: t('services.requestUpdated'),
+        message: t(`services.${newStatus}`),
+        data: { request_id: selectedRequest.id, type: selectedRequest.type, status: newStatus }
       });
 
+      toast({ title: t('admin.requestUpdated'), description: t('admin.requestUpdatedDesc') });
       setShowDetailDialog(false);
       fetchRequests();
     } catch (error) {
       console.error('Error updating request:', error);
-      toast({
-        title: t('common.error'),
-        description: 'Failed to update request',
-        variant: 'destructive'
-      });
+      toast({ title: t('common.error'), description: 'Failed to update request', variant: 'destructive' });
     } finally {
       setUpdating(false);
     }
   };
 
-  const filteredRequests = filter === 'all' 
-    ? requests 
-    : requests.filter(r => r.status === filter);
-
+  const filteredRequests = filter === 'all' ? requests : requests.filter(r => r.status === filter);
   const pendingCount = requests.filter(r => r.status === 'pending').length;
 
   if (loading) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
-        {t('common.loading')}
+      <div className="space-y-5">
+        <div className="h-24 rounded-2xl bg-card/50 animate-pulse border border-border/20" />
+        {[1, 2, 3].map(i => (
+          <div key={i} className="h-28 rounded-2xl bg-card/50 animate-pulse border border-border/20" />
+        ))}
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold flex items-center gap-2">
-          {t('admin.serviceRequests')}
-          {pendingCount > 0 && (
-            <Badge variant="destructive" className="rounded-full">
-              {pendingCount}
-            </Badge>
-          )}
-        </h2>
-        <Select value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t('trades.all')}</SelectItem>
-            <SelectItem value="pending">{t('services.pending')}</SelectItem>
-            <SelectItem value="in_progress">{t('services.in_progress')}</SelectItem>
-            <SelectItem value="approved">{t('services.approved')}</SelectItem>
-            <SelectItem value="rejected">{t('services.rejected')}</SelectItem>
-            <SelectItem value="completed">{t('services.completed')}</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+    <div className="space-y-5">
+      {/* Premium Header Banner */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-orange-500/15 via-orange-600/5 to-transparent border border-orange-500/15"
+      >
+        <div className="absolute top-0 end-0 w-32 h-32 bg-orange-500/10 rounded-full blur-3xl" />
+        <div className="relative flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-orange-500/20 border border-orange-500/20">
+              <ClipboardList className="w-5 h-5 text-orange-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+                {t('admin.serviceRequests')}
+                {pendingCount > 0 && (
+                  <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 rounded-lg">
+                    {pendingCount} معلقة
+                  </Badge>
+                )}
+              </h2>
+              <p className="text-xs text-muted-foreground/70">{requests.length} طلب إجمالي</p>
+            </div>
+          </div>
+          <Select value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
+            <SelectTrigger className="w-[130px] rounded-xl border-border/30 bg-background/50 backdrop-blur-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('trades.all')}</SelectItem>
+              <SelectItem value="pending">{t('services.pending')}</SelectItem>
+              <SelectItem value="in_progress">{t('services.in_progress')}</SelectItem>
+              <SelectItem value="approved">{t('services.approved')}</SelectItem>
+              <SelectItem value="rejected">{t('services.rejected')}</SelectItem>
+              <SelectItem value="completed">{t('services.completed')}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </motion.div>
 
       {filteredRequests.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground">
-          {t('admin.noServiceRequests')}
-        </div>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex flex-col items-center justify-center py-16 text-center"
+        >
+          <div className="p-4 rounded-2xl bg-muted/30 mb-4">
+            <ClipboardList className="w-10 h-10 text-muted-foreground/50" />
+          </div>
+          <p className="text-muted-foreground font-medium">{t('admin.noServiceRequests')}</p>
+        </motion.div>
       ) : (
         <div className="space-y-3">
           {filteredRequests.map((request, index) => {
@@ -260,23 +228,25 @@ export const ServiceRequestsManagement = () => {
                 key={request.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className="p-4 rounded-xl bg-card/50 border border-border/30 cursor-pointer hover:bg-card/70 transition-colors"
+                transition={{ delay: index * 0.04 }}
+                className={cn(
+                  "p-4 rounded-2xl border backdrop-blur-sm cursor-pointer transition-all hover:scale-[1.01]",
+                  request.status === 'pending' 
+                    ? "bg-gradient-to-br from-yellow-500/8 to-transparent border-yellow-500/20" 
+                    : "bg-card/50 border-border/25 hover:border-border/40"
+                )}
                 onClick={() => handleOpenDetail(request)}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3">
-                    <div className={cn(
-                      "p-2 rounded-lg",
-                      statusCfg.bgColor
-                    )}>
+                    <div className={cn("p-2.5 rounded-xl border", statusCfg.bgColor, "border-current/10")}>
                       <TypeIcon className={cn("w-5 h-5", typeCfg.color)} />
                     </div>
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <Badge variant="outline">{t(`services.${request.type}`)}</Badge>
+                        <Badge variant="outline" className="rounded-lg">{t(`services.${request.type}`)}</Badge>
                         {request.amount && (
-                          <span className="text-sm font-medium trading-number text-foreground">
+                          <span className="text-sm font-semibold trading-number text-foreground">
                             ${request.amount}
                           </span>
                         )}
@@ -286,26 +256,26 @@ export const ServiceRequestsManagement = () => {
                         <span>{request.user_profile?.display_name || t('admin.unnamed')}</span>
                       </div>
                       {request.network && (
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className="text-xs text-muted-foreground/70 mt-1">
                           {t('services.network')}: {request.network}
                         </p>
                       )}
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-1">
-                    <div className={cn("flex items-center gap-1", statusCfg.color)}>
-                      <StatusIcon className="w-4 h-4" />
-                      <span className="text-sm font-medium">
+                    <div className={cn("flex items-center gap-1 px-2 py-1 rounded-lg", statusCfg.bgColor)}>
+                      <StatusIcon className={cn("w-3.5 h-3.5", statusCfg.color)} />
+                      <span className={cn("text-xs font-medium", statusCfg.color)}>
                         {t(`services.${request.status}`)}
                       </span>
                     </div>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-[11px] text-muted-foreground/60">
                       {new Date(request.created_at).toLocaleDateString(isArabic ? 'ar-SA' : 'en-US')}
                     </span>
                   </div>
                 </div>
                 {request.notes && (
-                  <p className="text-sm text-muted-foreground mt-2 pt-2 border-t border-border/30">
+                  <p className="text-sm text-muted-foreground/70 mt-2.5 pt-2.5 border-t border-border/20 line-clamp-1">
                     {request.notes}
                   </p>
                 )}
@@ -323,16 +293,15 @@ export const ServiceRequestsManagement = () => {
           </DialogHeader>
           {selectedRequest && (
             <div className="space-y-4 pt-2">
-              {/* Request Info */}
-              <div className="p-4 rounded-lg bg-muted/30 border border-border/30 space-y-3">
+              <div className="p-4 rounded-xl bg-gradient-to-br from-muted/40 to-muted/20 border border-border/25 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">{t('services.requestType')}</span>
-                  <Badge>{t(`services.${selectedRequest.type}`)}</Badge>
+                  <Badge className="rounded-lg">{t(`services.${selectedRequest.type}`)}</Badge>
                 </div>
                 {selectedRequest.amount && (
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">{t('services.amount')}</span>
-                    <span className="font-medium trading-number">${selectedRequest.amount}</span>
+                    <span className="font-semibold trading-number">${selectedRequest.amount}</span>
                   </div>
                 )}
                 {selectedRequest.network && (
@@ -358,18 +327,17 @@ export const ServiceRequestsManagement = () => {
                   </span>
                 </div>
                 {selectedRequest.notes && (
-                  <div className="pt-2 border-t border-border/30">
+                  <div className="pt-2 border-t border-border/20">
                     <span className="text-sm text-muted-foreground block mb-1">{t('services.notes')}</span>
                     <p className="text-sm">{selectedRequest.notes}</p>
                   </div>
                 )}
               </div>
 
-              {/* Status Update */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">{t('services.status')}</label>
                 <Select value={newStatus} onValueChange={(v) => setNewStatus(v as ServiceStatus)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="rounded-xl">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -382,7 +350,6 @@ export const ServiceRequestsManagement = () => {
                 </Select>
               </div>
 
-              {/* Admin Notes */}
               <div className="space-y-2">
                 <label className="text-sm font-medium flex items-center gap-2">
                   <MessageSquare className="w-4 h-4" />
@@ -393,12 +360,13 @@ export const ServiceRequestsManagement = () => {
                   onChange={(e) => setAdminNotes(e.target.value)}
                   placeholder={t('admin.adminReplyPlaceholder')}
                   rows={3}
+                  className="rounded-xl"
                 />
               </div>
 
               <Button 
                 onClick={handleUpdateRequest} 
-                className="w-full gap-2" 
+                className="w-full gap-2 rounded-xl" 
                 disabled={updating}
               >
                 <Send className="w-4 h-4" />

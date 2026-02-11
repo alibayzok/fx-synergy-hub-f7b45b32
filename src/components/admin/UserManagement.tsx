@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { Crown, User, Shield, Search, ChevronDown, Check } from 'lucide-react';
+import { Crown, User, Shield, Search, ChevronDown, Check, Users, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -92,7 +92,6 @@ export const UserManagement = () => {
     setUpdatingUser(userId);
     
     try {
-      // First, delete all existing roles for this user (except if it's removing admin from self)
       const { error: deleteError } = await supabase
         .from('user_roles')
         .delete()
@@ -100,7 +99,6 @@ export const UserManagement = () => {
 
       if (deleteError) throw deleteError;
 
-      // Insert the new role
       const { error: insertError } = await supabase
         .from('user_roles')
         .insert({ user_id: userId, role: newRole });
@@ -146,34 +144,65 @@ export const UserManagement = () => {
     return roleConfig ? t(roleConfig.labelKey) : role;
   };
 
-  return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-lg font-semibold">{t('admin.manageUsers')}</h2>
-      </div>
+  const adminCount = users.filter(u => u.roles.includes('admin')).length;
+  const vipCount = users.filter(u => u.roles.includes('vip')).length;
 
-      {/* Search */}
+  return (
+    <div className="space-y-5">
+      {/* Premium Header Banner */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-blue-500/15 via-blue-600/5 to-transparent border border-blue-500/15"
+      >
+        <div className="absolute top-0 end-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl" />
+        <div className="relative flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-blue-500/20 border border-blue-500/20">
+              <Users className="w-5 h-5 text-blue-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-foreground">{t('admin.manageUsers')}</h2>
+              <p className="text-xs text-muted-foreground/70">
+                {users.length} مستخدم • {adminCount} مدير • {vipCount} VIP
+              </p>
+            </div>
+          </div>
+          <Sparkles className="w-5 h-5 text-blue-400/40" />
+        </div>
+      </motion.div>
+
+      {/* Enhanced Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground rtl:left-auto rtl:right-3" />
         <Input
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder={t('admin.searchUsers')}
-          className="pl-10 rtl:pl-3 rtl:pr-10"
+          className="pl-10 rtl:pl-3 rtl:pr-10 rounded-xl border-border/30 bg-card/50 backdrop-blur-sm focus:border-primary/40 transition-colors"
         />
       </div>
 
       {loading ? (
-        <div className="text-center py-8 text-muted-foreground">
-          {t('common.loading')}
+        <div className="space-y-3">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-24 rounded-2xl bg-card/50 animate-pulse border border-border/20" />
+          ))}
         </div>
       ) : filteredUsers.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground">
-          {t('admin.noUsers')}
-        </div>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex flex-col items-center justify-center py-16 text-center"
+        >
+          <div className="p-4 rounded-2xl bg-muted/30 mb-4">
+            <Users className="w-10 h-10 text-muted-foreground/50" />
+          </div>
+          <p className="text-muted-foreground font-medium">{t('admin.noUsers')}</p>
+        </motion.div>
       ) : (
         <div className="space-y-3">
-          {filteredUsers.map((user) => {
+          {filteredUsers.map((user, index) => {
             const currentRole = getCurrentRole(user.roles);
             const isAdmin = user.roles.includes('admin');
             const isVip = user.roles.includes('vip');
@@ -184,43 +213,43 @@ export const UserManagement = () => {
                 key={user.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.03 }}
                 className={cn(
-                  "p-4 rounded-xl border",
-                  isAdmin ? "bg-primary/5 border-primary/30" :
-                  isVip ? "bg-vip/5 border-vip/30" : 
-                  "bg-card/50 border-border/30"
+                  "p-4 rounded-2xl border backdrop-blur-sm transition-all hover:scale-[1.01]",
+                  isAdmin ? "bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/25 shadow-[0_0_15px_rgba(var(--primary),0.08)]" :
+                  isVip ? "bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border-amber-500/25 shadow-[0_0_15px_rgba(245,158,11,0.08)]" : 
+                  "bg-card/50 border-border/25 hover:border-border/40"
                 )}
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     <div className={cn(
-                      "w-10 h-10 rounded-full flex items-center justify-center shrink-0",
-                      isAdmin ? "bg-primary/20" :
-                      isVip ? "bg-vip/20" : "bg-muted"
+                      "w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border",
+                      isAdmin ? "bg-primary/15 border-primary/20" :
+                      isVip ? "bg-amber-500/15 border-amber-500/20" : "bg-muted/50 border-border/20"
                     )}>
                       {getRoleIcon(user.roles)}
                     </div>
                      <div className="min-w-0">
-                      <p className="font-medium text-foreground truncate">
+                      <p className="font-semibold text-foreground truncate">
                         {user.display_name || t('admin.unnamed')}
                       </p>
-                      <p className="text-xs text-muted-foreground truncate">
+                      <p className="text-xs text-muted-foreground/70 truncate">
                         @{user.username || user.user_id.slice(0, 8)}
                       </p>
-                      {/* Full user details for admin */}
-                      <div className="mt-1 space-y-0.5">
+                      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5">
                         {(user.first_name || user.last_name) && (
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-[11px] text-muted-foreground">
                             👤 {[user.first_name, user.last_name].filter(Boolean).join(' ')}
                           </p>
                         )}
                         {user.phone && (
-                          <p className="text-xs text-muted-foreground trading-number">
+                          <p className="text-[11px] text-muted-foreground trading-number">
                             📱 {user.phone}
                           </p>
                         )}
                         {user.country && (
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-[11px] text-muted-foreground">
                             🌍 {user.country}
                           </p>
                         )}
@@ -229,25 +258,23 @@ export const UserManagement = () => {
                   </div>
                   
                   <div className="flex items-center gap-2 shrink-0">
-                    {/* Current Role Badge */}
                     <Badge className={cn(
-                      "hidden sm:flex",
-                      isAdmin ? "bg-primary/20 text-primary" :
-                      isVip ? "bg-vip/20 text-vip" : 
-                      "bg-muted text-muted-foreground"
+                      "hidden sm:flex rounded-lg border",
+                      isAdmin ? "bg-primary/15 text-primary border-primary/20" :
+                      isVip ? "bg-amber-500/15 text-amber-500 border-amber-500/20" : 
+                      "bg-muted/50 text-muted-foreground border-border/20"
                     )}>
                       {getRoleIcon(user.roles)}
                       <span className="mr-1">{getRoleLabel(currentRole)}</span>
                     </Badge>
 
-                    {/* Role Dropdown */}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button 
                           variant="outline" 
                           size="sm"
                           disabled={isUpdating}
-                          className="gap-1"
+                          className="gap-1 rounded-xl border-border/30 hover:border-primary/30 hover:bg-primary/5"
                         >
                           {isUpdating ? (
                             <span className="animate-spin">⏳</span>

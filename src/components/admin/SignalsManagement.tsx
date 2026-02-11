@@ -47,11 +47,8 @@ export const SignalsManagement = () => {
   const handleEdit = (signal: any) => {
     setEditId(signal.id);
     setForm({
-      title: signal.title,
-      content: signal.content,
-      symbol: signal.symbol || '',
-      asset_type: signal.asset_type || 'forex',
-      timeframe: signal.timeframe || 'H4',
+      title: signal.title, content: signal.content, symbol: signal.symbol || '',
+      asset_type: signal.asset_type || 'forex', timeframe: signal.timeframe || 'H4',
       visibility: signal.visibility || 'free',
     });
     setShowForm(true);
@@ -61,20 +58,12 @@ export const SignalsManagement = () => {
     if (!form.title || !form.content) return;
     setSaving(true);
     const payload = {
-      title: form.title,
-      content: form.content,
-      symbol: form.symbol || null,
-      asset_type: form.asset_type as any,
-      timeframe: form.timeframe as any,
-      visibility: form.visibility as any,
-      created_by: user?.id || null,
+      title: form.title, content: form.content, symbol: form.symbol || null,
+      asset_type: form.asset_type as any, timeframe: form.timeframe as any,
+      visibility: form.visibility as any, created_by: user?.id || null,
     };
-
-    if (editId) {
-      await updateSignal(editId, payload);
-    } else {
-      await createSignal(payload as any);
-    }
+    if (editId) { await updateSignal(editId, payload); }
+    else { await createSignal(payload as any); }
     setSaving(false);
     setShowForm(false);
     setEditId(null);
@@ -82,47 +71,66 @@ export const SignalsManagement = () => {
   };
 
   const handleDelete = async () => {
-    if (deleteId) {
-      await deleteSignal(deleteId);
-      setDeleteId(null);
-    }
+    if (deleteId) { await deleteSignal(deleteId); setDeleteId(null); }
   };
+
+  const freeCount = signals.filter(s => s.visibility === 'free').length;
+  const vipCount = signals.filter(s => s.visibility === 'vip').length;
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-10 w-40" />
-        {[1, 2, 3].map((i) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)}
+      <div className="space-y-5">
+        <div className="h-24 rounded-2xl bg-card/50 animate-pulse border border-border/20" />
+        {[1, 2, 3].map((i) => <Skeleton key={i} className="h-32 w-full rounded-2xl" />)}
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Radio className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-bold">إدارة الإشارات</h2>
-          <Badge variant="secondary">{signals.length}</Badge>
+    <div className="space-y-5">
+      {/* Premium Header Banner */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-emerald-500/15 via-emerald-600/5 to-transparent border border-emerald-500/15"
+      >
+        <div className="absolute top-0 end-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl" />
+        <div className="relative flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-emerald-500/20 border border-emerald-500/20">
+              <Radio className="w-5 h-5 text-emerald-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-foreground">إدارة الإشارات</h2>
+              <p className="text-xs text-muted-foreground/70">
+                {signals.length} إشارة • {freeCount} مجاني • {vipCount} VIP
+              </p>
+            </div>
+          </div>
+          <Button onClick={() => { setEditId(null); setForm(defaultForm); setShowForm(true); }} className="gap-2 rounded-xl shadow-lg shadow-primary/20">
+            <Plus className="w-4 h-4" />
+            إشارة جديدة
+          </Button>
         </div>
-        <Button onClick={() => { setEditId(null); setForm(defaultForm); setShowForm(true); }} className="gap-2">
-          <Plus className="w-4 h-4" />
-          إشارة جديدة
-        </Button>
-      </div>
+      </motion.div>
 
       <AnimatePresence mode="popLayout">
         {signals.length === 0 ? (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-12 text-center">
-            <Radio className="w-12 h-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">لا توجد إشارات بعد</p>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="p-4 rounded-2xl bg-muted/30 mb-4">
+              <Radio className="w-10 h-10 text-muted-foreground/50" />
+            </div>
+            <p className="text-muted-foreground font-medium">لا توجد إشارات بعد</p>
           </motion.div>
         ) : (
           <div className="space-y-3">
             {signals.map((signal, index) => (
               <motion.div key={signal.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.03 }}
-                className={cn("p-4 rounded-xl border transition-all bg-card hover:bg-card/80",
-                  signal.visibility === 'vip' ? "border-amber-500/30" : "border-border/50"
+                className={cn(
+                  "p-4 rounded-2xl border backdrop-blur-sm transition-all hover:scale-[1.01]",
+                  signal.visibility === 'vip' 
+                    ? "bg-gradient-to-br from-amber-500/8 to-transparent border-amber-500/25 shadow-[0_0_20px_rgba(245,158,11,0.06)]" 
+                    : "bg-card/50 border-border/25 hover:border-border/40"
                 )}
               >
                 <div className="flex items-start justify-between gap-4">
@@ -130,25 +138,25 @@ export const SignalsManagement = () => {
                     <div className="flex items-center gap-2 mb-2 flex-wrap">
                       <h3 className="font-bold text-foreground">{signal.title}</h3>
                       {signal.visibility === 'vip' && (
-                        <Badge variant="outline" className="bg-amber-500/20 text-amber-400 border-amber-500/30 gap-1 text-[10px]">
+                        <Badge variant="outline" className="bg-amber-500/15 text-amber-400 border-amber-500/25 gap-1 text-[10px] rounded-lg">
                           <Crown className="w-3 h-3" /> VIP
                         </Badge>
                       )}
-                      {signal.symbol && <Badge variant="secondary" className="text-xs">{signal.symbol}</Badge>}
-                      <Badge variant="outline" className="text-xs">{signal.timeframe}</Badge>
+                      {signal.symbol && <Badge variant="secondary" className="text-xs rounded-lg">{signal.symbol}</Badge>}
+                      <Badge variant="outline" className="text-xs rounded-lg">{signal.timeframe}</Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{signal.content}</p>
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <p className="text-sm text-muted-foreground/80 line-clamp-2 mb-3">{signal.content}</p>
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground/60">
                       <span className="flex items-center gap-1"><Eye className="w-3.5 h-3.5" />{signal.views_count}</span>
                       <span className="flex items-center gap-1"><Heart className="w-3.5 h-3.5" />{signal.likes_count}</span>
                       <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{new Date(signal.created_at).toLocaleDateString('ar')}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(signal)}>
+                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-primary/10" onClick={() => handleEdit(signal)}>
                       <Pencil className="w-4 h-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleteId(signal.id)}>
+                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setDeleteId(signal.id)}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
@@ -168,21 +176,21 @@ export const SignalsManagement = () => {
           <div className="space-y-4">
             <div>
               <Label>العنوان</Label>
-              <Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="عنوان الإشارة" />
+              <Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="عنوان الإشارة" className="rounded-xl" />
             </div>
             <div>
               <Label>المحتوى</Label>
-              <Textarea value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))} placeholder="تفاصيل الإشارة..." rows={5} />
+              <Textarea value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))} placeholder="تفاصيل الإشارة..." rows={5} className="rounded-xl" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>الرمز</Label>
-                <Input value={form.symbol} onChange={e => setForm(f => ({ ...f, symbol: e.target.value }))} placeholder="XAUUSD" />
+                <Input value={form.symbol} onChange={e => setForm(f => ({ ...f, symbol: e.target.value }))} placeholder="XAUUSD" className="rounded-xl" />
               </div>
               <div>
                 <Label>نوع الأصل</Label>
                 <Select value={form.asset_type} onValueChange={v => setForm(f => ({ ...f, asset_type: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="forex">فوركس</SelectItem>
                     <SelectItem value="crypto">كريبتو</SelectItem>
@@ -193,7 +201,7 @@ export const SignalsManagement = () => {
               <div>
                 <Label>الإطار الزمني</Label>
                 <Select value={form.timeframe} onValueChange={v => setForm(f => ({ ...f, timeframe: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {['M5', 'M15', 'H1', 'H4', 'D1'].map(tf => <SelectItem key={tf} value={tf}>{tf}</SelectItem>)}
                   </SelectContent>
@@ -202,7 +210,7 @@ export const SignalsManagement = () => {
               <div>
                 <Label>الرؤية</Label>
                 <Select value={form.visibility} onValueChange={v => setForm(f => ({ ...f, visibility: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="free">مجاني</SelectItem>
                     <SelectItem value="vip">VIP</SelectItem>
@@ -212,15 +220,14 @@ export const SignalsManagement = () => {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowForm(false)}>{t('common.cancel')}</Button>
-            <Button onClick={handleSubmit} disabled={saving || !form.title || !form.content}>
+            <Button variant="outline" onClick={() => setShowForm(false)} className="rounded-xl">{t('common.cancel')}</Button>
+            <Button onClick={handleSubmit} disabled={saving || !form.title || !form.content} className="rounded-xl">
               {saving ? 'جاري الحفظ...' : editId ? 'تحديث' : 'نشر'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

@@ -200,38 +200,45 @@ const FlaggedContentManagement = () => {
   const pendingCount = flaggedItems.filter(i => !i.reviewed).length;
 
   return (
-    <div className="space-y-4" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-red-500/10">
-            <AlertTriangle className="w-6 h-6 text-red-500" />
+    <div className="space-y-5" dir={isRTL ? 'rtl' : 'ltr'}>
+      {/* Premium Header Banner */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-red-500/15 via-red-600/5 to-transparent border border-red-500/15"
+      >
+        <div className="absolute top-0 end-0 w-32 h-32 bg-red-500/10 rounded-full blur-3xl" />
+        <div className="relative flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-red-500/20 border border-red-500/20">
+              <AlertTriangle className="w-5 h-5 text-red-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-foreground">إدارة المحتوى المخالف</h2>
+              <p className="text-xs text-muted-foreground/70">
+                {pendingCount > 0 ? `${pendingCount} محتوى بانتظار المراجعة` : 'لا يوجد محتوى بانتظار المراجعة'}
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-lg font-bold">إدارة المحتوى المخالف</h2>
-            <p className="text-sm text-muted-foreground">
-              {pendingCount > 0 ? `${pendingCount} محتوى بانتظار المراجعة` : 'لا يوجد محتوى بانتظار المراجعة'}
-            </p>
-          </div>
-        </div>
 
-        <div className="flex items-center gap-2">
-          <Select value={filter} onValueChange={(v) => setFilter(v as any)}>
-            <SelectTrigger className="w-[140px]">
-              <Filter className="w-4 h-4 ml-2" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="pending">قيد الانتظار</SelectItem>
-              <SelectItem value="reviewed">تمت مراجعته</SelectItem>
-              <SelectItem value="all">الكل</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button variant="outline" size="icon" onClick={fetchFlaggedContent} disabled={loading}>
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Select value={filter} onValueChange={(v) => setFilter(v as any)}>
+              <SelectTrigger className="w-[140px] rounded-xl border-border/30 bg-background/50 backdrop-blur-sm">
+                <Filter className="w-4 h-4 ml-2" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pending">قيد الانتظار</SelectItem>
+                <SelectItem value="reviewed">تمت مراجعته</SelectItem>
+                <SelectItem value="all">الكل</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="icon" onClick={fetchFlaggedContent} disabled={loading} className="rounded-xl border-border/30">
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Content List */}
       {loading ? (
@@ -257,7 +264,7 @@ const FlaggedContentManagement = () => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
               >
-                <Card className={`bg-card/50 border ${item.reviewed ? 'border-border/30' : 'border-red-500/30'}`}>
+                <Card className={`bg-card/50 backdrop-blur-sm rounded-2xl ${item.reviewed ? 'border-border/25' : 'border-red-500/25'} transition-all hover:scale-[1.005]`}>
                   <CardContent className="p-4">
                     <div className="flex flex-col sm:flex-row gap-4">
                       {/* Image Preview */}

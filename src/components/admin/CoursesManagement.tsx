@@ -273,18 +273,30 @@ export const CoursesManagement = () => {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <GraduationCap className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-bold">{isArabic ? 'إدارة الكورسات' : 'Courses Management'}</h2>
+    <div className="space-y-5">
+      {/* Premium Header Banner */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-cyan-500/15 via-cyan-600/5 to-transparent border border-cyan-500/15"
+      >
+        <div className="absolute top-0 end-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl" />
+        <div className="relative flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-cyan-500/20 border border-cyan-500/20">
+              <GraduationCap className="w-5 h-5 text-cyan-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-foreground">{isArabic ? 'إدارة الكورسات' : 'Courses Management'}</h2>
+              <p className="text-xs text-muted-foreground/70">{categories.length} {isArabic ? 'قسم' : 'categories'} • {courses.length} {isArabic ? 'كورس' : 'courses'}</p>
+            </div>
+          </div>
+          <Button size="sm" onClick={() => openCategoryDialog()} className="gap-1.5 rounded-xl shadow-lg shadow-primary/20">
+            <Plus className="w-4 h-4" />
+            {isArabic ? 'قسم جديد' : 'New Category'}
+          </Button>
         </div>
-        <Button size="sm" onClick={() => openCategoryDialog()} className="gap-1.5">
-          <Plus className="w-4 h-4" />
-          {isArabic ? 'قسم جديد' : 'New Category'}
-        </Button>
-      </div>
+      </motion.div>
 
       {/* Categories Accordion */}
       <div className="space-y-2">
@@ -293,7 +305,7 @@ export const CoursesManagement = () => {
           const isExpanded = expandedCategory === cat.id;
 
           return (
-            <div key={cat.id} className="rounded-xl border border-border/30 overflow-hidden">
+            <div key={cat.id} className="rounded-2xl border border-border/25 overflow-hidden backdrop-blur-sm">
               {/* Category Header */}
               <button
                 onClick={() => setExpandedCategory(isExpanded ? null : cat.id)}
