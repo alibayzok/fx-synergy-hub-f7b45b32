@@ -408,6 +408,38 @@ export const CMSManagement = () => {
         );
 
       default:
+        // Handle password type (for API keys)
+        if (setting.setting_type === 'password') {
+          return (
+            <div className="space-y-1.5">
+              <Label className="text-foreground font-medium">{setting.label_ar}</Label>
+              {setting.description_ar && (
+                <p className="text-xs text-muted-foreground">{setting.description_ar}</p>
+              )}
+              <div className="flex items-center gap-2">
+                <Input
+                  type="password"
+                  value={value}
+                  onChange={(e) => setEditedValues(prev => ({ ...prev, [setting.id]: e.target.value }))}
+                  placeholder="sk-... أو AIza..."
+                  dir="ltr"
+                  className="flex-1 font-mono text-sm"
+                />
+                {changed && (
+                  <Button size="sm" onClick={() => handleSave(setting)} disabled={saving === setting.id}>
+                    <Save className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+              {value && (
+                <Badge variant="outline" className="text-xs text-emerald-500 border-emerald-500/30">
+                  <Check className="w-3 h-3 mr-1" /> مفتاح محفوظ
+                </Badge>
+              )}
+            </div>
+          );
+        }
+
         // Handle select:option1,option2,... type
         if (setting.setting_type.startsWith('select:')) {
           const selectOptions = setting.setting_type.replace('select:', '').split(',');
