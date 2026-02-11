@@ -442,7 +442,16 @@ export const CMSManagement = () => {
 
         // Handle select:option1,option2,... type
         if (setting.setting_type.startsWith('select:')) {
-          const selectOptions = setting.setting_type.replace('select:', '').split(',');
+          let selectOptions = setting.setting_type.replace('select:', '').split(',');
+          
+          // Filter AI models based on provider selection
+          if (setting.setting_key === 'ai_model') {
+            const providerSetting = settings.find(s => s.setting_key === 'ai_provider');
+            const currentProvider = editedValues[providerSetting?.id || ''] ?? providerSetting?.setting_value ?? 'lovable';
+            if (currentProvider === 'custom') {
+              selectOptions = selectOptions.filter(opt => opt.startsWith('google/'));
+            }
+          }
           return (
             <div className="space-y-1.5">
               <Label className="text-foreground font-medium">{setting.label_ar}</Label>
