@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -194,9 +195,10 @@ export const ArticlesTab = () => {
             <p className="text-sm text-muted-foreground/80 italic mb-5 leading-relaxed">{getSummary(selectedArticle)}</p>
           )}
           <div className="h-px bg-gradient-to-r from-transparent via-border/40 to-transparent mb-6" />
-          <div className="prose prose-sm dark:prose-invert max-w-none">
-            <p className="text-sm text-foreground/90 leading-[1.9] whitespace-pre-line">{getContent(selectedArticle)}</p>
-          </div>
+          <div
+            className="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground/90 leading-[1.9] prose-headings:font-bold prose-h2:text-lg prose-h3:text-base prose-blockquote:border-s-4 prose-blockquote:border-primary/30 prose-blockquote:ps-4 prose-blockquote:italic prose-a:text-primary prose-a:underline"
+            dangerouslySetInnerHTML={{ __html: getContent(selectedArticle) }}
+          />
         </motion.div>
       </div>
     );
@@ -405,7 +407,7 @@ export const ArticlesTab = () => {
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">المحتوى (عربي) *</Label>
-                <Textarea value={form.content_ar} onChange={e => setForm(f => ({ ...f, content_ar: e.target.value }))} dir="rtl" rows={5} className="text-sm" />
+                <RichTextEditor value={form.content_ar} onChange={v => setForm(f => ({ ...f, content_ar: v }))} dir="rtl" placeholder="اكتب محتوى المقال..." minHeight="150px" />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">التصنيف</Label>
