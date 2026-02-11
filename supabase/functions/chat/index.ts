@@ -77,7 +77,7 @@ serve(async (req) => {
     const { data: aiSettings } = await adminClient
       .from('app_settings')
       .select('setting_key, setting_value')
-      .in('setting_key', ['ai_provider', 'ai_model', 'custom_ai_api_key', 'custom_ai_endpoint']);
+      .in('setting_key', ['ai_provider', 'ai_model', 'custom_ai_api_key', 'custom_ai_endpoint', 'ai_system_prompt']);
 
     const settingsMap: Record<string, string> = {};
     aiSettings?.forEach((s: any) => { settingsMap[s.setting_key] = s.setting_value || ''; });
@@ -121,17 +121,7 @@ serve(async (req) => {
         messages: [
           { 
             role: "system", 
-            content: `أنت مساعد ذكي لمنصة تداول FX Synergy Hub. تساعد المستخدمين في:
-- الإجابة على أسئلة التداول والفوركس والعملات الرقمية
-- شرح المصطلحات المالية والتحليل الفني
-- تقديم نصائح عامة حول إدارة المخاطر
-- المساعدة في استخدام المنصة
-
-تذكر:
-- لا تقدم نصائح استثمارية محددة
-- شجع المستخدمين على البحث والتعلم
-- كن ودوداً ومفيداً
-- أجب باللغة العربية إلا إذا سألك المستخدم بالإنجليزية`
+            content: settingsMap['ai_system_prompt'] || `أنت مساعد ذكي لمنصة تداول FX Synergy Hub. تساعد المستخدمين في الإجابة على أسئلة التداول والفوركس والعملات الرقمية. كن ودوداً ومفيداً وأجب باللغة العربية إلا إذا سألك المستخدم بالإنجليزية.`
           },
           ...messages,
         ],
