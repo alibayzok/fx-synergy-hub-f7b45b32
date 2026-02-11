@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useVirtualCards } from '@/hooks/useVirtualCards';
 import { useProfile } from '@/hooks/useProfile';
+import { useAuth } from '@/hooks/useAuth';
 
 const VirtualCardsSection = () => {
   const { i18n } = useTranslation();
@@ -17,6 +18,7 @@ const VirtualCardsSection = () => {
   const isRTL = i18n.language === 'ar';
   const { cards, loading, actionLoading, createCard, freezeCard, unfreezeCard, cancelCard } = useVirtualCards();
   const { profile } = useProfile();
+  const { user } = useAuth();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [nickname, setNickname] = useState('');
   const [spendingLimit, setSpendingLimit] = useState('1000');
@@ -29,7 +31,7 @@ const VirtualCardsSection = () => {
         spending_limit: parseFloat(spendingLimit) || 1000,
         first_name: profile?.first_name || undefined,
         last_name: profile?.last_name || undefined,
-        email: '',
+        email: user?.email || undefined,
       });
       setShowCreateDialog(false);
       setNickname('');
