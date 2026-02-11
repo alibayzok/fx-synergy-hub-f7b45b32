@@ -1,13 +1,13 @@
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Home, TrendingUp, Users, BarChart3, Briefcase } from 'lucide-react';
+import { Home, Radio, Users, BarChart3, Briefcase } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAppSettings } from '@/hooks/useAppSettings';
 
 const allNavItems = [
   { key: 'home', path: '/', icon: Home, settingKey: null },
-  { key: 'trades', path: '/trades', icon: TrendingUp, settingKey: null },
+  { key: 'signals', path: '/trades', icon: Radio, settingKey: null },
   { key: 'community', path: '/community', icon: Users, settingKey: 'enable_community' },
   { key: 'markets', path: '/markets', icon: BarChart3, settingKey: null },
   { key: 'services', path: '/services', icon: Briefcase, settingKey: null },

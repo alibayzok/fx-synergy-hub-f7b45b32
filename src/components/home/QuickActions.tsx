@@ -1,13 +1,13 @@
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { Bot, TrendingUp, BarChart3 } from 'lucide-react';
+import { Bot, Radio, BarChart3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAppSettings } from '@/hooks/useAppSettings';
 
 const actions = [
   { key: 'aiAssistant', icon: Bot, gradient: 'from-blue-500 to-cyan-500', settingKey: 'enable_ai_chat' },
   { key: 'viewAnalyses', icon: BarChart3, gradient: 'from-purple-500 to-pink-500', settingKey: 'enable_analyses' },
-  { key: 'publishTrade', icon: TrendingUp, gradient: 'from-emerald-500 to-teal-500', adminOnly: true, settingKey: null },
+  { key: 'viewSignals', icon: Radio, gradient: 'from-emerald-500 to-teal-500', adminOnly: true, settingKey: null },
 ];
 
 interface QuickActionsProps {

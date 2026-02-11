@@ -43,7 +43,6 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useMarketData } from '@/hooks/useMarketData';
-import { useTrades } from '@/hooks/useTrades';
 import { countries } from '@/data/countries';
 import { useToast } from '@/hooks/use-toast';
 import { NotificationSettings } from '@/components/notifications/NotificationSettings';
@@ -59,7 +58,6 @@ const ProfilePage = () => {
   const { profile, updateProfile, uploadAvatar, uploadingAvatar, deleteAvatar } = useProfile();
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const { watchlist } = useMarketData();
-  const { trades } = useTrades();
   const { isSupportAgent } = useSupport();
   
   const [showLanguageDialog, setShowLanguageDialog] = useState(false);
@@ -112,7 +110,6 @@ const ProfilePage = () => {
     { icon: Globe, label: 'profile.language', onClick: () => setShowLanguageDialog(true), value: i18n.language === 'ar' ? 'العربية' : 'English' },
     { icon: Bell, label: 'profile.notifications', onClick: () => setShowNotificationSettings(true) },
     { icon: Star, label: 'profile.watchlist', onClick: () => setShowWatchlistDialog(true), count: watchlist.length },
-    { icon: TrendingUp, label: 'profile.followedTrades', onClick: () => setShowFollowedDialog(true), count: trades.length },
   ];
 
   // Show login prompt if not authenticated
@@ -541,43 +538,6 @@ const ProfilePage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Followed Trades Dialog */}
-      <Dialog open={showFollowedDialog} onOpenChange={setShowFollowedDialog}>
-        <DialogContent className="sm:max-w-[350px]">
-          <DialogHeader>
-            <DialogTitle>{t('profile.followedTrades')}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-2 pt-2 max-h-[300px] overflow-y-auto">
-            {trades.length > 0 ? (
-              trades.slice(0, 5).map(trade => (
-                <div key={trade.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <div>
-                    <span className="font-medium">{trade.symbol}</span>
-                    <span className={cn(
-                      "text-xs ms-2",
-                      trade.direction === 'buy' ? "text-profit" : "text-loss"
-                    )}>
-                      {trade.direction.toUpperCase()}
-                    </span>
-                  </div>
-                  <Badge variant="outline" className="text-xs">{trade.status}</Badge>
-                </div>
-              ))
-            ) : (
-              <p className="text-center text-muted-foreground py-4">
-                {t('admin.noTrades')}
-              </p>
-            )}
-            <Button 
-              variant="outline" 
-              className="w-full mt-2"
-              onClick={() => { setShowFollowedDialog(false); navigate('/trades'); }}
-            >
-              {t('home.viewAll')}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Notification Settings Dialog */}
       <Dialog open={showNotificationSettings} onOpenChange={setShowNotificationSettings}>
