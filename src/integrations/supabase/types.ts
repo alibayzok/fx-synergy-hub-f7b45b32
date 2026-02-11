@@ -163,6 +163,54 @@ export type Database = {
         }
         Relationships: []
       }
+      articles: {
+        Row: {
+          category: string
+          content_ar: string
+          content_en: string
+          created_at: string
+          created_by: string | null
+          id: string
+          image_url: string | null
+          is_published: boolean
+          summary_ar: string | null
+          summary_en: string | null
+          title_ar: string
+          title_en: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          content_ar: string
+          content_en?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          image_url?: string | null
+          is_published?: boolean
+          summary_ar?: string | null
+          summary_en?: string | null
+          title_ar: string
+          title_en?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          content_ar?: string
+          content_en?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          image_url?: string | null
+          is_published?: boolean
+          summary_ar?: string | null
+          summary_en?: string | null
+          title_ar?: string
+          title_en?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       community_rooms: {
         Row: {
           color: string | null
