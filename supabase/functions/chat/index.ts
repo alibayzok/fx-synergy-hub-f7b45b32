@@ -73,6 +73,17 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
+    // Read AI model from app_settings
+    let aiModel = "google/gemini-3-flash-preview";
+    const { data: modelSetting } = await supabase
+      .from('app_settings')
+      .select('setting_value')
+      .eq('setting_key', 'ai_model')
+      .single();
+    if (modelSetting?.setting_value) {
+      aiModel = modelSetting.setting_value;
+    }
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -80,7 +91,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: aiModel,
         messages: [
           { 
             role: "system", 
