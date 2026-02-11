@@ -11,7 +11,7 @@ import { SplashScreen } from "./components/layout/SplashScreen";
 import HomePage from "./pages/HomePage";
 import TradesPage from "./pages/TradesPage";
 import CommunityPage from "./pages/CommunityPage";
-import MarketsPage from "./pages/MarketsPage";
+import NewsPage from "./pages/NewsPage";
 import ServicesPage from "./pages/ServicesPage";
 import ProfilePage from "./pages/ProfilePage";
 import UserProfilePage from "./pages/UserProfilePage";
@@ -65,7 +65,8 @@ const App = () => {
                 <Route path="/" element={<HomePage />} />
                 <Route path="/trades" element={<TradesPage />} />
                 <Route path="/community" element={<CommunityPage />} />
-                <Route path="/markets" element={<MarketsPage />} />
+                <Route path="/news" element={<NewsPage />} />
+                <Route path="/markets" element={<NewsPage />} />
                 <Route path="/services" element={<ServicesPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/user/:userId" element={<UserProfilePage />} />
