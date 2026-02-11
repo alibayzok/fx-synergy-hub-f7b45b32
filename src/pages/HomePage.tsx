@@ -1,9 +1,8 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, LogIn, Radio, Clock, Eye, Heart } from 'lucide-react';
+import { ChevronLeft, ChevronRight, LogIn, Radio, Clock, Eye, Heart, Megaphone } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { MarketTicker } from '@/components/market/MarketTicker';
 import { QuickActions } from '@/components/home/QuickActions';
 import { NewsCard } from '@/components/home/NewsCard';
 import { Button } from '@/components/ui/button';
@@ -12,7 +11,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useSignals } from '@/hooks/useSignals';
-import { useMarketData } from '@/hooks/useMarketData';
 import { useProfile } from '@/hooks/useProfile';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { formatDistanceToNow } from 'date-fns';
@@ -47,10 +45,14 @@ const HomePage = () => {
   
   const { user, isAdmin, loading: authLoading } = useAuth();
   const { signals, loading: analysesLoading } = useSignals();
-  const { symbols } = useMarketData();
   const { profile, loading: profileLoading } = useProfile();
-  const { getSetting } = useAppSettings();
+  const { getSetting, getBoolean } = useAppSettings();
   const appName = getSetting('app_name', 'ASSASSIN FX');
+
+  // Admin announcement
+  const announcementActive = getBoolean('home_announcement_active');
+  const announcementText = getSetting('home_announcement_text');
+  const announcementColor = getSetting('home_announcement_color', '#f59e0b');
 
   useEffect(() => {
     if (user && !profileLoading && profile && !profile.onboarding_completed) {
@@ -106,7 +108,16 @@ const HomePage = () => {
         </div>
       </header>
 
-      <MarketTicker symbols={symbols} />
+      {/* Admin Announcement Banner (replaces MarketTicker) */}
+      {announcementActive && announcementText && (
+        <div 
+          className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white border-b border-white/10"
+          style={{ backgroundColor: announcementColor }}
+        >
+          <Megaphone className="w-4 h-4 shrink-0" />
+          <span className="flex-1">{announcementText}</span>
+        </div>
+      )}
 
       <div className="px-4 py-4 space-y-6 page-transition">
         {/* Quick Actions */}
@@ -115,7 +126,7 @@ const HomePage = () => {
           <QuickActions isAdmin={isAdmin} onAction={handleQuickAction} />
         </motion.section>
 
-        {/* Latest Signals - Telegram broadcast style */}
+        {/* Latest Signals */}
         <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
