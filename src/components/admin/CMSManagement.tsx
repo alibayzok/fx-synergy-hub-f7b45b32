@@ -37,6 +37,7 @@ const CATEGORIES = [
   { key: 'texts', label: 'النصوص', icon: Type },
   { key: 'links', label: 'الروابط', icon: Link2 },
   { key: 'features', label: 'الميزات', icon: ToggleRight },
+  { key: 'services', label: 'الخدمات', icon: Globe },
   { key: 'announcements', label: 'الإعلانات', icon: Megaphone },
   { key: 'images', label: 'الصور', icon: ImageIcon },
 ];
