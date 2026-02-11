@@ -926,6 +926,83 @@ export type Database = {
         }
         Relationships: []
       }
+      signal_likes: {
+        Row: {
+          created_at: string
+          id: string
+          signal_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          signal_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          signal_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signal_likes_signal_id_fkey"
+            columns: ["signal_id"]
+            isOneToOne: false
+            referencedRelation: "signals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      signals: {
+        Row: {
+          asset_type: Database["public"]["Enums"]["asset_type"] | null
+          attachments: string[] | null
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          likes_count: number | null
+          symbol: string | null
+          timeframe: Database["public"]["Enums"]["timeframe"] | null
+          title: string
+          updated_at: string
+          views_count: number | null
+          visibility: Database["public"]["Enums"]["content_visibility"]
+        }
+        Insert: {
+          asset_type?: Database["public"]["Enums"]["asset_type"] | null
+          attachments?: string[] | null
+          content: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          likes_count?: number | null
+          symbol?: string | null
+          timeframe?: Database["public"]["Enums"]["timeframe"] | null
+          title: string
+          updated_at?: string
+          views_count?: number | null
+          visibility?: Database["public"]["Enums"]["content_visibility"]
+        }
+        Update: {
+          asset_type?: Database["public"]["Enums"]["asset_type"] | null
+          attachments?: string[] | null
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          likes_count?: number | null
+          symbol?: string | null
+          timeframe?: Database["public"]["Enums"]["timeframe"] | null
+          title?: string
+          updated_at?: string
+          views_count?: number | null
+          visibility?: Database["public"]["Enums"]["content_visibility"]
+        }
+        Relationships: []
+      }
       support_agents: {
         Row: {
           created_at: string
@@ -1456,6 +1533,7 @@ export type Database = {
         | "usdt_buy"
         | "usdt_sell"
         | "broker_account"
+      signal_type: "signal" | "tip"
       timeframe: "M5" | "M15" | "H1" | "H4" | "D1"
       usdt_listing_type: "buy" | "sell"
     }
@@ -1609,6 +1687,7 @@ export const Constants = {
         "usdt_sell",
         "broker_account",
       ],
+      signal_type: ["signal", "tip"],
       timeframe: ["M5", "M15", "H1", "H4", "D1"],
       usdt_listing_type: ["buy", "sell"],
     },

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Shield, Users, Plus, ArrowLeft, LayoutDashboard, BarChart3, ClipboardList,
-  Database, FileText, AlertTriangle, GraduationCap, Settings2
+  Database, FileText, AlertTriangle, GraduationCap, Settings2, Radio
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -20,6 +20,7 @@ import { AnalysesManagement } from '@/components/admin/AnalysesManagement';
 import FlaggedContentManagement from '@/components/admin/FlaggedContentManagement';
 import { CoursesManagement } from '@/components/admin/CoursesManagement';
 import { CMSManagement } from '@/components/admin/CMSManagement';
+import { SignalsManagement } from '@/components/admin/SignalsManagement';
 
 const AdminPage = () => {
   const { t, i18n } = useTranslation();
@@ -54,7 +55,7 @@ const AdminPage = () => {
 
       <div className="p-4">
         <Tabs defaultValue="dashboard" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-8">
+          <TabsList className="grid w-full grid-cols-9">
             <TabsTrigger value="dashboard" className="gap-1 text-xs sm:text-sm">
               <LayoutDashboard className="w-4 h-4" />
               <span className="hidden sm:inline">{t('admin.dashboard')}</span>
@@ -69,6 +70,10 @@ const AdminPage = () => {
             </TabsTrigger>
             <TabsTrigger value="analyses" className="gap-1 text-xs sm:text-sm">
               <FileText className="w-4 h-4" />
+              <span className="hidden sm:inline">التحليلات</span>
+            </TabsTrigger>
+            <TabsTrigger value="signals" className="gap-1 text-xs sm:text-sm">
+              <Radio className="w-4 h-4" />
               <span className="hidden sm:inline">الإشارات</span>
             </TabsTrigger>
             <TabsTrigger value="courses" className="gap-1 text-xs sm:text-sm">
@@ -103,6 +108,7 @@ const AdminPage = () => {
           <TabsContent value="requests"><ServiceRequestsManagement /></TabsContent>
           <TabsContent value="moderation"><FlaggedContentManagement /></TabsContent>
           <TabsContent value="analyses"><AnalysesManagement /></TabsContent>
+          <TabsContent value="signals"><SignalsManagement /></TabsContent>
           <TabsContent value="courses"><CoursesManagement /></TabsContent>
           <TabsContent value="users"><UserManagement /></TabsContent>
           <TabsContent value="cms"><CMSManagement /></TabsContent>
