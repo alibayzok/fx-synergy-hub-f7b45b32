@@ -14,6 +14,7 @@ export type NotificationSoundType =
   | 'comment'      // تعليق
   | 'like'         // إعجاب
   | 'trade'        // صفقة جديدة
+  | 'signal'       // إشارة جديدة
   | 'friend'       // طلب صداقة
   | 'alert'        // تنبيه عام
   | 'default';     // افتراضي
@@ -54,6 +55,13 @@ const soundConfigs: Record<NotificationSoundType, SoundConfig> = {
     durations: [0.1, 0.1, 0.1, 0.2],
     type: 'triangle',
     gain: 0.35,
+  },
+  signal: {
+    // صوت إشارة: نغمة احترافية مميزة - 3 نغمات صاعدة بقوة
+    frequencies: [523, 698, 880, 1047],
+    durations: [0.08, 0.08, 0.08, 0.25],
+    type: 'sine',
+    gain: 0.4,
   },
   friend: {
     // صوت صداقة: نغمة ودية صاعدة
@@ -99,6 +107,10 @@ const notificationTypeToSound: Record<string, NotificationSoundType> = {
   'trade': 'trade',
   'new_trade': 'trade',
   'trade_update': 'trade',
+  
+  // Signals
+  'signal': 'signal',
+  'new_signal': 'signal',
   
   // Friends
   'friend_request': 'friend',
