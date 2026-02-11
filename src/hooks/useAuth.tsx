@@ -55,6 +55,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
+    let rolesChannel: ReturnType<typeof supabase.channel> | null = null;
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -67,8 +69,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             const userRoles = await fetchRoles(session.user.id);
             setRoles(userRoles);
           }, 0);
+
+          // Subscribe to role changes for this user
+          if (rolesChannel) {
+            supabase.removeChannel(rolesChannel);
+          }
+          rolesChannel = supabase
+            .channel(`user-roles-${session.user.id}`)
+            .on(
+              'postgres_changes',
+              {
+                event: '*',
+                schema: 'public',
+                table: 'user_roles',
+                filter: `user_id=eq.${session.user.id}`,
+              },
+              async () => {
+                const userRoles = await fetchRoles(session.user.id);
+                setRoles(userRoles);
+              }
+            )
+            .subscribe();
         } else {
           setRoles([]);
+          if (rolesChannel) {
+            supabase.removeChannel(rolesChannel);
+            rolesChannel = null;
+          }
         }
         
         setLoading(false);
@@ -83,12 +110,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (session?.user) {
         const userRoles = await fetchRoles(session.user.id);
         setRoles(userRoles);
+
+        // Subscribe to role changes
+        rolesChannel = supabase
+          .channel(`user-roles-${session.user.id}`)
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'user_roles',
+              filter: `user_id=eq.${session.user.id}`,
+            },
+            async () => {
+              const userRoles = await fetchRoles(session.user.id);
+              setRoles(userRoles);
+            }
+          )
+          .subscribe();
       }
       
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      if (rolesChannel) {
+        supabase.removeChannel(rolesChannel);
+      }
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
