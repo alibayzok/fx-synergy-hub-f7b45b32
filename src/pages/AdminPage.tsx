@@ -22,6 +22,7 @@ import FlaggedContentManagement from '@/components/admin/FlaggedContentManagemen
 import { CoursesManagement } from '@/components/admin/CoursesManagement';
 import { CMSManagement } from '@/components/admin/CMSManagement';
 import { SignalsManagement } from '@/components/admin/SignalsManagement';
+import { ArticlesManagement } from '@/components/admin/ArticlesManagement';
 
 const tabs = [
   { value: 'dashboard', icon: LayoutDashboard, label: 'لوحة القيادة' },
@@ -31,6 +32,7 @@ const tabs = [
   { value: 'signals', icon: Radio, label: 'الإشارات' },
   { value: 'courses', icon: GraduationCap, label: 'الكورسات' },
   { value: 'users', icon: Users, label: 'المستخدمين' },
+  { value: 'articles', icon: FileText, label: 'المقالات' },
   { value: 'cms', icon: Settings2, label: 'CMS' },
   { value: 'export', icon: Database, label: 'تصدير' },
 ];
@@ -169,6 +171,7 @@ const AdminPage = () => {
           <TabsContent value="signals"><SignalsManagement /></TabsContent>
           <TabsContent value="courses"><CoursesManagement /></TabsContent>
           <TabsContent value="users"><UserManagement /></TabsContent>
+          <TabsContent value="articles"><ArticlesManagement /></TabsContent>
           <TabsContent value="cms"><CMSManagement /></TabsContent>
           <TabsContent value="export"><DatabaseExport /></TabsContent>
         </Tabs>
