@@ -480,6 +480,56 @@ CREATE TABLE public.admin_notifications (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
+-- جدول إعدادات التطبيق
+CREATE TABLE public.app_settings (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    category TEXT NOT NULL,
+    setting_key TEXT NOT NULL,
+    setting_value TEXT,
+    setting_type TEXT NOT NULL DEFAULT 'text',
+    label_ar TEXT NOT NULL,
+    label_en TEXT NOT NULL DEFAULT '',
+    description_ar TEXT,
+    sort_order INTEGER DEFAULT 0,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_by UUID
+);
+
+-- جدول تذاكر الدعم الفني
+CREATE TABLE public.support_tickets (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID NOT NULL,
+    subject TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'open',
+    priority TEXT NOT NULL DEFAULT 'normal',
+    assigned_to UUID,
+    escalated_to UUID,
+    escalated_by UUID,
+    escalated_at TIMESTAMP WITH TIME ZONE,
+    escalation_reason TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- جدول رسائل الدعم الفني
+CREATE TABLE public.support_messages (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    ticket_id UUID NOT NULL REFERENCES public.support_tickets(id) ON DELETE CASCADE,
+    sender_id UUID NOT NULL,
+    content TEXT NOT NULL,
+    is_admin BOOLEAN NOT NULL DEFAULT false,
+    attachments TEXT[] DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- جدول وكلاء الدعم الفني
+CREATE TABLE public.support_agents (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
 
 -- ============================================================
 -- 3. VIEWS (العروض)
@@ -922,6 +972,56 @@ BEGIN
     RETURN NEW;
 END; $$;
 
+-- دوال الدعم الفني
+CREATE OR REPLACE FUNCTION public.is_support_agent(p_user_id uuid DEFAULT auth.uid())
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
+AS $$ SELECT EXISTS (SELECT 1 FROM public.support_agents WHERE user_id = p_user_id AND is_active = true) OR public.is_admin() $$;
+
+CREATE OR REPLACE FUNCTION public.close_stale_support_tickets()
+RETURNS integer LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE closed_count integer;
+BEGIN
+    UPDATE public.support_tickets SET status = 'closed', updated_at = now() WHERE status = 'open' AND updated_at < now() - interval '4 hours';
+    GET DIAGNOSTICS closed_count = ROW_COUNT;
+    RETURN closed_count;
+END; $$;
+
+CREATE OR REPLACE FUNCTION public.notify_admin_new_support_ticket()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE user_display_name TEXT; agent RECORD;
+BEGIN
+    SELECT COALESCE(display_name, username, 'مستخدم') INTO user_display_name FROM public.profiles WHERE user_id = NEW.user_id;
+    FOR agent IN SELECT user_id FROM public.support_agents WHERE is_active = true
+    LOOP
+        INSERT INTO public.user_notifications (user_id, type, title, message, data)
+        VALUES (agent.user_id, 'support_ticket', 'تذكرة دعم جديدة 🎫', user_display_name || ': ' || LEFT(NEW.subject, 50),
+            jsonb_build_object('ticket_id', NEW.id, 'user_id', NEW.user_id));
+    END LOOP;
+    INSERT INTO public.admin_notifications (type, title, message, data)
+    VALUES ('support_ticket', 'تذكرة دعم جديدة 🎫', user_display_name || ' أرسل تذكرة دعم: ' || LEFT(NEW.subject, 50),
+        jsonb_build_object('ticket_id', NEW.id, 'user_id', NEW.user_id, 'subject', NEW.subject));
+    RETURN NEW;
+END; $$;
+
+CREATE OR REPLACE FUNCTION public.notify_ticket_transfer()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE sender_name TEXT; target_user_id UUID; action_text TEXT;
+BEGIN
+    IF (OLD.assigned_to IS DISTINCT FROM NEW.assigned_to AND NEW.assigned_to IS NOT NULL) OR
+       (OLD.escalated_to IS DISTINCT FROM NEW.escalated_to AND NEW.escalated_to IS NOT NULL) THEN
+        SELECT COALESCE(display_name, username, 'موظف دعم') INTO sender_name FROM public.profiles WHERE user_id = COALESCE(NEW.escalated_by, auth.uid());
+        IF OLD.escalated_to IS DISTINCT FROM NEW.escalated_to AND NEW.escalated_to IS NOT NULL THEN
+            target_user_id := NEW.escalated_to; action_text := 'تم تصعيد تذكرة إليك';
+        ELSE
+            target_user_id := NEW.assigned_to; action_text := 'تم تحويل تذكرة إليك';
+        END IF;
+        INSERT INTO public.user_notifications (user_id, type, title, message, data)
+        VALUES (target_user_id, 'support_ticket', action_text || ' 🎫', sender_name || ': ' || LEFT(NEW.subject, 50),
+            jsonb_build_object('ticket_id', NEW.id, 'transferred_by', COALESCE(NEW.escalated_by, auth.uid()), 'reason', NEW.escalation_reason));
+    END IF;
+    RETURN NEW;
+END; $$;
+
 
 -- ============================================================
 -- 5. TRIGGERS (المشغّلات)
@@ -957,28 +1057,14 @@ CREATE TRIGGER on_new_reply AFTER INSERT ON public.replies FOR EACH ROW EXECUTE 
 CREATE TRIGGER on_new_direct_message AFTER INSERT ON public.direct_messages FOR EACH ROW EXECUTE FUNCTION public.notify_new_message();
 CREATE TRIGGER on_friend_request_change AFTER INSERT OR UPDATE ON public.friend_requests FOR EACH ROW EXECUTE FUNCTION public.notify_friend_request();
 CREATE TRIGGER on_flagged_content AFTER INSERT ON public.flagged_content FOR EACH ROW EXECUTE FUNCTION public.notify_admin_flagged_content();
-
--- Triggers العدادات
-CREATE TRIGGER on_reply_insert_count AFTER INSERT ON public.replies FOR EACH ROW EXECUTE FUNCTION public.update_thread_replies_count();
-CREATE TRIGGER on_reply_delete_count AFTER DELETE ON public.replies FOR EACH ROW EXECUTE FUNCTION public.update_thread_replies_count();
-CREATE TRIGGER on_reply_like_insert AFTER INSERT ON public.reply_likes FOR EACH ROW EXECUTE FUNCTION public.update_reply_likes_count();
-CREATE TRIGGER on_reply_like_delete AFTER DELETE ON public.reply_likes FOR EACH ROW EXECUTE FUNCTION public.update_reply_likes_count();
-CREATE TRIGGER on_trade_comment_like_insert AFTER INSERT ON public.trade_comment_likes FOR EACH ROW EXECUTE FUNCTION public.update_trade_comment_likes_count();
-CREATE TRIGGER on_trade_comment_like_delete AFTER DELETE ON public.trade_comment_likes FOR EACH ROW EXECUTE FUNCTION public.update_trade_comment_likes_count();
-CREATE TRIGGER on_trade_follower_insert AFTER INSERT ON public.trade_followers FOR EACH ROW EXECUTE FUNCTION public.update_trade_followers_count();
-CREATE TRIGGER on_trade_follower_delete AFTER DELETE ON public.trade_followers FOR EACH ROW EXECUTE FUNCTION public.update_trade_followers_count();
-CREATE TRIGGER on_analysis_like_insert AFTER INSERT ON public.analysis_likes FOR EACH ROW EXECUTE FUNCTION public.update_analysis_likes_count();
-CREATE TRIGGER on_analysis_like_delete AFTER DELETE ON public.analysis_likes FOR EACH ROW EXECUTE FUNCTION public.update_analysis_likes_count();
-CREATE TRIGGER on_post_like_insert AFTER INSERT ON public.post_likes FOR EACH ROW EXECUTE FUNCTION public.update_post_likes_count();
-CREATE TRIGGER on_post_like_delete AFTER DELETE ON public.post_likes FOR EACH ROW EXECUTE FUNCTION public.update_post_likes_count();
-CREATE TRIGGER on_post_comment_insert AFTER INSERT ON public.post_comments FOR EACH ROW EXECUTE FUNCTION public.update_post_comments_count();
-CREATE TRIGGER on_post_comment_delete AFTER DELETE ON public.post_comments FOR EACH ROW EXECUTE FUNCTION public.update_post_comments_count();
-CREATE TRIGGER on_post_like_notify AFTER INSERT ON public.post_likes FOR EACH ROW EXECUTE FUNCTION public.notify_post_like();
-CREATE TRIGGER on_post_comment_notify AFTER INSERT ON public.post_comments FOR EACH ROW EXECUTE FUNCTION public.notify_post_comment();
-CREATE TRIGGER on_trade_comment_notify AFTER INSERT ON public.trade_comments FOR EACH ROW EXECUTE FUNCTION public.notify_trade_comment();
-CREATE TRIGGER on_analysis_like_notify AFTER INSERT ON public.analysis_likes FOR EACH ROW EXECUTE FUNCTION public.notify_analysis_like();
+CREATE TRIGGER on_new_support_ticket AFTER INSERT ON public.support_tickets FOR EACH ROW EXECUTE FUNCTION public.notify_admin_new_support_ticket();
+CREATE TRIGGER on_support_ticket_transfer AFTER UPDATE ON public.support_tickets FOR EACH ROW EXECUTE FUNCTION public.notify_ticket_transfer();
 CREATE TRIGGER on_room_join_request AFTER INSERT ON public.room_join_requests FOR EACH ROW EXECUTE FUNCTION public.notify_room_join_request();
 CREATE TRIGGER on_room_request_status_change AFTER UPDATE ON public.room_join_requests FOR EACH ROW EXECUTE FUNCTION public.notify_room_request_status();
+
+-- Triggers تحديث updated_at للجداول الجديدة
+CREATE TRIGGER update_support_tickets_updated_at BEFORE UPDATE ON public.support_tickets FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_app_settings_updated_at BEFORE UPDATE ON public.app_settings FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 
 -- ============================================================
@@ -1019,8 +1105,10 @@ ALTER TABLE public.usdt_listings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.flagged_content ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.admin_notifications ENABLE ROW LEVEL SECURITY;
-
--- === profiles ===
+ALTER TABLE public.app_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.support_tickets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.support_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.support_agents ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Authenticated users can view all profiles" ON public.profiles FOR SELECT USING (auth.uid() IS NOT NULL);
 CREATE POLICY "Admins can view all profiles via view" ON public.profiles FOR SELECT USING (is_admin());
@@ -1203,6 +1291,27 @@ CREATE POLICY "Only admins can view notifications" ON public.admin_notifications
 CREATE POLICY "Only admins can insert notifications" ON public.admin_notifications FOR INSERT WITH CHECK (is_admin());
 CREATE POLICY "Only admins can update notifications" ON public.admin_notifications FOR UPDATE USING (is_admin());
 CREATE POLICY "Only admins can delete notifications" ON public.admin_notifications FOR DELETE USING (is_admin());
+-- === app_settings ===
+CREATE POLICY "Anyone can view non-secret settings" ON public.app_settings FOR SELECT USING (setting_key !~~ '%api_key%' AND setting_key !~~ '%secret%');
+CREATE POLICY "Admins can view secret settings" ON public.app_settings FOR SELECT USING ((setting_key ~~ '%api_key%' OR setting_key ~~ '%secret%') AND is_admin());
+CREATE POLICY "Admins can insert settings" ON public.app_settings FOR INSERT WITH CHECK (is_admin());
+CREATE POLICY "Admins can update settings" ON public.app_settings FOR UPDATE USING (is_admin());
+CREATE POLICY "Admins can delete settings" ON public.app_settings FOR DELETE USING (is_admin());
+
+-- === support_tickets ===
+CREATE POLICY "Users and agents can view tickets" ON public.support_tickets FOR SELECT USING (auth.uid() = user_id OR is_support_agent());
+CREATE POLICY "Users can create tickets" ON public.support_tickets FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Owners and agents can update tickets" ON public.support_tickets FOR UPDATE USING (is_support_agent() OR auth.uid() = user_id);
+CREATE POLICY "Agents can delete tickets" ON public.support_tickets FOR DELETE USING (is_support_agent());
+
+-- === support_messages ===
+CREATE POLICY "Users and agents can view messages" ON public.support_messages FOR SELECT USING (EXISTS (SELECT 1 FROM support_tickets t WHERE t.id = support_messages.ticket_id AND (t.user_id = auth.uid() OR is_support_agent())));
+CREATE POLICY "Users and agents can send messages" ON public.support_messages FOR INSERT WITH CHECK (auth.uid() = sender_id AND EXISTS (SELECT 1 FROM support_tickets t WHERE t.id = support_messages.ticket_id AND (t.user_id = auth.uid() OR is_support_agent())));
+CREATE POLICY "Agents can delete messages" ON public.support_messages FOR DELETE USING (is_support_agent() OR auth.uid() = sender_id);
+
+-- === support_agents ===
+CREATE POLICY "Admins can manage support agents" ON public.support_agents FOR ALL USING (is_admin());
+CREATE POLICY "Agents can view themselves" ON public.support_agents FOR SELECT USING (auth.uid() = user_id);
 
 
 -- ============================================================
@@ -1245,6 +1354,13 @@ CREATE INDEX IF NOT EXISTS idx_user_notifications_read ON public.user_notificati
 CREATE INDEX IF NOT EXISTS idx_learning_courses_category_id ON public.learning_courses(category_id);
 CREATE INDEX IF NOT EXISTS idx_learning_lessons_course_id ON public.learning_lessons(course_id);
 CREATE INDEX IF NOT EXISTS idx_flagged_content_user_id ON public.flagged_content(user_id);
+CREATE INDEX IF NOT EXISTS idx_app_settings_category ON public.app_settings(category);
+CREATE INDEX IF NOT EXISTS idx_app_settings_key ON public.app_settings(setting_key);
+CREATE INDEX IF NOT EXISTS idx_support_tickets_user_id ON public.support_tickets(user_id);
+CREATE INDEX IF NOT EXISTS idx_support_tickets_status ON public.support_tickets(status);
+CREATE INDEX IF NOT EXISTS idx_support_tickets_assigned_to ON public.support_tickets(assigned_to);
+CREATE INDEX IF NOT EXISTS idx_support_messages_ticket_id ON public.support_messages(ticket_id);
+CREATE INDEX IF NOT EXISTS idx_support_agents_user_id ON public.support_agents(user_id);
 
 
 -- ============================================================
@@ -1256,6 +1372,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.room_messages;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.user_notifications;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.trades;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.usdt_listings;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.app_settings;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.support_messages;
 
 
 -- ============================================================
@@ -1267,6 +1385,8 @@ INSERT INTO storage.buckets (id, name, public) VALUES ('avatars', 'avatars', tru
 INSERT INTO storage.buckets (id, name, public) VALUES ('analysis-attachments', 'analysis-attachments', false);
 INSERT INTO storage.buckets (id, name, public) VALUES ('post-attachments', 'post-attachments', false);
 INSERT INTO storage.buckets (id, name, public) VALUES ('lesson-videos', 'lesson-videos', true);
+INSERT INTO storage.buckets (id, name, public) VALUES ('support-attachments', 'support-attachments', false);
+INSERT INTO storage.buckets (id, name, public) VALUES ('cms-assets', 'cms-assets', true);
 
 -- سياسات التخزين للصور الشخصية
 CREATE POLICY "Avatar images are publicly accessible" ON storage.objects FOR SELECT USING (bucket_id = 'avatars');
@@ -1278,6 +1398,16 @@ CREATE POLICY "Lesson videos are publicly accessible" ON storage.objects FOR SEL
 CREATE POLICY "Only admins can upload lesson videos" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'lesson-videos' AND public.is_admin());
 CREATE POLICY "Only admins can update lesson videos" ON storage.objects FOR UPDATE USING (bucket_id = 'lesson-videos' AND public.is_admin());
 CREATE POLICY "Only admins can delete lesson videos" ON storage.objects FOR DELETE USING (bucket_id = 'lesson-videos' AND public.is_admin());
+
+-- سياسات تخزين مرفقات الدعم الفني
+CREATE POLICY "Support attachments accessible by ticket participants" ON storage.objects FOR SELECT USING (bucket_id = 'support-attachments' AND (public.is_support_agent() OR auth.uid()::text = (storage.foldername(name))[1]));
+CREATE POLICY "Users can upload support attachments" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'support-attachments' AND auth.uid() IS NOT NULL);
+
+-- سياسات تخزين أصول CMS
+CREATE POLICY "CMS assets are publicly accessible" ON storage.objects FOR SELECT USING (bucket_id = 'cms-assets');
+CREATE POLICY "Only admins can upload CMS assets" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'cms-assets' AND public.is_admin());
+CREATE POLICY "Only admins can update CMS assets" ON storage.objects FOR UPDATE USING (bucket_id = 'cms-assets' AND public.is_admin());
+CREATE POLICY "Only admins can delete CMS assets" ON storage.objects FOR DELETE USING (bucket_id = 'cms-assets' AND public.is_admin());
 
 
 -- ============================================================
@@ -1294,7 +1424,8 @@ INSERT INTO public.community_rooms (id, name, name_ar, description, description_
 
 -- ============================================================
 -- انتهى التنفيذ بنجاح! ✅
--- عدد الجداول: 33
--- عدد الدوال: 30+
--- عدد سياسات RLS: 80+
+-- عدد الجداول: 37
+-- عدد الدوال: 35+
+-- عدد سياسات RLS: 95+
+-- عدد حاويات التخزين: 6
 -- ============================================================

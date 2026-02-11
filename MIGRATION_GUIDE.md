@@ -11,6 +11,14 @@
 3. [إنشاء مشروع Supabase](#-الخطوة-2-إنشاء-مشروع-supabase)
 4. [تنفيذ Schema](#-الخطوة-3-تنفيذ-schema)
 5. [تحديث الإعدادات](#-الخطوة-4-تحديث-الإعدادات)
+6. [نشر Edge Functions](#-الخطوة-5-نشر-edge-functions)
+7. [التشغيل المحلي](#-الخطوة-6-التشغيل-المحلي)
+8. [بناء APK](#-الخطوة-7-بناء-apk-للأندرويد)
+9. [النشر على الويب](#-الخطوة-8-النشر-على-الويب)
+10. [ترحيل البيانات](#-الخطوة-9-ترحيل-البيانات-اختياري)
+11. [إعداد Google OAuth](#-الخطوة-10-إعداد-google-oauth)
+12. [قائمة التحقق](#-قائمة-التحقق-النهائية)
+5. [تحديث الإعدادات](#-الخطوة-4-تحديث-الإعدادات)
 6. [التشغيل المحلي](#-الخطوة-5-التشغيل-المحلي)
 7. [بناء APK](#-الخطوة-6-بناء-apk-للأندرويد)
 8. [النشر على الويب](#-الخطوة-7-النشر-على-الويب)
@@ -83,13 +91,20 @@ npm install
 5. اضغط **Run**
 
 ### 3.2 التحقق من النجاح
-اذهب إلى **Table Editor** وتأكد من وجود الجداول:
-- `profiles`
-- `trades`
-- `user_roles`
-- `conversations`
-- `direct_messages`
-- وباقي الجداول...
+اذهب إلى **Table Editor** وتأكد من وجود جميع الجداول (37 جدول):
+- `profiles`, `user_roles`, `user_privacy_settings`
+- `trades`, `trade_comments`, `trade_comment_likes`, `trade_followers`, `trade_shares`
+- `analyses`, `analysis_likes`
+- `user_posts`, `post_likes`, `post_comments`
+- `community_rooms`, `room_members`, `room_join_requests`, `room_messages`
+- `threads`, `replies`, `reply_likes`
+- `learning_categories`, `learning_courses`, `learning_lessons`
+- `conversations`, `conversation_participants`, `direct_messages`
+- `follows`, `friend_requests`
+- `service_requests`, `usdt_listings`
+- `flagged_content`, `user_notifications`, `admin_notifications`
+- `app_settings`
+- `support_tickets`, `support_messages`, `support_agents`
 
 ---
 
@@ -130,46 +145,86 @@ const config: CapacitorConfig = {
 
 ---
 
-## 🖥️ الخطوة 5: التشغيل المحلي
+## ⚡ الخطوة 5: نشر Edge Functions
 
-### 5.1 تشغيل خادم التطوير
+المشروع يحتوي على 4 وظائف خلفية (Edge Functions) يجب نشرها:
+
+### 5.1 تثبيت Supabase CLI
+```bash
+npm install -g supabase
+supabase login
+```
+
+### 5.2 ربط المشروع
+```bash
+supabase link --project-ref YOUR_PROJECT_ID
+```
+
+### 5.3 إعداد الأسرار (Secrets)
+```bash
+supabase secrets set GOOGLE_AI_API_KEY=your_google_ai_key
+supabase secrets set FINNHUB_API_KEY=your_finnhub_key
+supabase secrets set LOVABLE_API_KEY=your_lovable_api_key
+```
+
+### 5.4 نشر الوظائف
+```bash
+supabase functions deploy chat
+supabase functions deploy market-data
+supabase functions deploy check-trade-targets
+supabase functions deploy moderate-image
+```
+
+### 5.5 وصف الوظائف
+| الوظيفة | الوصف | الأسرار المطلوبة |
+|---------|-------|-----------------|
+| `chat` | المساعد الذكي (AI Chat) | `GOOGLE_AI_API_KEY` |
+| `market-data` | بيانات الأسواق اللحظية | `FINNHUB_API_KEY` |
+| `check-trade-targets` | فحص أهداف الصفقات | `FINNHUB_API_KEY` |
+| `moderate-image` | فحص الصور المرفوعة | `LOVABLE_API_KEY` |
+
+---
+
+## 🖥️ الخطوة 6: التشغيل المحلي
+
+### 6.1 تشغيل خادم التطوير
 ```bash
 npm run dev
 ```
 
-### 5.2 فتح التطبيق
+### 6.2 فتح التطبيق
 افتح المتصفح على: `http://localhost:8080`
 
-### 5.3 اختبار التسجيل والدخول
+### 6.3 اختبار التسجيل والدخول
 1. أنشئ حساب جديد
 2. تحقق من البريد الإلكتروني (أو فعّل auto-confirm في Supabase)
 3. سجّل الدخول
 
 ---
 
-## 📱 الخطوة 6: بناء APK للأندرويد
+## 📱 الخطوة 7: بناء APK للأندرويد
 
-### 6.1 بناء ملفات الويب
+### 7.1 بناء ملفات الويب
 ```bash
 npm run build
 ```
 
-### 6.2 إضافة Android Platform
+### 7.2 إضافة Android Platform
 ```bash
 npx cap add android
 ```
 
-### 6.3 مزامنة المشروع
+### 7.3 مزامنة المشروع
 ```bash
 npx cap sync android
 ```
 
-### 6.4 فتح Android Studio
+### 7.4 فتح Android Studio
 ```bash
 npx cap open android
 ```
 
-### 6.5 بناء APK موقّع
+### 7.5 بناء APK موقّع
 في Android Studio:
 1. **Build → Generate Signed Bundle / APK**
 2. اختر **APK**
@@ -184,7 +239,7 @@ android/app/release/app-release.apk
 
 ---
 
-## 🌐 الخطوة 7: النشر على الويب
+## 🌐 الخطوة 8: النشر على الويب
 
 ### Vercel (موصى به)
 ```bash
@@ -203,14 +258,14 @@ netlify deploy --prod
 
 ---
 
-## 📊 الخطوة 8: ترحيل البيانات (اختياري)
+## 📊 الخطوة 9: ترحيل البيانات (اختياري)
 
-### 8.1 تصدير البيانات من Lovable
+### 9.1 تصدير البيانات من Lovable
 1. اذهب إلى `/admin` في التطبيق
 2. اختر تبويب **تصدير**
-3. حمّل ملفات JSON للجداول المطلوبة
+3. حمّل **نسخة احتياطية كاملة** (تشمل 37 جدول + هيكل + إعدادات)
 
-### 8.2 استيراد البيانات
+### 9.2 استيراد البيانات
 استخدم Supabase Dashboard:
 1. **Table Editor → Import**
 2. اختر ملف CSV أو أدخل البيانات يدوياً
@@ -218,6 +273,7 @@ netlify deploy --prod
 ### ⚠️ ملاحظات مهمة:
 - **المستخدمون**: يجب إعادة التسجيل (كلمات المرور لا تُصدَّر)
 - **الملفات**: إذا كان لديك Storage، صدّرها يدوياً
+- **إعدادات التطبيق**: جدول `app_settings` يحتوي على إعدادات CMS المهمة
 
 ---
 
@@ -225,20 +281,29 @@ netlify deploy --prod
 
 ### إعداد Supabase
 - [ ] إنشاء مشروع جديد
-- [ ] تنفيذ `scripts/export-schema.sql`
-- [ ] التحقق من إنشاء الجداول
+- [ ] تنفيذ `scripts/export-schema.sql` (37 جدول)
+- [ ] التحقق من إنشاء جميع الجداول
 - [ ] تفعيل RLS على جميع الجداول
+- [ ] التحقق من حاويات التخزين الـ 6
+
+### Edge Functions
+- [ ] تثبيت Supabase CLI
+- [ ] إعداد الأسرار (API Keys)
+- [ ] نشر وظائف: `chat`, `market-data`, `check-trade-targets`, `moderate-image`
+- [ ] اختبار المساعد الذكي وبيانات الأسواق
 
 ### إعداد المشروع
 - [ ] استنساخ الكود من GitHub
 - [ ] تثبيت الـ dependencies
 - [ ] إنشاء ملف `.env`
 - [ ] تحديث `environment.ts`
+- [ ] تغيير `USE_LOVABLE_AUTH = false` في `auth-helpers.ts`
 - [ ] اختبار التشغيل المحلي
 
 ### بناء التطبيق
 - [ ] بناء ملفات الويب (`npm run build`)
 - [ ] إضافة Android (`npx cap add android`)
+- [ ] حذف قسم `server` من `capacitor.config.ts`
 - [ ] مزامنة Capacitor (`npx cap sync`)
 - [ ] بناء APK موقّع
 - [ ] اختبار APK على جهاز حقيقي
@@ -246,12 +311,15 @@ netlify deploy --prod
 ### النشر
 - [ ] نشر على Vercel/Netlify
 - [ ] تحديث روابط التطبيق
+- [ ] إعداد Google OAuth
 - [ ] اختبار إعادة تعيين كلمة المرور
 - [ ] اختبار التسجيل الجديد
+- [ ] اختبار نظام الدعم الفني
+- [ ] اختبار إعدادات CMS
 
 ---
 
-## 🔐 الخطوة 9: إعداد Google OAuth
+## 🔐 الخطوة 10: إعداد Google OAuth
 
 ### 9.1 إنشاء OAuth في Google Cloud
 1. اذهب إلى [Google Cloud Console](https://console.cloud.google.com)
