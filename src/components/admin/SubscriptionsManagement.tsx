@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Crown, Check, X, Clock, UserPlus, Search, Filter,
-  Calendar, MoreVertical, RefreshCw, Ban, Eye, ChevronDown, MessageCircle
+  Calendar, MoreVertical, RefreshCw, Ban, Eye, ChevronDown, MessageCircle, Send
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -75,7 +75,8 @@ export const SubscriptionsManagement = () => {
   const [newSubPlan, setNewSubPlan] = useState('monthly');
   const [userSearch, setUserSearch] = useState('');
   const [selectedUser, setSelectedUser] = useState<{ user_id: string; display_name: string | null; username: string | null; avatar_url: string | null } | null>(null);
-
+  const [chatMessage, setChatMessage] = useState('');
+  const chatEndRef = useRef<HTMLDivElement>(null);
   // Search users for manual add
   const { data: searchResults = [] } = useQuery({
     queryKey: ['search-users', userSearch],
@@ -115,6 +116,50 @@ export const SubscriptionsManagement = () => {
         ...sub,
         profile: profileMap.get(sub.user_id) || null,
       })) as Subscription[];
+    },
+  });
+
+  // Fetch chat messages for the detail dialog
+  const { data: chatMessages = [], refetch: refetchChat } = useQuery({
+    queryKey: ['subscription-chat', detailDialog?.id],
+    queryFn: async () => {
+      if (!detailDialog) return [];
+      const { data } = await supabase
+        .from('subscription_messages' as any)
+        .select('*')
+        .eq('subscription_id', detailDialog.id)
+        .order('created_at', { ascending: true });
+      return (data || []) as any[];
+    },
+    enabled: !!detailDialog,
+    refetchInterval: detailDialog ? 5000 : false,
+  });
+
+  // Auto-scroll chat
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages]);
+
+  // Send chat message
+  const sendChatMessage = useMutation({
+    mutationFn: async () => {
+      if (!detailDialog || !chatMessage.trim() || !user) return;
+      const { error } = await supabase
+        .from('subscription_messages' as any)
+        .insert({
+          subscription_id: detailDialog.id,
+          sender_id: user.id,
+          content: chatMessage.trim(),
+          is_admin: true,
+        } as any);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setChatMessage('');
+      refetchChat();
+    },
+    onError: (err: any) => {
+      toast({ title: 'خطأ', description: err.message, variant: 'destructive' });
     },
   });
 
@@ -221,61 +266,6 @@ export const SubscriptionsManagement = () => {
       s.user_id.includes(search);
     return matchStatus && matchSearch;
   });
-
-  // Message user - create or find existing direct conversation
-  const handleMessageUser = async (targetUserId: string) => {
-    if (!user) return;
-    try {
-      // Check if conversation already exists
-      const { data: existingParticipations } = await supabase
-        .from('conversation_participants')
-        .select('conversation_id')
-        .eq('user_id', user.id);
-
-      if (existingParticipations && existingParticipations.length > 0) {
-        const convIds = existingParticipations.map(p => p.conversation_id);
-        const { data: targetParticipations } = await supabase
-          .from('conversation_participants')
-          .select('conversation_id')
-          .eq('user_id', targetUserId)
-          .in('conversation_id', convIds);
-
-        if (targetParticipations && targetParticipations.length > 0) {
-          // Check it's a direct conversation
-          const { data: conv } = await supabase
-            .from('conversations')
-            .select('id, type')
-            .eq('id', targetParticipations[0].conversation_id)
-            .eq('type', 'direct')
-            .single();
-
-          if (conv) {
-            navigate('/messages');
-            return;
-          }
-        }
-      }
-
-      // Create new conversation
-      const { data: newConv, error: convError } = await supabase
-        .from('conversations')
-        .insert({ created_by: user.id, type: 'direct' as any })
-        .select()
-        .single();
-
-      if (convError || !newConv) throw convError;
-
-      // Add both participants
-      await supabase.from('conversation_participants').insert([
-        { conversation_id: newConv.id, user_id: user.id, is_admin: true },
-        { conversation_id: newConv.id, user_id: targetUserId, is_admin: false },
-      ]);
-
-      navigate('/messages');
-    } catch (err: any) {
-      toast({ title: 'خطأ في فتح المحادثة', description: err?.message, variant: 'destructive' });
-    }
-  };
 
   const formatDate = (d: string | null) => {
     if (!d) return '-';
@@ -454,8 +444,8 @@ export const SubscriptionsManagement = () => {
                           size="sm"
                           variant="ghost"
                           className="h-7 w-7 p-0 text-blue-500 hover:text-blue-600 hover:bg-blue-500/10"
-                          onClick={() => handleMessageUser(sub.user_id)}
-                          title="مراسلة المستخدم"
+                          onClick={() => setDetailDialog(sub)}
+                          title="محادثة الطلب"
                         >
                           <MessageCircle className="w-4 h-4" />
                         </Button>
@@ -587,33 +577,86 @@ export const SubscriptionsManagement = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Detail Dialog */}
-      <Dialog open={!!detailDialog} onOpenChange={() => setDetailDialog(null)}>
-        <DialogContent>
+      {/* Detail Dialog with Chat */}
+      <Dialog open={!!detailDialog} onOpenChange={() => { setDetailDialog(null); setChatMessage(''); }}>
+        <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Eye className="w-5 h-5 text-primary" />
-              تفاصيل الاشتراك
+              <MessageCircle className="w-5 h-5 text-primary" />
+              تفاصيل الطلب والمحادثة
             </DialogTitle>
           </DialogHeader>
           {detailDialog && (
-            <div className="space-y-3 py-4 text-sm">
-              {[
-                ['المستخدم', detailDialog.profile?.display_name || 'مستخدم'],
-                ['معرف المستخدم', detailDialog.user_id],
-                ['الباقة', detailDialog.plan === 'monthly' ? 'شهري' : detailDialog.plan],
-                ['الحالة', statusConfig[detailDialog.status]?.label || detailDialog.status],
-                ['تاريخ الطلب', formatDate(detailDialog.created_at)],
-                ['بداية الاشتراك', formatDate(detailDialog.starts_at)],
-                ['نهاية الاشتراك', formatDate(detailDialog.expires_at)],
-                ['تاريخ الموافقة', formatDate(detailDialog.approved_at)],
-                ['ملاحظات', detailDialog.admin_notes || '-'],
-              ].map(([label, value]) => (
-                <div key={label as string} className="flex justify-between border-b border-border/30 pb-2">
-                  <span className="text-muted-foreground">{label}</span>
-                  <span className="font-medium text-end max-w-[60%] break-all">{value}</span>
+            <div className="flex flex-col flex-1 min-h-0 space-y-3">
+              {/* Subscription Info - Compact */}
+              <div className="grid grid-cols-2 gap-2 text-xs p-3 rounded-lg bg-muted/30 border border-border/30">
+                <div><span className="text-muted-foreground">المستخدم:</span> <span className="font-medium">{detailDialog.profile?.display_name || 'مستخدم'}</span></div>
+                <div><span className="text-muted-foreground">الباقة:</span> <span className="font-medium">{detailDialog.plan === 'monthly' ? 'شهري' : detailDialog.plan}</span></div>
+                <div><span className="text-muted-foreground">الحالة:</span> <Badge className={cn('text-[10px] gap-0.5 border h-5', statusConfig[detailDialog.status]?.color)}>{statusConfig[detailDialog.status]?.label}</Badge></div>
+                <div><span className="text-muted-foreground">تاريخ الطلب:</span> <span className="font-medium trading-number">{formatDate(detailDialog.created_at)}</span></div>
+              </div>
+
+              {/* Chat Section */}
+              <div className="flex-1 min-h-0 flex flex-col rounded-lg border border-border/50 bg-card">
+                <div className="px-3 py-2 border-b border-border/30 flex items-center gap-2">
+                  <MessageCircle className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-xs font-medium text-muted-foreground">محادثة الطلب</span>
+                  <span className="text-[10px] text-muted-foreground ms-auto">{chatMessages.length} رسالة</span>
                 </div>
-              ))}
+                
+                <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-[200px] max-h-[300px]">
+                  {chatMessages.length === 0 ? (
+                    <div className="flex items-center justify-center h-full text-muted-foreground text-xs">
+                      لا توجد رسائل بعد - ابدأ المحادثة مع المستخدم
+                    </div>
+                  ) : (
+                    chatMessages.map((msg: any) => (
+                      <div key={msg.id} className={cn('flex', msg.is_admin ? 'justify-start' : 'justify-end')}>
+                        <div className={cn(
+                          'max-w-[80%] rounded-2xl px-3 py-2 text-sm',
+                          msg.is_admin 
+                            ? 'bg-primary/10 text-foreground rounded-tl-none' 
+                            : 'bg-muted text-foreground rounded-tr-none'
+                        )}>
+                          <div className="flex items-center gap-1 mb-0.5">
+                            <span className={cn('text-[10px] font-medium', msg.is_admin ? 'text-primary' : 'text-muted-foreground')}>
+                              {msg.is_admin ? '🛡️ الإدارة' : `👤 ${detailDialog.profile?.display_name || 'المستخدم'}`}
+                            </span>
+                          </div>
+                          <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                          <span className="text-[9px] text-muted-foreground mt-1 block">
+                            {new Date(msg.created_at).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                  <div ref={chatEndRef} />
+                </div>
+
+                {/* Chat Input */}
+                <div className="p-2 border-t border-border/30">
+                  <form 
+                    className="flex gap-2"
+                    onSubmit={(e) => { e.preventDefault(); sendChatMessage.mutate(); }}
+                  >
+                    <Input
+                      value={chatMessage}
+                      onChange={(e) => setChatMessage(e.target.value)}
+                      placeholder="اكتب رسالة للمستخدم..."
+                      className="flex-1 h-9 text-sm"
+                    />
+                    <Button 
+                      type="submit" 
+                      size="sm" 
+                      disabled={!chatMessage.trim() || sendChatMessage.isPending}
+                      className="h-9 w-9 p-0 bg-primary"
+                    >
+                      <Send className="w-4 h-4" />
+                    </Button>
+                  </form>
+                </div>
+              </div>
             </div>
           )}
         </DialogContent>
