@@ -6,7 +6,9 @@ const corsHeaders = {
 interface RSSItem {
   id: string;
   title: string;
+  title_ar: string;
   summary: string;
+  summary_ar: string;
   link: string;
   source: string;
   category: string;
@@ -49,7 +51,6 @@ function parseRSSItems(xml: string, source: string, category: string): RSSItem[]
     const link = getTagContent(itemXml, 'link');
     const pubDate = getTagContent(itemXml, 'pubDate');
 
-    // Try multiple image sources
     let imageUrl = '';
     const enclosureMatch = itemXml.match(/<enclosure[^>]+url=["']([^"']+)["']/);
     if (enclosureMatch) imageUrl = enclosureMatch[1];
@@ -67,7 +68,9 @@ function parseRSSItems(xml: string, source: string, category: string): RSSItem[]
       items.push({
         id: `${source}-${items.length}-${Date.now()}`,
         title,
-        summary: description.substring(0, 200),
+        title_ar: '',
+        summary: description.substring(0, 300),
+        summary_ar: '',
         link,
         source,
         category,
@@ -87,6 +90,58 @@ const RSS_FEEDS = [
   { url: 'https://www.investing.com/rss/news.rss', source: 'Investing.com', category: 'economy' },
   { url: 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=^GSPC&region=US&lang=en-US', source: 'Yahoo Finance', category: 'stocks' },
 ];
+
+async function translateToArabic(items: RSSItem[]): Promise<RSSItem[]> {
+  try {
+    const textsToTranslate = items.map(item => `TITLE: ${item.title}\nSUMMARY: ${item.summary}`).join('\n---\n');
+    
+    const response = await fetch('https://bpgpknlqdsmtjlvcjieq.supabase.co/functions/v1/proxy-ai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}` },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash-lite',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a professional financial news translator. Translate the following financial news titles and summaries from English to Arabic. Keep financial terms, currency pairs, and numbers in their original form. Return ONLY a JSON array where each element has "title_ar" and "summary_ar" fields. No markdown, no code blocks, just pure JSON.'
+          },
+          {
+            role: 'user',
+            content: `Translate these ${items.length} news items to Arabic. Return a JSON array with ${items.length} objects, each having "title_ar" and "summary_ar":\n\n${textsToTranslate}`
+          }
+        ]
+      })
+    });
+
+    if (!response.ok) {
+      console.error('Translation API error:', response.status);
+      return items;
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content || '';
+    
+    // Extract JSON from response
+    let jsonStr = content.trim();
+    const jsonMatch = jsonStr.match(/\[[\s\S]*\]/);
+    if (jsonMatch) jsonStr = jsonMatch[0];
+    
+    const translations = JSON.parse(jsonStr);
+    
+    if (Array.isArray(translations) && translations.length === items.length) {
+      return items.map((item, i) => ({
+        ...item,
+        title_ar: translations[i]?.title_ar || item.title,
+        summary_ar: translations[i]?.summary_ar || item.summary,
+      }));
+    }
+    
+    return items;
+  } catch (err) {
+    console.error('Translation error:', err);
+    return items;
+  }
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -143,10 +198,15 @@ Deno.serve(async (req) => {
       return dateB - dateA;
     });
 
-    console.log(`Fetched ${allItems.length} news items`);
+    const topItems = allItems.slice(0, 30);
+
+    // Translate to Arabic
+    const translatedItems = await translateToArabic(topItems);
+
+    console.log(`Fetched ${translatedItems.length} news items with translations`);
 
     return new Response(
-      JSON.stringify({ success: true, data: allItems.slice(0, 30) }),
+      JSON.stringify({ success: true, data: translatedItems }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {

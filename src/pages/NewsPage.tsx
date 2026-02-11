@@ -3,9 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Newspaper, TrendingUp, Globe, Clock, Search, 
-  Bookmark, BookmarkCheck, ChevronLeft, ChevronRight,
-  Flame, Star, Eye, ExternalLink, Sparkles, ArrowUpRight,
-  RefreshCw, Loader2, AlertCircle, Wifi
+  Bookmark, BookmarkCheck, ChevronLeft,
+  Flame, Star, Sparkles, ArrowUpRight,
+  RefreshCw, Loader2, AlertCircle, ArrowLeft, ExternalLink
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Input } from '@/components/ui/input';
@@ -20,7 +20,9 @@ type NewsCategory = 'all' | 'forex' | 'crypto' | 'economy' | 'stocks';
 interface NewsArticle {
   id: string;
   title: string;
+  title_ar: string;
   summary: string;
+  summary_ar: string;
   link: string;
   source: string;
   category: string;
@@ -55,6 +57,7 @@ const NewsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastFetched, setLastFetched] = useState<Date | null>(null);
+  const [selectedArticle, setSelectedArticle] = useState<NewsArticle | null>(null);
 
   const fetchNews = useCallback(async (category: NewsCategory = 'all') => {
     setLoading(true);
@@ -89,10 +92,14 @@ const NewsPage = () => {
     fetchNews(activeCategory);
   }, [activeCategory]);
 
+  const getTitle = (article: NewsArticle) => isArabic && article.title_ar ? article.title_ar : article.title;
+  const getSummary = (article: NewsArticle) => isArabic && article.summary_ar ? article.summary_ar : article.summary;
+
   const featuredArticles = articles.slice(0, 3);
   const filteredNews = articles.filter((n, idx) => {
-    if (idx < 3) return false; // Skip featured
-    const matchesSearch = n.title.toLowerCase().includes(searchQuery.toLowerCase());
+    if (idx < 3) return false;
+    const title = getTitle(n);
+    const matchesSearch = title.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSearch;
   });
 
@@ -100,7 +107,6 @@ const NewsPage = () => {
     setSavedArticles(prev => prev.includes(id) ? prev.filter(a => a !== id) : [...prev, id]);
   };
 
-  // Auto-rotate featured articles
   useEffect(() => {
     if (featuredArticles.length <= 1) return;
     const timer = setInterval(() => {
@@ -137,6 +143,132 @@ const NewsPage = () => {
     if (article.imageUrl) return article.imageUrl;
     return categoryImages[article.category] || categoryImages.economy;
   };
+
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString(isArabic ? 'ar-SA' : 'en-US', {
+        year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+      });
+    } catch { return ''; }
+  };
+
+  // Article Detail View
+  if (selectedArticle) {
+    const catKey = (selectedArticle.category as NewsCategory) || 'economy';
+    const config = categoryConfig[catKey] || categoryConfig.economy;
+    return (
+      <AppLayout>
+        <div className="min-h-screen">
+          {/* Detail Header */}
+          <header className="sticky top-0 z-40 glass-card border-b border-border/30 px-4 py-3">
+            <div className="flex items-center justify-between">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedArticle(null)}
+                className="gap-1.5"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                {isArabic ? 'رجوع' : 'Back'}
+              </Button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => toggleSave(selectedArticle.id)}
+                  className="p-2 rounded-xl hover:bg-muted/50 transition-colors"
+                >
+                  {savedArticles.includes(selectedArticle.id)
+                    ? <BookmarkCheck className="w-5 h-5 text-primary" />
+                    : <Bookmark className="w-5 h-5 text-muted-foreground" />}
+                </button>
+                <a
+                  href={selectedArticle.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-2 rounded-xl hover:bg-muted/50 transition-colors"
+                >
+                  <ExternalLink className="w-5 h-5 text-muted-foreground" />
+                </a>
+              </div>
+            </div>
+          </header>
+
+          {/* Article Image */}
+          <div className="relative h-56 overflow-hidden">
+            <img
+              src={getArticleImage(selectedArticle)}
+              alt={getTitle(selectedArticle)}
+              className="w-full h-full object-cover"
+              onError={(e) => { (e.target as HTMLImageElement).src = categoryImages[selectedArticle.category] || categoryImages.economy; }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
+          </div>
+
+          {/* Article Content */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="px-4 -mt-12 relative z-10 pb-8"
+          >
+            {/* Badges */}
+            <div className="flex items-center gap-2 mb-3">
+              <Badge
+                variant="outline"
+                className={cn("text-xs px-2 py-0.5 rounded-lg border-current/20", config.color)}
+              >
+                {categories.find(c => c.key === catKey)
+                  ? (isArabic ? categories.find(c => c.key === catKey)?.labelAr : categories.find(c => c.key === catKey)?.labelEn)
+                  : selectedArticle.category}
+              </Badge>
+              <Badge variant="outline" className="text-xs px-2 py-0.5 rounded-lg bg-background/60 backdrop-blur-md border-border/30">
+                {selectedArticle.source}
+              </Badge>
+            </div>
+
+            {/* Title */}
+            <h1 className="text-xl font-bold text-foreground leading-snug mb-3">
+              {getTitle(selectedArticle)}
+            </h1>
+
+            {/* Meta */}
+            <div className="flex items-center gap-3 text-xs text-muted-foreground mb-6">
+              <span className="flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5" />
+                {formatDate(selectedArticle.pubDate)}
+              </span>
+            </div>
+
+            {/* Divider */}
+            <div className="h-px bg-border/30 mb-6" />
+
+            {/* Summary/Content */}
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-line">
+                {getSummary(selectedArticle)}
+              </p>
+            </div>
+
+            {/* Source Link */}
+            <div className="mt-8 p-4 rounded-2xl bg-muted/30 border border-border/20">
+              <p className="text-xs text-muted-foreground mb-2">
+                {isArabic ? 'المصدر الأصلي' : 'Original Source'}
+              </p>
+              <a
+                href={selectedArticle.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-sm text-primary hover:underline"
+              >
+                <ExternalLink className="w-4 h-4" />
+                {isArabic ? 'قراءة المقال الكامل على' : 'Read full article on'} {selectedArticle.source}
+              </a>
+            </div>
+          </motion.div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
@@ -245,28 +377,24 @@ const NewsPage = () => {
             <div className="relative">
               <AnimatePresence mode="wait">
                 {featuredArticles.map((article, idx) => idx === featuredIndex && (
-                  <motion.a
+                  <motion.div
                     key={article.id}
-                    href={article.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    onClick={() => setSelectedArticle(article)}
                     initial={{ opacity: 0, x: 30 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -30 }}
                     transition={{ duration: 0.4 }}
-                    className="block relative overflow-hidden rounded-2xl border border-border/25 group"
+                    className="block relative overflow-hidden rounded-2xl border border-border/25 group cursor-pointer"
                   >
-                    {/* Image */}
                     <div className="relative h-52 overflow-hidden">
                       <img
                         src={getArticleImage(article)}
-                        alt={article.title}
+                        alt={getTitle(article)}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                         onError={(e) => { (e.target as HTMLImageElement).src = categoryImages[article.category] || categoryImages.economy; }}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
                       
-                      {/* Top badges */}
                       <div className="absolute top-3 start-3 flex items-center gap-2">
                         <Badge className="bg-orange-500/90 text-white border-none gap-1 rounded-lg text-[10px] backdrop-blur-sm">
                           <Flame className="w-3 h-3" /> {isArabic ? 'رائج' : 'Hot'}
@@ -276,9 +404,8 @@ const NewsPage = () => {
                         </Badge>
                       </div>
 
-                      {/* Save */}
                       <button
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleSave(article.id); }}
+                        onClick={(e) => { e.stopPropagation(); toggleSave(article.id); }}
                         className="absolute top-3 end-3 p-2 rounded-xl bg-background/40 backdrop-blur-md border border-border/20 hover:bg-background/60 transition-all"
                       >
                         {savedArticles.includes(article.id)
@@ -287,10 +414,9 @@ const NewsPage = () => {
                       </button>
                     </div>
 
-                    {/* Content */}
                     <div className="absolute bottom-0 start-0 end-0 p-4">
                       <h3 className="text-base font-bold text-foreground leading-snug mb-2 line-clamp-2">
-                        {article.title}
+                        {getTitle(article)}
                       </h3>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3 text-[11px] text-muted-foreground/70">
@@ -298,21 +424,17 @@ const NewsPage = () => {
                             <Clock className="w-3 h-3" />
                             {timeAgo(article.pubDate)}
                           </span>
-                          <span className="flex items-center gap-1">
-                            <ExternalLink className="w-3 h-3" />
-                            {article.source}
-                          </span>
+                          <span>{article.source}</span>
                         </div>
                         <span className="h-7 text-xs gap-1 text-primary flex items-center">
                           {isArabic ? 'اقرأ المزيد' : 'Read more'} <ArrowUpRight className="w-3 h-3" />
                         </span>
                       </div>
                     </div>
-                  </motion.a>
+                  </motion.div>
                 ))}
               </AnimatePresence>
 
-              {/* Carousel Dots */}
               {featuredArticles.length > 1 && (
                 <div className="flex items-center justify-center gap-1.5 mt-3">
                   {featuredArticles.map((_, idx) => (
@@ -352,28 +474,24 @@ const NewsPage = () => {
                   const catKey = (article.category as NewsCategory) || 'economy';
                   const config = categoryConfig[catKey] || categoryConfig.economy;
                   return (
-                    <motion.a
+                    <motion.div
                       key={article.id}
-                      href={article.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      onClick={() => setSelectedArticle(article)}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.05 }}
                       className="group flex gap-3 p-3 rounded-2xl border border-border/25 bg-card/50 backdrop-blur-sm hover:border-border/40 hover:scale-[1.01] transition-all cursor-pointer"
                     >
-                      {/* Thumbnail */}
                       <div className="relative w-24 h-24 rounded-xl overflow-hidden shrink-0">
                         <img
                           src={getArticleImage(article)}
-                          alt={article.title}
+                          alt={getTitle(article)}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                           onError={(e) => { (e.target as HTMLImageElement).src = categoryImages[article.category] || categoryImages.economy; }}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-background/40 to-transparent" />
                       </div>
 
-                      {/* Content */}
                       <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
                         <div>
                           <div className="flex items-center gap-1.5 mb-1.5">
@@ -391,7 +509,7 @@ const NewsPage = () => {
                             <span className="text-[10px] text-muted-foreground/60">{article.source}</span>
                           </div>
                           <h3 className="text-sm font-bold text-foreground leading-snug line-clamp-2">
-                            {article.title}
+                            {getTitle(article)}
                           </h3>
                         </div>
 
@@ -403,7 +521,7 @@ const NewsPage = () => {
                             </span>
                           </div>
                           <button
-                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleSave(article.id); }}
+                            onClick={(e) => { e.stopPropagation(); toggleSave(article.id); }}
                             className="p-1 rounded-lg hover:bg-muted/50 transition-colors"
                           >
                             {savedArticles.includes(article.id)
@@ -412,7 +530,7 @@ const NewsPage = () => {
                           </button>
                         </div>
                       </div>
-                    </motion.a>
+                    </motion.div>
                   );
                 })}
               </div>
