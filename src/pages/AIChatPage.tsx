@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
+import { useAppSettings } from '@/hooks/useAppSettings';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -29,6 +30,7 @@ const AIChatPage = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { getBoolean } = useAppSettings();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -37,6 +39,7 @@ const AIChatPage = () => {
   
   const isArabic = i18n.language === 'ar';
   const BackArrow = isArabic ? ArrowRight : ArrowLeft;
+  const enabled = getBoolean('enable_ai_chat', true);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -52,6 +55,12 @@ const AIChatPage = () => {
       textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 150)}px`;
     }
   }, [input]);
+
+  useEffect(() => {
+    if (!enabled) navigate('/', { replace: true });
+  }, [enabled, navigate]);
+
+  if (!enabled) return null;
 
   const streamChat = async (userMessages: Message[]) => {
     // Get the user's actual session token for authentication

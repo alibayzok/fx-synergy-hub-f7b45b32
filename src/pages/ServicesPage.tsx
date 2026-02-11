@@ -10,6 +10,7 @@ import { useServiceRequests } from '@/hooks/useServiceRequests';
 import { BrokerLandingSection } from '@/components/services/BrokerLandingSection';
 import { UsdtServiceSection } from '@/components/services/UsdtServiceSection';
 import { MyRequestsSection } from '@/components/services/MyRequestsSection';
+import { useAppSettings } from '@/hooks/useAppSettings';
 import { cn } from '@/lib/utils';
 
 type Tab = 'broker' | 'usdt' | 'requests';
@@ -18,9 +19,11 @@ const ServicesPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { requests, loading } = useServiceRequests();
-  const [activeTab, setActiveTab] = useState<Tab>('broker');
-
   const { user, loading: authLoading } = useAuth();
+  const { getBoolean } = useAppSettings();
+  const showBroker = getBoolean('enable_broker_service', true);
+  const showUsdt = getBoolean('enable_usdt_service', true);
+  const [activeTab, setActiveTab] = useState<Tab>(showBroker ? 'broker' : showUsdt ? 'usdt' : 'requests');
 
   const handleRequestSubmitted = () => {
     setActiveTab('requests');
@@ -65,16 +68,20 @@ const ServicesPage = () => {
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as Tab)} className="flex-1 flex flex-col">
         {/* Tabs List */}
         <div className="px-4 py-3 border-b border-border/30">
-          <TabsList className="w-full grid grid-cols-3 h-11">
-            <TabsTrigger value="broker" className="gap-2 text-xs sm:text-sm">
-              <Briefcase className="w-4 h-4" />
-              <span className="hidden sm:inline">{t('services.brokerTab')}</span>
-              <span className="sm:hidden">{t('services.broker')}</span>
-            </TabsTrigger>
-            <TabsTrigger value="usdt" className="gap-2 text-xs sm:text-sm">
-              <Coins className="w-4 h-4" />
-              <span>USDT</span>
-            </TabsTrigger>
+          <TabsList className={cn("w-full grid h-11", showBroker && showUsdt ? "grid-cols-3" : "grid-cols-2")}>
+            {showBroker && (
+              <TabsTrigger value="broker" className="gap-2 text-xs sm:text-sm">
+                <Briefcase className="w-4 h-4" />
+                <span className="hidden sm:inline">{t('services.brokerTab')}</span>
+                <span className="sm:hidden">{t('services.broker')}</span>
+              </TabsTrigger>
+            )}
+            {showUsdt && (
+              <TabsTrigger value="usdt" className="gap-2 text-xs sm:text-sm">
+                <Coins className="w-4 h-4" />
+                <span>USDT</span>
+              </TabsTrigger>
+            )}
             <TabsTrigger value="requests" className="gap-2 text-xs sm:text-sm relative">
               <ClipboardList className="w-4 h-4" />
               <span className="hidden sm:inline">{t('services.myRequests')}</span>
@@ -90,13 +97,17 @@ const ServicesPage = () => {
 
         {/* Tab Contents */}
         <div className="flex-1 overflow-auto px-4 py-4">
-          <TabsContent value="broker" className="mt-0 h-full">
-            <BrokerLandingSection onRequestSubmitted={handleRequestSubmitted} />
-          </TabsContent>
+          {showBroker && (
+            <TabsContent value="broker" className="mt-0 h-full">
+              <BrokerLandingSection onRequestSubmitted={handleRequestSubmitted} />
+            </TabsContent>
+          )}
 
-          <TabsContent value="usdt" className="mt-0 h-full">
-            <UsdtServiceSection onRequestSubmitted={handleRequestSubmitted} />
-          </TabsContent>
+          {showUsdt && (
+            <TabsContent value="usdt" className="mt-0 h-full">
+              <UsdtServiceSection onRequestSubmitted={handleRequestSubmitted} />
+            </TabsContent>
+          )}
 
           <TabsContent value="requests" className="mt-0 h-full">
             <MyRequestsSection requests={requests} loading={loading} />
