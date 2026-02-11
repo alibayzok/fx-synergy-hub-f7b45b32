@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import {
   Settings, Globe, Type, Link2, ToggleRight, Megaphone,
-  Save, Plus, Trash2, Check, X, Palette
+  Save, Plus, Trash2, Check, X, Palette, ImageIcon, Upload, Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,6 +37,7 @@ const CATEGORIES = [
   { key: 'links', label: 'الروابط', icon: Link2 },
   { key: 'features', label: 'الميزات', icon: ToggleRight },
   { key: 'announcements', label: 'الإعلانات', icon: Megaphone },
+  { key: 'images', label: 'الصور', icon: ImageIcon },
 ];
 
 export const CMSManagement = () => {
@@ -47,6 +48,7 @@ export const CMSManagement = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [editedValues, setEditedValues] = useState<Record<string, string>>({});
+  const [uploading, setUploading] = useState<string | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [newSetting, setNewSetting] = useState({
     category: 'general',
@@ -161,11 +163,135 @@ export const CMSManagement = () => {
     return editedValues[setting.id] !== (setting.setting_value || '');
   };
 
+  const handleImageUpload = async (setting: Setting, file: File) => {
+    setUploading(setting.id);
+    const ext = file.name.split('.').pop();
+    const filePath = `${setting.setting_key}_${Date.now()}.${ext}`;
+
+    // Delete old file if exists
+    const oldUrl = setting.setting_value;
+    if (oldUrl) {
+      const oldPath = oldUrl.split('/cms-assets/')[1];
+      if (oldPath) {
+        await supabase.storage.from('cms-assets').remove([oldPath]);
+      }
+    }
+
+    const { error: uploadError } = await supabase.storage
+      .from('cms-assets')
+      .upload(filePath, file, { upsert: true });
+
+    if (uploadError) {
+      toast({ title: 'خطأ في الرفع', description: uploadError.message, variant: 'destructive' });
+      setUploading(null);
+      return;
+    }
+
+    const { data: urlData } = supabase.storage.from('cms-assets').getPublicUrl(filePath);
+    const publicUrl = urlData.publicUrl;
+
+    const { error } = await supabase
+      .from('app_settings')
+      .update({ setting_value: publicUrl, updated_at: new Date().toISOString(), updated_by: user?.id })
+      .eq('id', setting.id);
+
+    if (error) {
+      toast({ title: 'خطأ', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'تم رفع الصورة ✅', description: setting.label_ar });
+      setSettings(prev => prev.map(s => s.id === setting.id ? { ...s, setting_value: publicUrl } : s));
+      setEditedValues(prev => ({ ...prev, [setting.id]: publicUrl }));
+    }
+    setUploading(null);
+  };
+
+  const handleImageRemove = async (setting: Setting) => {
+    const oldUrl = setting.setting_value;
+    if (oldUrl) {
+      const oldPath = oldUrl.split('/cms-assets/')[1];
+      if (oldPath) {
+        await supabase.storage.from('cms-assets').remove([oldPath]);
+      }
+    }
+
+    await supabase
+      .from('app_settings')
+      .update({ setting_value: '', updated_at: new Date().toISOString(), updated_by: user?.id })
+      .eq('id', setting.id);
+
+    setSettings(prev => prev.map(s => s.id === setting.id ? { ...s, setting_value: '' } : s));
+    setEditedValues(prev => ({ ...prev, [setting.id]: '' }));
+    toast({ title: 'تم حذف الصورة' });
+  };
+
   const renderSettingInput = (setting: Setting) => {
     const value = editedValues[setting.id] ?? '';
     const changed = hasChanges(setting);
 
     switch (setting.setting_type) {
+      case 'image':
+        return (
+          <div className="space-y-2">
+            <Label className="text-foreground font-medium">{setting.label_ar}</Label>
+            {setting.description_ar && (
+              <p className="text-xs text-muted-foreground">{setting.description_ar}</p>
+            )}
+            {value ? (
+              <div className="relative group/img w-fit">
+                <img
+                  src={value}
+                  alt={setting.label_ar}
+                  className="max-h-32 max-w-full rounded-lg border border-border object-contain bg-muted/30"
+                />
+                <div className="absolute inset-0 bg-background/70 opacity-0 group-hover/img:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleImageUpload(setting, file);
+                      }}
+                    />
+                    <div className="bg-foreground/20 backdrop-blur-sm rounded-lg p-2 hover:bg-foreground/30 transition-colors">
+                      <Upload className="w-4 h-4 text-foreground" />
+                    </div>
+                  </label>
+                  <button
+                    onClick={() => handleImageRemove(setting)}
+                    className="bg-foreground/20 backdrop-blur-sm rounded-lg p-2 hover:bg-destructive/50 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4 text-foreground" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <label className="cursor-pointer block">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleImageUpload(setting, file);
+                  }}
+                />
+                <div className="border-2 border-dashed border-border/50 rounded-xl p-6 flex flex-col items-center gap-2 hover:border-primary/50 hover:bg-primary/5 transition-colors">
+                  {uploading === setting.id ? (
+                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                  ) : (
+                    <Upload className="w-8 h-8 text-muted-foreground" />
+                  )}
+                  <span className="text-sm text-muted-foreground">
+                    {uploading === setting.id ? 'جاري الرفع...' : 'اضغط لرفع صورة'}
+                  </span>
+                </div>
+              </label>
+            )}
+          </div>
+        );
+
       case 'boolean':
         return (
           <div className="flex items-center justify-between">
@@ -339,7 +465,8 @@ export const CMSManagement = () => {
                     <SelectItem value="url">رابط</SelectItem>
                     <SelectItem value="boolean">تبديل (نعم/لا)</SelectItem>
                     <SelectItem value="color">لون</SelectItem>
-                    <SelectItem value="number">رقم</SelectItem>
+                    <SelectItem value="color">لون</SelectItem>
+                    <SelectItem value="image">صورة</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
