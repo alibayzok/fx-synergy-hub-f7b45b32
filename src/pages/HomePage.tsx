@@ -98,9 +98,14 @@ const HomePage = () => {
       {/* Header */}
       <header className="sticky top-0 z-40 glass-premium border-b border-border/20">
         <div className="flex items-center justify-between px-4 py-3">
-          <div>
-            <h1 className="text-xl font-bold gold-gradient">{appName}</h1>
-            <p className="text-xs text-muted-foreground">{t('app.tagline')}</p>
+          <div className="flex items-center gap-2">
+            {getSetting('logo_url') ? (
+              <img src={getSetting('logo_url')} alt={appName} className="h-8 w-8 rounded-lg object-contain" />
+            ) : null}
+            <div>
+              <h1 className="text-xl font-bold gold-gradient">{appName}</h1>
+              <p className="text-xs text-muted-foreground">{t('app.tagline')}</p>
+            </div>
           </div>
           {user ? (
             <motion.button
