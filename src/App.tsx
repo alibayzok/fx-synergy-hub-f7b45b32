@@ -12,6 +12,7 @@ import HomePage from "./pages/HomePage";
 import TradesPage from "./pages/TradesPage";
 import CommunityPage from "./pages/CommunityPage";
 import NewsPage from "./pages/NewsPage";
+import ArticleDetailPage from "./pages/ArticleDetailPage";
 import ServicesPage from "./pages/ServicesPage";
 import ProfilePage from "./pages/ProfilePage";
 import UserProfilePage from "./pages/UserProfilePage";
@@ -66,6 +67,7 @@ const App = () => {
                 <Route path="/trades" element={<TradesPage />} />
                 <Route path="/community" element={<CommunityPage />} />
                 <Route path="/news" element={<NewsPage />} />
+                <Route path="/news/article/:id" element={<ArticleDetailPage />} />
                 <Route path="/markets" element={<NewsPage />} />
                 <Route path="/services" element={<ServicesPage />} />
                 <Route path="/profile" element={<ProfilePage />} />

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, Clock, Loader2, ArrowLeft, Plus, Sparkles, BookOpen, TrendingUp, GraduationCap, BarChart3, Globe, Share2, Copy, Check } from 'lucide-react';
@@ -118,10 +119,10 @@ const ShareButtons = ({ title, summary, isArabic, variant = 'compact' }: { title
 export const ArticlesTab = () => {
   const { i18n } = useTranslation();
   const { isAdmin } = useAuth();
+  const navigate = useNavigate();
   const isArabic = i18n.language === 'ar';
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [activeFilter, setActiveFilter] = useState<string>('all');
 
   // Admin quick-create state
@@ -215,60 +216,7 @@ export const ArticlesTab = () => {
     setSaving(false);
   };
 
-  // Article Detail View
-  if (selectedArticle) {
-    const cat = categoryConfig[selectedArticle.category] || categoryConfig.general;
-    return (
-      <div className="min-h-screen">
-        <header className="sticky top-0 z-30 backdrop-blur-xl bg-background/80 border-b border-border/20 px-4 py-3 flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={() => setSelectedArticle(null)} className="gap-1.5 rounded-xl">
-            <ArrowLeft className="w-4 h-4" />
-            {isArabic ? 'رجوع' : 'Back'}
-          </Button>
-          <ShareButtons title={getTitle(selectedArticle)} summary={getSummary(selectedArticle) || ''} isArabic={isArabic} />
-        </header>
-
-        {selectedArticle.image_url && (
-          <div className="relative w-full overflow-hidden">
-            <img src={selectedArticle.image_url} alt={getTitle(selectedArticle)} className="w-full h-auto max-h-[70vh] object-contain bg-black/5 dark:bg-white/5" />
-            <div className="absolute bottom-0 inset-x-0 h-16 bg-gradient-to-t from-background to-transparent" />
-          </div>
-        )}
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={cn("px-4 pb-8", selectedArticle.image_url ? "-mt-16 relative z-10" : "pt-4")}
-        >
-          <div className="flex items-center gap-2 mb-3">
-            <Badge className={cn("text-xs px-2.5 py-1 rounded-lg gap-1 border-0 bg-gradient-to-r", cat.gradient)}>
-              <cat.icon className="w-3 h-3" />
-              {cat[isArabic ? 'ar' : 'en']}
-            </Badge>
-            <span className="text-xs text-muted-foreground/60 flex items-center gap-1">
-              <Clock className="w-3 h-3" />
-              {timeAgo(selectedArticle.created_at)}
-            </span>
-          </div>
-          <h1 className="text-2xl font-bold text-foreground leading-tight mb-4">{getTitle(selectedArticle)}</h1>
-          {getSummary(selectedArticle) && (
-            <p className="text-sm text-muted-foreground/80 italic mb-5 leading-relaxed">{getSummary(selectedArticle)}</p>
-          )}
-          <div className="h-px bg-gradient-to-r from-transparent via-border/40 to-transparent mb-6" />
-          <div
-            className="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground/90 leading-[1.9] prose-headings:font-bold prose-h2:text-lg prose-h3:text-base prose-blockquote:border-s-4 prose-blockquote:border-primary/30 prose-blockquote:ps-4 prose-blockquote:italic prose-a:text-primary prose-a:underline"
-            dangerouslySetInnerHTML={{ __html: getContent(selectedArticle) }}
-          />
-
-          {/* Bottom share section */}
-          <div className="mt-8 pt-6 border-t border-border/20">
-            <p className="text-xs text-muted-foreground/60 mb-3">{isArabic ? 'شارك هذا المقال' : 'Share this article'}</p>
-            <ShareButtons title={getTitle(selectedArticle)} summary={getSummary(selectedArticle) || ''} isArabic={isArabic} variant="full" />
-          </div>
-        </motion.div>
-      </div>
-    );
-  }
+  const openArticle = (article: Article) => navigate(`/news/article/${article.id}`);
 
   return (
     <div className="px-4 py-3 space-y-4">
@@ -345,7 +293,7 @@ export const ArticlesTab = () => {
             {filteredArticles.length > 0 && (
               <motion.div
                 key={filteredArticles[0].id}
-                onClick={() => setSelectedArticle(filteredArticles[0])}
+                onClick={() => openArticle(filteredArticles[0])}
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="group relative rounded-2xl overflow-hidden cursor-pointer border border-border/20 hover:border-border/40 transition-all shadow-lg shadow-background/50"
@@ -394,7 +342,7 @@ export const ArticlesTab = () => {
               return (
                 <motion.div
                   key={article.id}
-                  onClick={() => setSelectedArticle(article)}
+                  onClick={() => openArticle(article)}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95 }}
