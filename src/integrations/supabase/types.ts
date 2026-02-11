@@ -1045,6 +1045,24 @@ export type Database = {
         }
         Relationships: []
       }
+      test_table_2: {
+        Row: {
+          created_at: string
+          id: string
+          name: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string | null
+        }
+        Relationships: []
+      }
       threads: {
         Row: {
           content: string
