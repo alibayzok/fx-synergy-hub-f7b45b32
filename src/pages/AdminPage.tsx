@@ -23,10 +23,12 @@ import { CoursesManagement } from '@/components/admin/CoursesManagement';
 import { CMSManagement } from '@/components/admin/CMSManagement';
 import { SignalsManagement } from '@/components/admin/SignalsManagement';
 import { ArticlesManagement } from '@/components/admin/ArticlesManagement';
+import { ServicesAndBrokersManagement } from '@/components/admin/ServicesAndBrokersManagement';
 
 const tabs = [
   { value: 'dashboard', icon: LayoutDashboard, label: 'لوحة القيادة' },
   { value: 'requests', icon: ClipboardList, label: 'الطلبات' },
+  { value: 'services-mgmt', icon: BarChart3, label: 'الخدمات' },
   { value: 'moderation', icon: AlertTriangle, label: 'المخالفات' },
   { value: 'analyses', icon: FileText, label: 'التحليلات' },
   { value: 'signals', icon: Radio, label: 'الإشارات' },
@@ -166,6 +168,7 @@ const AdminPage = () => {
           </TabsContent>
 
           <TabsContent value="requests"><ServiceRequestsManagement /></TabsContent>
+          <TabsContent value="services-mgmt"><ServicesAndBrokersManagement /></TabsContent>
           <TabsContent value="moderation"><FlaggedContentManagement /></TabsContent>
           <TabsContent value="analyses"><AnalysesManagement /></TabsContent>
           <TabsContent value="signals"><SignalsManagement /></TabsContent>

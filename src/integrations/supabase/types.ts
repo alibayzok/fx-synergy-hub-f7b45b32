@@ -211,6 +211,63 @@ export type Database = {
         }
         Relationships: []
       }
+      brokers: {
+        Row: {
+          color: string
+          created_at: string
+          description_ar: string
+          description_en: string
+          features_ar: string[]
+          features_en: string[]
+          id: string
+          is_active: boolean
+          is_featured: boolean
+          logo_url: string | null
+          name: string
+          name_ar: string
+          registration_url: string
+          sort_order: number
+          stats: Json
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          description_ar?: string
+          description_en?: string
+          features_ar?: string[]
+          features_en?: string[]
+          id?: string
+          is_active?: boolean
+          is_featured?: boolean
+          logo_url?: string | null
+          name: string
+          name_ar?: string
+          registration_url?: string
+          sort_order?: number
+          stats?: Json
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          description_ar?: string
+          description_en?: string
+          features_ar?: string[]
+          features_en?: string[]
+          id?: string
+          is_active?: boolean
+          is_featured?: boolean
+          logo_url?: string | null
+          name?: string
+          name_ar?: string
+          registration_url?: string
+          sort_order?: number
+          stats?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       community_rooms: {
         Row: {
           color: string | null
@@ -971,6 +1028,60 @@ export type Database = {
           updated_at?: string
           user_id?: string
           wallet_address?: string | null
+        }
+        Relationships: []
+      }
+      services: {
+        Row: {
+          color: string
+          created_at: string
+          description_ar: string
+          description_en: string
+          icon: string
+          id: string
+          is_active: boolean
+          is_external_link: boolean
+          link_label_ar: string | null
+          link_label_en: string | null
+          link_url: string | null
+          name_ar: string
+          name_en: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          description_ar?: string
+          description_en?: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          is_external_link?: boolean
+          link_label_ar?: string | null
+          link_label_en?: string | null
+          link_url?: string | null
+          name_ar: string
+          name_en?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          description_ar?: string
+          description_en?: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          is_external_link?: boolean
+          link_label_ar?: string | null
+          link_label_en?: string | null
+          link_url?: string | null
+          name_ar?: string
+          name_en?: string
+          sort_order?: number
+          updated_at?: string
         }
         Relationships: []
       }
