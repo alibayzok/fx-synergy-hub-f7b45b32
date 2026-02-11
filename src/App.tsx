@@ -25,6 +25,7 @@ import OnboardingPage from "./pages/OnboardingPage";
 import SupportPage from "./pages/SupportPage";
 import SupportDashboardPage from "./pages/SupportDashboardPage";
 import VipPage from "./pages/VipPage";
+import SubscriptionsPage from "./pages/SubscriptionsPage";
 import NotFound from "./pages/NotFound";
 import "./i18n";
 
@@ -78,6 +79,7 @@ const App = () => {
                 <Route path="/support" element={<SupportPage />} />
                 <Route path="/support-dashboard" element={<SupportDashboardPage />} />
                 <Route path="/vip" element={<VipPage />} />
+                <Route path="/admin/subscriptions" element={<SubscriptionsPage />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

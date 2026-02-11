@@ -4,13 +4,14 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Crown, Check, Star, Radio, BookOpen, Shield, Zap, 
-  ArrowLeft, Sparkles, Lock, TrendingUp, Users
+  ArrowLeft, Sparkles, Lock, TrendingUp, Users, Clock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import { AppLayout } from '@/components/layout/AppLayout';
 
@@ -22,6 +23,24 @@ const VipPage = () => {
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('monthly');
   const [requesting, setRequesting] = useState(false);
   const isRTL = i18n.language === 'ar';
+
+  // Check if user has a pending subscription request
+  const { data: pendingSub } = useQuery({
+    queryKey: ['my-vip-subscription', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase
+        .from('vip_subscriptions' as any)
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!user,
+  });
 
   const plans = [
     {
@@ -236,24 +255,33 @@ const VipPage = () => {
             transition={{ delay: 0.6 }}
             className="space-y-3"
           >
-            <Button
-              onClick={handleRequestVip}
-              disabled={requesting}
-              className="w-full h-14 text-lg font-bold rounded-2xl bg-gradient-to-r from-amber-500 via-yellow-500 to-orange-500 hover:from-amber-600 hover:via-yellow-600 hover:to-orange-600 text-white shadow-xl shadow-amber-500/25 border-0"
-            >
-              {requesting ? (
-                <span className="animate-pulse">{isRTL ? 'جارٍ الإرسال...' : 'Sending...'}</span>
-              ) : (
-                <>
-                  <Crown className="w-5 h-5 me-2" />
-                  {isRTL ? 'اشترك الآن' : 'Subscribe Now'}
-                </>
-              )}
-            </Button>
+            {pendingSub ? (
+              <div className="w-full h-14 text-lg font-bold rounded-2xl bg-muted flex items-center justify-center gap-2 text-muted-foreground">
+                <Clock className="w-5 h-5" />
+                {isRTL ? 'طلبك قيد المراجعة ⏳' : 'Your request is under review ⏳'}
+              </div>
+            ) : (
+              <Button
+                onClick={handleRequestVip}
+                disabled={requesting}
+                className="w-full h-14 text-lg font-bold rounded-2xl bg-gradient-to-r from-amber-500 via-yellow-500 to-orange-500 hover:from-amber-600 hover:via-yellow-600 hover:to-orange-600 text-white shadow-xl shadow-amber-500/25 border-0"
+              >
+                {requesting ? (
+                  <span className="animate-pulse">{isRTL ? 'جارٍ الإرسال...' : 'Sending...'}</span>
+                ) : (
+                  <>
+                    <Crown className="w-5 h-5 me-2" />
+                    {isRTL ? 'اشترك الآن' : 'Subscribe Now'}
+                  </>
+                )}
+              </Button>
+            )}
             <p className="text-center text-xs text-muted-foreground">
-              {isRTL 
-                ? 'سيتم التواصل معك عبر الواتساب لإتمام الدفع وتفعيل اشتراكك'
-                : 'We will contact you via WhatsApp to complete payment and activate your subscription'}
+              {pendingSub
+                ? (isRTL ? 'سيتم إشعارك فور معالجة طلبك' : 'You will be notified once your request is processed')
+                : (isRTL 
+                  ? 'سيتم التواصل معك عبر الواتساب لإتمام الدفع وتفعيل اشتراكك'
+                  : 'We will contact you via WhatsApp to complete payment and activate your subscription')}
             </p>
           </motion.div>
 

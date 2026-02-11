@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Shield, Users, Plus, ArrowLeft, LayoutDashboard, BarChart3, ClipboardList,
-  Database, FileText, AlertTriangle, GraduationCap, Settings2, Radio
+  Database, FileText, AlertTriangle, GraduationCap, Settings2, Radio, Crown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -96,6 +96,16 @@ const AdminPage = () => {
 
           <TabsContent value="dashboard" className="space-y-6">
             <DashboardStats />
+            
+            {/* Quick link to subscriptions */}
+            <Button
+              onClick={() => navigate('/admin/subscriptions')}
+              className="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 gap-2"
+            >
+              <Crown className="w-4 h-4" />
+              إدارة اشتراكات VIP
+            </Button>
+
             <div className="space-y-3">
               <h3 className="text-lg font-semibold flex items-center gap-2">
                 <BarChart3 className="w-5 h-5 text-primary" />
