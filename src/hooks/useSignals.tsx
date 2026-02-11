@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
+import { playNotificationSound } from '@/lib/notification-sound';
 
 interface Signal {
   id: string;
@@ -59,15 +60,29 @@ export const useSignals = () => {
     }
   }, [user, fetchSignals]);
 
+  const initialLoadDone = useRef(false);
+
   useEffect(() => {
     const channel = supabase
       .channel('signals-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'signals' }, () => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'signals' }, () => {
+        if (initialLoadDone.current) {
+          playNotificationSound('new_signal');
+        }
+        fetchSignals();
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'signals' }, () => {
+        fetchSignals();
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'signals' }, () => {
         fetchSignals();
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    // Mark initial load as done after a short delay
+    const timer = setTimeout(() => { initialLoadDone.current = true; }, 2000);
+
+    return () => { supabase.removeChannel(channel); clearTimeout(timer); };
   }, [fetchSignals]);
 
   const createSignal = async (data: Omit<Signal, 'id' | 'views_count' | 'likes_count' | 'created_at' | 'updated_at'>) => {
