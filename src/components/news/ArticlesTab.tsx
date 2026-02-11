@@ -169,9 +169,9 @@ export const ArticlesTab = () => {
         </header>
 
         {selectedArticle.image_url && (
-          <div className="relative h-56 overflow-hidden">
-            <img src={selectedArticle.image_url} alt={getTitle(selectedArticle)} className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+          <div className="relative w-full overflow-hidden">
+            <img src={selectedArticle.image_url} alt={getTitle(selectedArticle)} className="w-full h-auto max-h-[70vh] object-contain bg-black/5 dark:bg-white/5" />
+            <div className="absolute bottom-0 inset-x-0 h-16 bg-gradient-to-t from-background to-transparent" />
           </div>
         )}
 
