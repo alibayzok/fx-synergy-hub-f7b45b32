@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { BarChart3, Clock, Eye, Heart, Lock, Image as ImageIcon } from 'lucide-react';
@@ -11,6 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAnalyses } from '@/hooks/useAnalyses';
 import { useAuth } from '@/hooks/useAuth';
+import { useAppSettings } from '@/hooks/useAppSettings';
+import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
 
@@ -18,9 +20,19 @@ const AnalysesPage = () => {
   const { t, i18n } = useTranslation();
   const { analyses, loading, likeAnalysis, unlikeAnalysis } = useAnalyses();
   const { isVip } = useAuth();
+  const { getBoolean } = useAppSettings();
+  const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState<string>('all');
   const [likedAnalyses, setLikedAnalyses] = useState<Set<string>>(new Set());
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  const enabled = getBoolean('enable_analyses', true);
+
+  useEffect(() => {
+    if (!enabled) navigate('/', { replace: true });
+  }, [enabled, navigate]);
+
+  if (!enabled) return null;
 
   const locale = i18n.language === 'ar' ? ar : enUS;
 

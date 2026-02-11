@@ -2,11 +2,12 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Bot, TrendingUp, BarChart3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAppSettings } from '@/hooks/useAppSettings';
 
 const actions = [
-  { key: 'aiAssistant', icon: Bot, gradient: 'from-blue-500 to-cyan-500' },
-  { key: 'viewAnalyses', icon: BarChart3, gradient: 'from-purple-500 to-pink-500' },
-  { key: 'publishTrade', icon: TrendingUp, gradient: 'from-emerald-500 to-teal-500', adminOnly: true },
+  { key: 'aiAssistant', icon: Bot, gradient: 'from-blue-500 to-cyan-500', settingKey: 'enable_ai_chat' },
+  { key: 'viewAnalyses', icon: BarChart3, gradient: 'from-purple-500 to-pink-500', settingKey: 'enable_analyses' },
+  { key: 'publishTrade', icon: TrendingUp, gradient: 'from-emerald-500 to-teal-500', adminOnly: true, settingKey: null },
 ];
 
 interface QuickActionsProps {
@@ -16,8 +17,13 @@ interface QuickActionsProps {
 
 export const QuickActions = ({ isAdmin = false, onAction }: QuickActionsProps) => {
   const { t } = useTranslation();
+  const { getBoolean } = useAppSettings();
 
-  const visibleActions = actions.filter(a => !a.adminOnly || isAdmin);
+  const visibleActions = actions.filter(a => {
+    if (a.adminOnly && !isAdmin) return false;
+    if (a.settingKey && !getBoolean(a.settingKey, true)) return false;
+    return true;
+  });
 
   return (
     <div className="grid grid-cols-3 gap-3">

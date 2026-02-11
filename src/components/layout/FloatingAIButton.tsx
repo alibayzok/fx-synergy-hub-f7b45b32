@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, Headset, MessageCircle, X, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAppSettings } from '@/hooks/useAppSettings';
 
 const socialLinks = [
   {
@@ -59,18 +60,20 @@ export const FloatingAIButton = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
+  const { getBoolean } = useAppSettings();
+  const aiEnabled = getBoolean('enable_ai_chat', true);
 
   if (location.pathname === '/ai-chat') return null;
 
   const menuItems = [
-    {
+    ...(aiEnabled ? [{
       key: 'ai',
       label: 'المساعد الذكي',
       color: 'from-primary to-primary/70',
       shadow: 'shadow-primary/30',
       icon: <Bot className="w-5 h-5 text-white" />,
       onClick: () => { navigate('/ai-chat'); setIsOpen(false); },
-    },
+    }] : []),
     {
       key: 'support',
       label: 'الدعم الفني',
