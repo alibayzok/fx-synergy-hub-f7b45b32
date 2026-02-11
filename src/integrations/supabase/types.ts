@@ -1509,6 +1509,7 @@ export type Database = {
         }[]
       }
       mask_phone_number: { Args: { phone: string }; Returns: string }
+      request_vip_subscription: { Args: { p_plan: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "vip" | "free"

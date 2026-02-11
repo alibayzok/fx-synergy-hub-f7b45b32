@@ -57,19 +57,9 @@ const VipPage = () => {
 
     setRequesting(true);
     try {
-      // Create admin notification for VIP request
-      const { error } = await supabase
-        .from('admin_notifications')
-        .insert({
-          type: 'vip_request',
-          title: 'طلب اشتراك VIP 👑',
-          message: `طلب اشتراك VIP - باقة ${selectedPlan === 'monthly' ? 'شهرية' : 'سنوية'}`,
-          data: {
-            user_id: user.id,
-            plan: selectedPlan,
-            email: user.email,
-          },
-        });
+      const { error } = await supabase.rpc('request_vip_subscription', {
+        p_plan: selectedPlan,
+      });
 
       if (error) throw error;
 
