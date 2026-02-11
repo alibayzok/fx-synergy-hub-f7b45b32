@@ -12,6 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { countries } from '@/data/countries';
 import { signInWithGoogle } from '@/lib/auth-helpers';
+import { useAppSettings } from '@/hooks/useAppSettings';
 
 type AuthMode = 'login' | 'register' | 'forgot';
 
@@ -21,6 +22,9 @@ const AuthPage = () => {
   const { signIn, signUp, resetPassword, user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const isRTL = i18n.language === 'ar';
+  const { getSetting } = useAppSettings();
+  const logoUrl = getSetting('logo_url');
+  const authBgUrl = getSetting('auth_bg_url');
 
   // Redirect if user is already authenticated
   useEffect(() => {
@@ -116,7 +120,10 @@ const AuthPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="min-h-screen bg-background flex flex-col relative" dir={isRTL ? 'rtl' : 'ltr'}>
+      {authBgUrl && (
+        <img src={authBgUrl} alt="" className="absolute inset-0 w-full h-full object-cover opacity-10 pointer-events-none" />
+      )}
       {/* Header */}
       <header className="p-4">
         <Button
@@ -137,7 +144,10 @@ const AuthPage = () => {
           className="w-full max-w-sm space-y-6"
         >
           {/* Logo/Title */}
-          <div className="text-center space-y-2">
+          <div className="text-center space-y-3">
+            {logoUrl ? (
+              <img src={logoUrl} alt={t('app.name')} className="h-16 w-16 mx-auto object-contain rounded-xl" />
+            ) : null}
             <h1 className="text-3xl font-bold text-primary">
               {t('app.name')}
             </h1>

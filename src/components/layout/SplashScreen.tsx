@@ -10,6 +10,8 @@ export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
   const [isVisible, setIsVisible] = useState(true);
   const { getSetting } = useAppSettings();
   const appName = getSetting('app_name', 'ASSASSIN FX');
+  const logoUrl = getSetting('logo_url');
+  const splashBgUrl = getSetting('splash_bg_url');
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -31,6 +33,9 @@ export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
         >
           {/* Animated Background */}
           <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-muted">
+            {splashBgUrl && (
+              <img src={splashBgUrl} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30" />
+            )}
             {/* Animated grid */}
             <div className="absolute inset-0 opacity-20">
               <div 
@@ -106,8 +111,12 @@ export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
               />
               
               {/* Logo container */}
-              <div className="relative w-28 h-28 rounded-full bg-gradient-to-br from-primary via-primary/80 to-vip flex items-center justify-center border-2 border-primary/30 shadow-2xl">
-                <span className="text-4xl font-bold text-primary-foreground">FX</span>
+              <div className="relative w-28 h-28 rounded-full bg-gradient-to-br from-primary via-primary/80 to-vip flex items-center justify-center border-2 border-primary/30 shadow-2xl overflow-hidden">
+                {logoUrl ? (
+                  <img src={logoUrl} alt={appName} className="w-16 h-16 object-contain" />
+                ) : (
+                  <span className="text-4xl font-bold text-primary-foreground">FX</span>
+                )}
               </div>
             </motion.div>
 
