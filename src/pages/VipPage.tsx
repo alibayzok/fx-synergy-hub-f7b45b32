@@ -57,7 +57,7 @@ const VipPage = () => {
 
     setRequesting(true);
     try {
-      const { error } = await supabase.rpc('request_vip_subscription', {
+      const { error } = await supabase.rpc('request_vip_subscription' as any, {
         p_plan: selectedPlan,
       });
 

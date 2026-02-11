@@ -284,7 +284,10 @@ const ProfilePage = () => {
           </div>
 
           {!isVip && !isAdmin && (
-            <Button className="w-full mt-4 bg-gradient-to-r from-vip to-amber-500 text-vip-foreground gap-2">
+            <Button 
+              onClick={() => navigate('/vip')}
+              className="w-full mt-4 bg-gradient-to-r from-vip to-amber-500 text-vip-foreground gap-2"
+            >
               <Crown className="w-4 h-4" />
               {t('profile.upgradeToVip')}
             </Button>
