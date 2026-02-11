@@ -7,7 +7,7 @@ import { useAppSettings } from '@/hooks/useAppSettings';
 const actions = [
   { key: 'aiAssistant', icon: Bot, gradient: 'from-blue-500 to-cyan-500', settingKey: 'enable_ai_chat' },
   { key: 'viewAnalyses', icon: BarChart3, gradient: 'from-purple-500 to-pink-500', settingKey: 'enable_analyses' },
-  { key: 'viewSignals', icon: Radio, gradient: 'from-emerald-500 to-teal-500', adminOnly: true, settingKey: null },
+  { key: 'viewSignals', icon: Radio, gradient: 'from-emerald-500 to-teal-500', adminOnly: false, settingKey: null },
 ];
 
 interface QuickActionsProps {
