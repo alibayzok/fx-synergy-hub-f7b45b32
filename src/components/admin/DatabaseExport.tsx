@@ -504,6 +504,82 @@ export const DatabaseExport = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Export Actions */}
+      <Card className="border-border/30">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Download className="w-5 h-5 text-muted-foreground" />
+            {isArabic ? 'تحميل وتصدير' : 'Download & Export'}
+          </CardTitle>
+          <CardDescription>
+            {isArabic ? 'حمّل نسخة من الهيكل أو البيانات أو نسخة احتياطية كاملة' : 'Download schema, data, or full backup'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {exporting && (
+            <div className="mb-4">
+              <Progress value={progress} className="h-2" />
+              <p className="text-xs text-muted-foreground mt-1 text-center">
+                {isArabic ? `جاري التصدير... ${progress}%` : `Exporting... ${progress}%`}
+              </p>
+            </div>
+          )}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <Button
+              variant="outline"
+              className="flex flex-col items-center gap-2 h-auto py-4"
+              onClick={exportSchema}
+              disabled={exporting}
+            >
+              {exporting && exportType === 'schema' ? (
+                <Loader2 className="w-6 h-6 animate-spin" />
+              ) : (
+                <FileCode className="w-6 h-6 text-blue-500" />
+              )}
+              <span className="text-xs">{isArabic ? 'هيكل SQL' : 'SQL Schema'}</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              className="flex flex-col items-center gap-2 h-auto py-4"
+              onClick={exportData}
+              disabled={exporting}
+            >
+              {exporting && exportType === 'data' ? (
+                <Loader2 className="w-6 h-6 animate-spin" />
+              ) : (
+                <FileJson className="w-6 h-6 text-green-500" />
+              )}
+              <span className="text-xs">{isArabic ? 'بيانات JSON' : 'JSON Data'}</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              className="flex flex-col items-center gap-2 h-auto py-4 border-primary/40"
+              onClick={exportFull}
+              disabled={exporting}
+            >
+              {exporting && exportType === 'full' ? (
+                <Loader2 className="w-6 h-6 animate-spin" />
+              ) : (
+                <Package className="w-6 h-6 text-primary" />
+              )}
+              <span className="text-xs font-semibold">{isArabic ? 'نسخة كاملة' : 'Full Backup'}</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              className="flex flex-col items-center gap-2 h-auto py-4"
+              onClick={exportMigrationGuide}
+              disabled={exporting}
+            >
+              <Settings className="w-6 h-6 text-muted-foreground" />
+              <span className="text-xs">{isArabic ? 'قالب .env' : '.env Template'}</span>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
