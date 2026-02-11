@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { LogIn, Briefcase, ClipboardList, ExternalLink, CheckCircle, Star, ChevronRight, Loader2, Coins } from 'lucide-react';
+import { LogIn, Briefcase, ClipboardList, ExternalLink, CheckCircle, Star, ChevronRight, Loader2, Coins, CreditCard } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { useServiceRequests } from '@/hooks/useServiceRequests';
 import { MyRequestsSection } from '@/components/services/MyRequestsSection';
 import { UsdtServiceSection } from '@/components/services/UsdtServiceSection';
+import VirtualCardsSection from '@/components/services/VirtualCardsSection';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
@@ -112,23 +113,30 @@ const ServicesPage = () => {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
         <div className="px-4 py-3 border-b border-border/30">
-          <TabsList className="w-full grid grid-cols-4 h-11">
-            <TabsTrigger value="main" className="gap-1.5 text-xs sm:text-sm">
-              <Briefcase className="w-4 h-4" />
-              {isRTL ? 'الخدمات' : 'Services'}
+          <TabsList className="w-full grid grid-cols-5 h-11">
+            <TabsTrigger value="main" className="gap-1 text-[10px] sm:text-sm px-1">
+              <Briefcase className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">{isRTL ? 'الخدمات' : 'Services'}</span>
+              <span className="sm:hidden">{isRTL ? 'خدمات' : 'Svc'}</span>
             </TabsTrigger>
-            <TabsTrigger value="usdt" className="gap-1.5 text-xs sm:text-sm">
-              <Coins className="w-4 h-4" />
+            <TabsTrigger value="cards" className="gap-1 text-[10px] sm:text-sm px-1">
+              <CreditCard className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">{isRTL ? 'البطاقات' : 'Cards'}</span>
+              <span className="sm:hidden">{isRTL ? 'بطاقات' : 'Cards'}</span>
+            </TabsTrigger>
+            <TabsTrigger value="usdt" className="gap-1 text-[10px] sm:text-sm px-1">
+              <Coins className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               USDT
             </TabsTrigger>
-            <TabsTrigger value="brokers" className="gap-1.5 text-xs sm:text-sm">
-              <Star className="w-4 h-4" />
-              {isRTL ? 'البروكرات' : 'Brokers'}
+            <TabsTrigger value="brokers" className="gap-1 text-[10px] sm:text-sm px-1">
+              <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">{isRTL ? 'البروكرات' : 'Brokers'}</span>
+              <span className="sm:hidden">{isRTL ? 'بروكر' : 'Brkr'}</span>
             </TabsTrigger>
-            <TabsTrigger value="requests" className="gap-1.5 text-xs sm:text-sm relative">
-              <ClipboardList className="w-4 h-4" />
+            <TabsTrigger value="requests" className="gap-1 text-[10px] sm:text-sm px-1 relative">
+              <ClipboardList className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">{t('services.myRequests')}</span>
-              <span className="sm:hidden">{isRTL ? 'طلباتي' : 'Requests'}</span>
+              <span className="sm:hidden">{isRTL ? 'طلبات' : 'Req'}</span>
               {requests.length > 0 && (
                 <span className="absolute -top-1 -end-1 w-5 h-5 flex items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
                   {requests.length}
@@ -254,6 +262,11 @@ const ServicesPage = () => {
                 );
               })
             )}
+          </TabsContent>
+
+          {/* Virtual Cards Tab */}
+          <TabsContent value="cards" className="mt-0">
+            <VirtualCardsSection />
           </TabsContent>
 
           {/* USDT Tab */}

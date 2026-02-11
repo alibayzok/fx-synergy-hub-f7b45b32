@@ -1580,6 +1580,51 @@ export type Database = {
         }
         Relationships: []
       }
+      virtual_cards: {
+        Row: {
+          card_last_four: string | null
+          card_status: string
+          card_type: string
+          created_at: string
+          currency: string | null
+          id: string
+          marqeta_card_token: string | null
+          marqeta_user_token: string | null
+          nickname: string | null
+          spending_limit: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          card_last_four?: string | null
+          card_status?: string
+          card_type?: string
+          created_at?: string
+          currency?: string | null
+          id?: string
+          marqeta_card_token?: string | null
+          marqeta_user_token?: string | null
+          nickname?: string | null
+          spending_limit?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          card_last_four?: string | null
+          card_status?: string
+          card_type?: string
+          created_at?: string
+          currency?: string | null
+          id?: string
+          marqeta_card_token?: string | null
+          marqeta_user_token?: string | null
+          nickname?: string | null
+          spending_limit?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       profiles_admin_view: {
