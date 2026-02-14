@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { 
@@ -15,7 +16,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAppSettings } from '@/hooks/useAppSettings';
+import { supabase } from '@/integrations/supabase/client';
 
 interface BrokerLandingSectionProps {
   onRequestSubmitted?: () => void;
@@ -23,8 +24,24 @@ interface BrokerLandingSectionProps {
 
 export const BrokerLandingSection = ({ onRequestSubmitted }: BrokerLandingSectionProps) => {
   const { t } = useTranslation();
-  const { getSetting } = useAppSettings();
-  const registrationUrl = getSetting('broker_registration_url', 'https://www.oneroyal.com');
+  const [registrationUrl, setRegistrationUrl] = useState('https://www.oneroyal.com');
+
+  useEffect(() => {
+    const fetchBrokerUrl = async () => {
+      const { data } = await supabase
+        .from('brokers')
+        .select('registration_url')
+        .eq('is_active', true)
+        .eq('is_featured', true)
+        .order('sort_order')
+        .limit(1)
+        .single();
+      if (data?.registration_url) {
+        setRegistrationUrl(data.registration_url);
+      }
+    };
+    fetchBrokerUrl();
+  }, []);
 
   const stats = [
     { icon: TrendingUp, label: t('services.brokerLanding.lowSpread'), value: '0.0', color: 'text-profit' },
