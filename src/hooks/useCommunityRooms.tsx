@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
-interface RoomWithCounts {
+export interface RoomWithCounts {
   id: string;
   name: string;
   name_ar: string;
@@ -13,6 +13,7 @@ interface RoomWithCounts {
   is_private: boolean;
   is_broadcast: boolean;
   requires_approval: boolean;
+  category: 'channels' | 'discussions' | 'learning';
   members_count: number;
   unread_count: number;
 }
@@ -115,6 +116,7 @@ export const useCommunityRooms = () => {
         is_private: room.is_private || false,
         is_broadcast: room.is_broadcast || false,
         requires_approval: room.requires_approval || false,
+        category: (room as any).category || 'discussions',
         members_count: memberCountMap[room.id] || 0,
         unread_count: unreadMap[room.id] || 0,
       }));
