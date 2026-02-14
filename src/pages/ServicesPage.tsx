@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { LogIn, Briefcase, ClipboardList, ExternalLink, CheckCircle, Star, ChevronRight, Loader2, Coins, CreditCard } from 'lucide-react';
+import { LogIn, Briefcase, ClipboardList, ExternalLink, CheckCircle, Star, ChevronRight, Loader2, Coins } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { useServiceRequests } from '@/hooks/useServiceRequests';
 import { MyRequestsSection } from '@/components/services/MyRequestsSection';
 import { UsdtServiceSection } from '@/components/services/UsdtServiceSection';
-import VirtualCardsSection from '@/components/services/VirtualCardsSection';
+
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
@@ -113,16 +113,11 @@ const ServicesPage = () => {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
         <div className="px-4 py-3 border-b border-border/30">
-          <TabsList className="w-full grid grid-cols-5 h-11">
+          <TabsList className="w-full grid grid-cols-4 h-11">
             <TabsTrigger value="main" className="gap-1 text-[10px] sm:text-sm px-1">
               <Briefcase className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">{isRTL ? 'الخدمات' : 'Services'}</span>
               <span className="sm:hidden">{isRTL ? 'خدمات' : 'Svc'}</span>
-            </TabsTrigger>
-            <TabsTrigger value="cards" className="gap-1 text-[10px] sm:text-sm px-1">
-              <CreditCard className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">{isRTL ? 'البطاقات' : 'Cards'}</span>
-              <span className="sm:hidden">{isRTL ? 'بطاقات' : 'Cards'}</span>
             </TabsTrigger>
             <TabsTrigger value="usdt" className="gap-1 text-[10px] sm:text-sm px-1">
               <Coins className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -264,10 +259,8 @@ const ServicesPage = () => {
             )}
           </TabsContent>
 
-          {/* Virtual Cards Tab */}
-          <TabsContent value="cards" className="mt-0">
-            <VirtualCardsSection />
-          </TabsContent>
+
+
 
           {/* USDT Tab */}
           <TabsContent value="usdt" className="mt-0">
