@@ -5,10 +5,13 @@
  * 
  * يدعم:
  * - Web Push Notifications (Browser API)
+ * - Firebase Cloud Messaging (FCM)
  * - Capacitor Push Notifications (للتطبيق المحلي)
  * 
  * ============================================================
  */
+
+import { supabase } from '@/integrations/supabase/client';
 
 export interface PushNotificationOptions {
   title: string;
@@ -71,6 +74,48 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
   } catch (error) {
     console.error('Service Worker registration failed:', error);
     return null;
+  }
+}
+
+/**
+ * تسجيل FCM Token في قاعدة البيانات
+ */
+export async function saveFcmToken(userId: string, token: string): Promise<boolean> {
+  try {
+    const deviceInfo = `${navigator.userAgent.substring(0, 100)}`;
+    
+    const { error } = await supabase
+      .from('fcm_tokens')
+      .upsert(
+        { user_id: userId, token, device_info: deviceInfo, updated_at: new Date().toISOString() },
+        { onConflict: 'user_id,token' }
+      );
+
+    if (error) {
+      console.error('Error saving FCM token:', error);
+      return false;
+    }
+    
+    console.log('FCM token saved successfully');
+    return true;
+  } catch (error) {
+    console.error('Error saving FCM token:', error);
+    return false;
+  }
+}
+
+/**
+ * حذف FCM Token عند تسجيل الخروج
+ */
+export async function removeFcmToken(token: string): Promise<void> {
+  try {
+    await supabase
+      .from('fcm_tokens')
+      .delete()
+      .eq('token', token);
+    console.log('FCM token removed');
+  } catch (error) {
+    console.error('Error removing FCM token:', error);
   }
 }
 
