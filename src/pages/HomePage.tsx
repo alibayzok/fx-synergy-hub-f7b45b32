@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, LogIn, Radio, Clock, Eye, Heart, Megaphone, BookOpen, TrendingUp, Sparkles } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { QuickActions } from '@/components/home/QuickActions';
+import { DailyQuestsWidget } from '@/components/home/DailyQuestsWidget';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -187,8 +188,15 @@ const HomePage = () => {
           </motion.div>
         )}
 
+        {/* Daily Quests Widget */}
+        {user && (
+          <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+            <DailyQuestsWidget />
+          </motion.section>
+        )}
+
         {/* Quick Actions */}
-        <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+        <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
           <h2 className="text-sm font-semibold text-muted-foreground mb-3">{t('home.quickActions')}</h2>
           <QuickActions isAdmin={isAdmin} onAction={handleQuickAction} />
         </motion.section>
