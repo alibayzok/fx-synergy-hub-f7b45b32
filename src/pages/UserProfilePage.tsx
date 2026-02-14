@@ -4,13 +4,29 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   ArrowRight, ArrowLeft, Crown, Shield, Calendar, MessageSquare,
-  UserPlus, UserMinus, Users, Check, X, Loader2, Mail
+  UserPlus, UserMinus, Users, Check, X, Loader2, Mail, Ban, MoreVertical
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { UserPostsSection } from '@/components/profile/UserPostsSection';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -20,6 +36,7 @@ import { countries } from '@/data/countries';
 import { formatDistanceToNow } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { useBlockUser } from '@/hooks/useBlockUser';
 
 interface UserProfile {
   id: string;
@@ -61,6 +78,8 @@ const UserProfilePage = () => {
   } = useSocial(userId);
 
   const { startDirectConversation } = useConversations();
+  const { isBlocked, blockUser, unblockUser } = useBlockUser(userId);
+  const [showBlockDialog, setShowBlockDialog] = useState(false);
   
   const isArabic = i18n.language === 'ar';
   const BackArrow = isArabic ? ArrowRight : ArrowLeft;
@@ -217,7 +236,32 @@ const UserProfilePage = () => {
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <BackArrow className="w-5 h-5" />
           </Button>
-          <h1 className="text-lg font-bold text-foreground">{t('profile.userProfile')}</h1>
+          <h1 className="text-lg font-bold text-foreground flex-1">{t('profile.userProfile')}</h1>
+          {user && !isOwnProfile && userId && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <MoreVertical className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align={isArabic ? "start" : "end"}>
+                {isBlocked ? (
+                  <DropdownMenuItem onClick={() => unblockUser(userId)} className="text-primary">
+                    <Ban className="w-4 h-4 me-2" />
+                    {t('social.unblockUser')}
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem 
+                    onClick={() => setShowBlockDialog(true)} 
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Ban className="w-4 h-4 me-2" />
+                    {t('social.blockUser')}
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       </header>
 
@@ -449,6 +493,27 @@ const UserProfilePage = () => {
           </>
         )}
       </div>
+
+      {/* Block Confirmation Dialog */}
+      <AlertDialog open={showBlockDialog} onOpenChange={setShowBlockDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('social.blockUser')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('social.confirmBlock')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={async () => { if (userId) { await blockUser(userId); setShowBlockDialog(false); } }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t('social.blockUser')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 };

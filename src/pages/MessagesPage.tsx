@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   MessageSquare, ArrowRight, ArrowLeft, Send, Users, 
-  Plus, Search, Trash2, Check, CheckCheck
+  Search, Check, CheckCheck, MoreVertical, Ban, Trash2, ShieldAlert
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
@@ -13,8 +13,25 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useConversations, useConversationMessages, Conversation } from '@/hooks/useMessaging';
+import { useBlockUser } from '@/hooks/useBlockUser';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
@@ -25,6 +42,7 @@ const MessagesPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { conversations, loading: convsLoading, unreadTotal } = useConversations();
+  const { blockedUsers, isUserBlocked } = useBlockUser();
   
   const selectedConversationId = searchParams.get('conv');
   const [searchQuery, setSearchQuery] = useState('');
@@ -40,9 +58,16 @@ const MessagesPage = () => {
     setSearchParams({});
   };
 
+  // Filter out conversations with blocked users
   const filteredConversations = conversations.filter(conv => {
-    if (!searchQuery) return true;
     const otherParticipant = conv.participants?.find(p => p.user_id !== user?.id);
+    
+    // Hide conversations with blocked users
+    if (otherParticipant && isUserBlocked(otherParticipant.user_id)) {
+      return false;
+    }
+
+    if (!searchQuery) return true;
     const name = conv.name || otherParticipant?.profile?.display_name || '';
     return name.toLowerCase().includes(searchQuery.toLowerCase());
   });
@@ -245,12 +270,21 @@ const ChatView = ({ conversationId, onBack }: ChatViewProps) => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { messages, conversation, loading, sendMessage } = useConversationMessages(conversationId);
+  const { messages, conversation, loading, sendMessage, deleteMessage } = useConversationMessages(conversationId);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const [showBlockDialog, setShowBlockDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   
   const isArabic = i18n.language === 'ar';
+
+  const otherParticipant = conversation?.type === 'direct' 
+    ? (conversation as any).participants?.find((p: any) => p.user_id !== user?.id)
+    : null;
+
+  const otherUserId = otherParticipant?.user_id;
+  const { isBlocked, blockUser, unblockUser } = useBlockUser(otherUserId);
 
   // Auto scroll to bottom
   useEffect(() => {
@@ -260,7 +294,7 @@ const ChatView = ({ conversationId, onBack }: ChatViewProps) => {
   }, [messages]);
 
   const handleSend = async () => {
-    if (!newMessage.trim() || sending) return;
+    if (!newMessage.trim() || sending || isBlocked) return;
     
     setSending(true);
     const success = await sendMessage(newMessage);
@@ -277,16 +311,30 @@ const ChatView = ({ conversationId, onBack }: ChatViewProps) => {
     }
   };
 
+  const handleBlock = async () => {
+    if (otherUserId) {
+      await blockUser(otherUserId);
+      setShowBlockDialog(false);
+    }
+  };
+
+  const handleUnblock = async () => {
+    if (otherUserId) {
+      await unblockUser(otherUserId);
+    }
+  };
+
+  const handleDeleteMessage = async (msgId: string) => {
+    await deleteMessage(msgId);
+    setShowDeleteDialog(null);
+  };
+
   const formatTime = (dateStr: string) => {
     return formatDistanceToNow(new Date(dateStr), {
       addSuffix: true,
       locale: isArabic ? ar : enUS
     });
   };
-
-  const otherParticipant = conversation?.type === 'direct' 
-    ? (conversation as any).participants?.find((p: any) => p.user_id !== user?.id)
-    : null;
 
   const conversationName = conversation?.type === 'group' 
     ? conversation.name 
@@ -299,8 +347,8 @@ const ChatView = ({ conversationId, onBack }: ChatViewProps) => {
         <Avatar 
           className="w-10 h-10 cursor-pointer hover:opacity-80 transition-opacity"
           onClick={() => {
-            if (otherParticipant?.user_id) {
-              navigate(`/user/${otherParticipant.user_id}`);
+            if (otherUserId) {
+              navigate(`/user/${otherUserId}`);
             }
           }}
         >
@@ -316,11 +364,11 @@ const ChatView = ({ conversationId, onBack }: ChatViewProps) => {
         <div 
           className={cn(
             "flex-1",
-            otherParticipant?.user_id && "cursor-pointer hover:opacity-80 transition-opacity"
+            otherUserId && "cursor-pointer hover:opacity-80 transition-opacity"
           )}
           onClick={() => {
-            if (otherParticipant?.user_id) {
-              navigate(`/user/${otherParticipant.user_id}`);
+            if (otherUserId) {
+              navigate(`/user/${otherUserId}`);
             }
           }}
         >
@@ -330,7 +378,40 @@ const ChatView = ({ conversationId, onBack }: ChatViewProps) => {
               {(conversation as any).participants?.length || 0} {t('community.members')}
             </p>
           )}
+          {isBlocked && (
+            <p className="text-xs text-destructive flex items-center gap-1">
+              <ShieldAlert className="w-3 h-3" />
+              {t('social.userIsBlocked')}
+            </p>
+          )}
         </div>
+
+        {/* Options Menu */}
+        {conversation?.type === 'direct' && otherUserId && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <MoreVertical className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align={isArabic ? "start" : "end"}>
+              {isBlocked ? (
+                <DropdownMenuItem onClick={handleUnblock} className="text-primary">
+                  <Ban className="w-4 h-4 me-2" />
+                  {t('social.unblockUser')}
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem 
+                  onClick={() => setShowBlockDialog(true)} 
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Ban className="w-4 h-4 me-2" />
+                  {t('social.blockUser')}
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
 
       {/* Messages */}
@@ -356,7 +437,7 @@ const ChatView = ({ conversationId, onBack }: ChatViewProps) => {
                   key={msg.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className={cn("flex gap-2", isOwn ? "flex-row-reverse" : "flex-row")}
+                  className={cn("flex gap-2 group", isOwn ? "flex-row-reverse" : "flex-row")}
                 >
                   {showAvatar ? (
                     <Avatar className="w-8 h-8 flex-shrink-0">
@@ -375,15 +456,26 @@ const ChatView = ({ conversationId, onBack }: ChatViewProps) => {
                         {msg.sender?.display_name || msg.sender?.username}
                       </span>
                     )}
-                    <div
-                      className={cn(
-                        "px-3 py-2 rounded-2xl",
-                        isOwn
-                          ? "bg-primary text-primary-foreground rounded-br-sm"
-                          : "bg-muted text-foreground rounded-bl-sm"
+                    <div className="relative">
+                      <div
+                        className={cn(
+                          "px-3 py-2 rounded-2xl",
+                          isOwn
+                            ? "bg-primary text-primary-foreground rounded-br-sm"
+                            : "bg-muted text-foreground rounded-bl-sm"
+                        )}
+                      >
+                        <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
+                      </div>
+                      {/* Delete button for own messages */}
+                      {isOwn && (
+                        <button
+                          onClick={() => setShowDeleteDialog(msg.id)}
+                          className="absolute -start-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full hover:bg-destructive/10"
+                        >
+                          <Trash2 className="w-3 h-3 text-destructive" />
+                        </button>
                       )}
-                    >
-                      <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
                     </div>
                     <div className="flex items-center gap-1 mt-1">
                       <span className="text-[10px] text-muted-foreground">
@@ -407,24 +499,73 @@ const ChatView = ({ conversationId, onBack }: ChatViewProps) => {
 
       {/* Input */}
       <div className="p-4 border-t border-border/30">
-        <div className="flex gap-2">
-          <Input
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={t('community.typeMessage')}
-            className="flex-1"
-            disabled={sending}
-          />
-          <Button
-            onClick={handleSend}
-            disabled={!newMessage.trim() || sending}
-            size="icon"
-          >
-            <Send className="w-4 h-4" />
-          </Button>
-        </div>
+        {isBlocked ? (
+          <div className="flex items-center justify-center gap-2 py-2 text-sm text-muted-foreground">
+            <ShieldAlert className="w-4 h-4" />
+            <span>{t('social.userIsBlocked')}</span>
+            <Button variant="link" size="sm" className="text-primary p-0 h-auto" onClick={handleUnblock}>
+              {t('social.unblockUser')}
+            </Button>
+          </div>
+        ) : (
+          <div className="flex gap-2">
+            <Input
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={t('community.typeMessage')}
+              className="flex-1"
+              disabled={sending}
+            />
+            <Button
+              onClick={handleSend}
+              disabled={!newMessage.trim() || sending}
+              size="icon"
+            >
+              <Send className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
       </div>
+
+      {/* Block Confirmation Dialog */}
+      <AlertDialog open={showBlockDialog} onOpenChange={setShowBlockDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('social.blockUser')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('social.confirmBlock')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBlock} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {t('social.blockUser')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Message Confirmation */}
+      <AlertDialog open={!!showDeleteDialog} onOpenChange={() => setShowDeleteDialog(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('common.delete')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('community.confirmDeleteMessage')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => showDeleteDialog && handleDeleteMessage(showDeleteDialog)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t('common.delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

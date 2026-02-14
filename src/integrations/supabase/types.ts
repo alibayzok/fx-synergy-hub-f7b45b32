@@ -1689,6 +1689,30 @@ export type Database = {
           },
         ]
       }
+      user_blocks: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string
+          id: string
+          reason: string | null
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
       user_daily_progress: {
         Row: {
           completed: boolean
@@ -2189,6 +2213,10 @@ export type Database = {
         Returns: Json
       }
       is_admin: { Args: never; Returns: boolean }
+      is_blocked: {
+        Args: { checker_id: string; target_id: string }
+        Returns: boolean
+      }
       is_conversation_admin: {
         Args: { check_user_id?: string; conv_id: string }
         Returns: boolean
