@@ -1,75 +1,68 @@
 
+# اضافة بطاقة تحميل تطبيق الخدمات الرقمية في قسم الخدمات
 
-# التحكم بما يُنشر من تلغرام إلى التطبيق
+## الهدف
+اضافة بطاقة مميزة بصريا داخل تبويب "الخدمات" مخصصة لتحميل تطبيق الخدمات الرقمية المستقبلي، مع امكانية ادارة رابط التحميل من لوحة التحكم.
 
-## الفكرة
-بدل ما ينزل كل شي من قنوات التلغرام تلقائياً، أنت تتحكم بالمحتوى اللي تبي تشاركه مع التطبيق عن طريق **هاشتاغات** بسيطة تضيفها للرسالة في تلغرام.
+## الخطوات
 
-## كيف يعمل
+### 1. اضافة حقول جديدة لجدول services في قاعدة البيانات
+- اضافة عمود `card_type` (نوع نصي، القيمة الافتراضية 'default') للتمييز بين البطاقات العادية وبطاقة تحميل التطبيق (`app_download`)
+- اضافة عمود `app_store_url` لرابط App Store (اختياري)
+- اضافة عمود `play_store_url` لرابط Google Play (اختياري)
+- اضافة عمود `apk_url` لرابط تحميل APK مباشر (اختياري)
 
-عند نشر رسالة في أي قناة، الـ webhook يفحص إذا فيها هاشتاغ نشر:
+### 2. اضافة خدمة "تطبيق الخدمات الرقمية" في قاعدة البيانات
+- ادخال سجل جديد في جدول `services` بنوع `card_type = 'app_download'` مع اسم عربي وانجليزي ووصف ولون مميز
 
-```text
-رسالة في تلغرام
-    │
-    ├── فيها #نشر أو #publish ──> تُحفظ في التطبيق
-    │
-    └── ما فيها هاشتاغ ──> تُتجاهل (ما تنزل بالتطبيق)
-```
+### 3. تصميم بطاقة تحميل التطبيق في صفحة الخدمات
+- تعديل `src/pages/ServicesPage.tsx` لاضافة عرض خاص عندما يكون `card_type === 'app_download'`
+- البطاقة ستتضمن:
+  - ايقونة تحميل مميزة مع تدرج لوني بنفسجي/ازرق
+  - شارة "جديد" او "قريبا"
+  - ازرار تحميل منفصلة (Google Play / App Store / APK) حسب الروابط المتوفرة
+  - اذا لم تتوفر روابط بعد، يظهر زر "قريبا" معطل مع رسالة توضيحية
 
-### أمثلة عملية
-
-| ما تكتبه في تلغرام | النتيجة |
-|---|---|
-| `EURUSD شراء من 1.0850 #نشر` | تنزل كإشارة في التطبيق |
-| `تحليل سريع للسوق` | ما تنزل (بدون هاشتاغ) |
-| `خبر عاجل: الفيدرالي يرفع الفائدة #نشر` | تنزل كخبر/مقالة |
-
-## خطوات التنفيذ
-
-### 1. إنشاء Backend Function: `telegram-webhook`
-- تستقبل الرسائل من بوت التلغرام
-- تتحقق من وجود هاشتاغ `#نشر` أو `#publish` في الرسالة
-- إذا ما فيه هاشتاغ = تتجاهل الرسالة بالكامل
-- إذا فيه هاشتاغ = تحدد القناة المصدر وتحفظ المحتوى:
-  - قناة VIP --> جدول `signals` مع `visibility = 'vip'`
-  - القناة العامة --> جدول `signals` مع `visibility = 'free'`
-  - قناة الأخبار --> جدول `articles` مع `is_published = true`
-- تزيل الهاشتاغ من النص قبل الحفظ
-- تدعم الصور المرفقة (تحملها عبر Telegram File API وترفعها للتخزين)
-
-### 2. إنشاء Backend Function مساعدة: `setup-telegram-webhook`
-- تُستدعى مرة واحدة لتسجيل رابط الـ webhook مع تلغرام
-
-### 3. المفاتيح المطلوبة (تضيفها أنت)
-- **TELEGRAM_BOT_TOKEN**: توكن البوت من BotFather
-- **TELEGRAM_WEBHOOK_SECRET**: كلمة سر للحماية (تختارها أنت)
-- **TELEGRAM_VIP_CHANNEL_ID**: معرّف قناة VIP
-- **TELEGRAM_PUBLIC_CHANNEL_ID**: معرّف القناة العامة
-- **TELEGRAM_NEWS_CHANNEL_ID**: معرّف قناة الأخبار
-
-### 4. إعداد البوت (تقوم بها أنت)
-- إنشاء بوت عبر @BotFather
-- إضافته كمسؤول في القنوات الثلاث
-- نسخ التوكن وإضافته كـ secret
-
-### 5. لا تغييرات على قاعدة البيانات
-الجداول الحالية (`signals` و `articles`) جاهزة ولا تحتاج تعديل.
+### 4. تحديث لوحة تحكم الخدمات
+- تعديل `src/components/admin/ServicesAndBrokersManagement.tsx` لاضافة حقول الروابط الجديدة (App Store, Play Store, APK) عند تعديل/اضافة خدمة من نوع `app_download`
 
 ---
 
 ## التفاصيل التقنية
 
-### منطق الفلترة في `telegram-webhook`
-- يبحث عن `#نشر` أو `#publish` في نص الرسالة (channel_post.text أو channel_post.caption)
-- إذا لم يجد الهاشتاغ، يُرجع 200 OK بدون أي إجراء
-- إذا وجده، يزيل الهاشتاغ من النص ويُكمل عملية الحفظ
-- يتحقق من `channel_post.chat.id` لمعرفة القناة المصدر
-- يقارنه بمعرّفات القنوات المحفوظة في الـ secrets
-- للصور: يحمّلها عبر Telegram File API ثم يرفعها إلى storage bucket
-- يستخدم `SUPABASE_SERVICE_ROLE_KEY` للكتابة (تجاوز RLS)
-- يتحقق من صحة الطلب عبر header: `X-Telegram-Bot-Api-Secret-Token`
+### تغييرات قاعدة البيانات (Migration)
+```sql
+ALTER TABLE public.services 
+  ADD COLUMN card_type text DEFAULT 'default',
+  ADD COLUMN app_store_url text,
+  ADD COLUMN play_store_url text,
+  ADD COLUMN apk_url text;
 
-### إعدادات config.toml
-- `verify_jwt = false` لأن الطلبات تأتي من Telegram وليس من مستخدم مسجّل
+INSERT INTO public.services (name_ar, name_en, description_ar, description_en, icon, color, is_active, sort_order, card_type, link_url, link_label_ar, link_label_en, is_external_link)
+VALUES (
+  'تطبيق الخدمات الرقمية',
+  'Digital Services App',
+  'حمّل تطبيقنا المستقل للخدمات الرقمية واستمتع بتجربة متكاملة',
+  'Download our standalone digital services app for a complete experience',
+  'Smartphone',
+  '#8B5CF6',
+  true,
+  0,
+  'app_download',
+  '',
+  'تحميل التطبيق',
+  'Download App',
+  true
+);
+```
 
+### تصميم بطاقة التحميل
+- تدرج لوني بنفسجي مع خلفية متوهجة (مشابه لبطاقة USDT لكن بلون مختلف)
+- ايقونة هاتف ذكي كبيرة
+- ازرار Google Play و App Store بتصميم رسمي
+- حالة "قريبا" عندما لا تتوفر روابط
+
+### الملفات المتاثرة
+- `src/pages/ServicesPage.tsx` - اضافة عرض بطاقة التحميل الخاصة
+- `src/components/admin/ServicesAndBrokersManagement.tsx` - اضافة حقول ادارة روابط التطبيق
+- Migration SQL جديد لتحديث هيكل الجدول
