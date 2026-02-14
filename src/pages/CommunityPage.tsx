@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { LogIn, Megaphone, MessageSquare, GraduationCap } from 'lucide-react';
@@ -56,17 +56,7 @@ const CommunityPage = () => {
     learning: isArabic ? 'لا توجد غرف تعليم حالياً' : 'No learning rooms yet',
   };
 
-  // Sliding indicator
-  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
   const activeIndex = TABS.findIndex(t => t.key === activeTab);
-
-  useEffect(() => {
-    const el = tabRefs.current[activeIndex];
-    if (el) {
-      setIndicator({ left: el.offsetLeft, width: el.offsetWidth });
-    }
-  }, [activeIndex]);
 
   const handleRoomClick = (room: RoomWithCounts) => {
     if (room.is_private && !isVipUser) {
@@ -192,12 +182,12 @@ const CommunityPage = () => {
           {/* Custom Tab Bar */}
           <div className="px-4 pt-3 pb-1">
             <div className="relative flex items-center bg-muted/60 rounded-xl p-1">
-              {/* Sliding indicator */}
+              {/* Sliding indicator - percentage based for RTL support */}
               <span
                 className="absolute top-1 bottom-1 rounded-lg bg-primary shadow-md transition-all duration-300 ease-out"
                 style={{
-                  left: indicator.left,
-                  width: indicator.width,
+                  width: `calc(${100 / TABS.length}% - 2px)`,
+                  insetInlineStart: `calc(${(activeIndex * 100) / TABS.length}% + 1px)`,
                 }}
               />
 
@@ -208,7 +198,6 @@ const CommunityPage = () => {
                 return (
                   <button
                     key={tab.key}
-                    ref={el => { tabRefs.current[i] = el; }}
                     onClick={() => setActiveTab(tab.key)}
                     className={cn(
                       'relative z-10 flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-semibold transition-colors duration-200',
