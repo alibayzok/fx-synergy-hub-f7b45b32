@@ -13,7 +13,7 @@ import { useSignals } from '@/hooks/useSignals';
 import { useProfile } from '@/hooks/useProfile';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { supabase } from '@/integrations/supabase/client';
-import appLogo from '@/assets/logo-clean.png';
+import appLogo from '@/assets/logo-dark.png';
 import { formatDistanceToNow } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
 
