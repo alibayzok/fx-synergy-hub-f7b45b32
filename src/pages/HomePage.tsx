@@ -13,6 +13,7 @@ import { useSignals } from '@/hooks/useSignals';
 import { useProfile } from '@/hooks/useProfile';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { supabase } from '@/integrations/supabase/client';
+import appLogo from '@/assets/logo.jpg';
 import { formatDistanceToNow } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
 
@@ -97,10 +98,8 @@ const HomePage = () => {
 
       <header className="sticky top-0 z-40 glass-premium border-b border-border/20">
         <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
-            {getSetting('logo_url') ? (
-              <img src={getSetting('logo_url')} alt={appName} className="h-8 w-8 rounded-lg object-contain" />
-            ) : null}
+          <div className="flex items-center gap-2.5">
+            <img src={appLogo} alt={appName} className="h-9 w-9 rounded-full object-cover border border-primary/30 shadow-md" />
             <div>
               <h1 className="text-xl font-bold gold-gradient">{appName}</h1>
               <p className="text-xs text-muted-foreground">{t('app.tagline')}</p>

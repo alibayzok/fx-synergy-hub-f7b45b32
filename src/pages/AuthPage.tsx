@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { countries } from '@/data/countries';
 import { signInWithGoogle } from '@/lib/auth-helpers';
 import { useAppSettings } from '@/hooks/useAppSettings';
+import appLogo from '@/assets/logo.jpg';
 
 type AuthMode = 'login' | 'register' | 'forgot';
 
@@ -145,9 +146,10 @@ const AuthPage = () => {
         >
           {/* Logo/Title */}
           <div className="text-center space-y-3">
-            {logoUrl ? (
-              <img src={logoUrl} alt={t('app.name')} className="h-16 w-16 mx-auto object-contain rounded-xl" />
-            ) : null}
+            <div className="relative mx-auto w-20 h-20">
+              <div className="absolute inset-0 rounded-full bg-primary/20 blur-xl animate-pulse" />
+              <img src={appLogo} alt={t('app.name')} className="relative h-20 w-20 mx-auto object-cover rounded-full border-2 border-primary/40 shadow-xl" />
+            </div>
             <h1 className="text-3xl font-bold text-primary">
               {t('app.name')}
             </h1>
