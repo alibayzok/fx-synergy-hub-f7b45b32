@@ -36,6 +36,7 @@ import { Input } from '@/components/ui/input';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -151,6 +152,7 @@ const ProfilePage = () => {
           <DialogContent className="sm:max-w-[300px]">
             <DialogHeader>
               <DialogTitle>{t('profile.language')}</DialogTitle>
+              <DialogDescription className="sr-only">Select language</DialogDescription>
             </DialogHeader>
             <div className="space-y-2 pt-2">
               <button
@@ -556,6 +558,7 @@ const ProfilePage = () => {
         <DialogContent className="sm:max-w-[300px]">
           <DialogHeader>
             <DialogTitle>{t('profile.language')}</DialogTitle>
+            <DialogDescription className="sr-only">Select language</DialogDescription>
           </DialogHeader>
           <div className="space-y-2 pt-2">
             <button
@@ -591,6 +594,7 @@ const ProfilePage = () => {
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
             <DialogTitle>{t('profile.editProfile')}</DialogTitle>
+            <DialogDescription className="sr-only">Edit your profile information</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-4">
             <div className="space-y-2">
@@ -656,6 +660,7 @@ const ProfilePage = () => {
         <DialogContent className="sm:max-w-[350px]">
           <DialogHeader>
             <DialogTitle>{t('profile.watchlist')}</DialogTitle>
+            <DialogDescription className="sr-only">Your watchlist</DialogDescription>
           </DialogHeader>
           <div className="space-y-2 pt-2">
             {watchlist.length > 0 ? (
@@ -693,6 +698,7 @@ const ProfilePage = () => {
         <DialogContent className="sm:max-w-[420px] p-0 overflow-hidden">
           <DialogHeader className="p-4 pb-0">
             <DialogTitle>الصورة الشخصية</DialogTitle>
+            <DialogDescription className="sr-only">Preview avatar</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col items-center gap-4 p-4">
             {profile?.avatar_url ? (
