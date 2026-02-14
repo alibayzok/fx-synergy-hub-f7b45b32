@@ -322,6 +322,7 @@ export type Database = {
           description_ar: string | null
           icon: string | null
           id: string
+          is_broadcast: boolean
           is_private: boolean | null
           name: string
           name_ar: string
@@ -336,6 +337,7 @@ export type Database = {
           description_ar?: string | null
           icon?: string | null
           id: string
+          is_broadcast?: boolean
           is_private?: boolean | null
           name: string
           name_ar: string
@@ -350,6 +352,7 @@ export type Database = {
           description_ar?: string | null
           icon?: string | null
           id?: string
+          is_broadcast?: boolean
           is_private?: boolean | null
           name?: string
           name_ar?: string
