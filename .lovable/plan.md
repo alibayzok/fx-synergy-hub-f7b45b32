@@ -1,68 +1,50 @@
 
-# اضافة بطاقة تحميل تطبيق الخدمات الرقمية في قسم الخدمات
+# تحسين معاينة الصور بشكل فاخر واحترافي
 
-## الهدف
-اضافة بطاقة مميزة بصريا داخل تبويب "الخدمات" مخصصة لتحميل تطبيق الخدمات الرقمية المستقبلي، مع امكانية ادارة رابط التحميل من لوحة التحكم.
+## ملخص
+انشاء مكون عارض صور (Image Lightbox) موحد وفاخر يُستخدم في كل التطبيق بدلاً من الحلول المبعثرة الحالية. سيتضمن تأثيرات حركية سينمائية، تكبير/تصغير، وتصميم أنيق.
 
-## الخطوات
+---
 
-### 1. اضافة حقول جديدة لجدول services في قاعدة البيانات
-- اضافة عمود `card_type` (نوع نصي، القيمة الافتراضية 'default') للتمييز بين البطاقات العادية وبطاقة تحميل التطبيق (`app_download`)
-- اضافة عمود `app_store_url` لرابط App Store (اختياري)
-- اضافة عمود `play_store_url` لرابط Google Play (اختياري)
-- اضافة عمود `apk_url` لرابط تحميل APK مباشر (اختياري)
+## ما سيتم تحسينه
 
-### 2. اضافة خدمة "تطبيق الخدمات الرقمية" في قاعدة البيانات
-- ادخال سجل جديد في جدول `services` بنوع `card_type = 'app_download'` مع اسم عربي وانجليزي ووصف ولون مميز
+### 1. مكون جديد: PremiumImageViewer
+مكون مركزي قابل لإعادة الاستخدام في كل مكان بالتطبيق:
+- خلفية داكنة شفافة مع تمويه (backdrop blur)
+- تأثير ظهور سينمائي باستخدام Framer Motion (scale + fade)
+- دعم تكبير/تصغير بالنقر المزدوج أو بإيماءة القرص (pinch-to-zoom)
+- زر إغلاق أنيق بتأثير زجاجي
+- حلقة متوهجة حول الصورة (glow ring)
+- مؤشر تحميل أثناء جلب الصورة
+- إغلاق بالسحب للأسفل (swipe down to dismiss)
 
-### 3. تصميم بطاقة تحميل التطبيق في صفحة الخدمات
-- تعديل `src/pages/ServicesPage.tsx` لاضافة عرض خاص عندما يكون `card_type === 'app_download'`
-- البطاقة ستتضمن:
-  - ايقونة تحميل مميزة مع تدرج لوني بنفسجي/ازرق
-  - شارة "جديد" او "قريبا"
-  - ازرار تحميل منفصلة (Google Play / App Store / APK) حسب الروابط المتوفرة
-  - اذا لم تتوفر روابط بعد، يظهر زر "قريبا" معطل مع رسالة توضيحية
+### 2. تحسين معاينة صورة الملف الشخصي (ProfilePage)
+- استبدال Dialog البسيط الحالي بـ PremiumImageViewer
+- إضافة تأثير توهج ذهبي حول الصورة
+- أزرار "تغيير" و"حذف" بتصميم زجاجي عائم أسفل الصورة
 
-### 4. تحديث لوحة تحكم الخدمات
-- تعديل `src/components/admin/ServicesAndBrokersManagement.tsx` لاضافة حقول الروابط الجديدة (App Store, Play Store, APK) عند تعديل/اضافة خدمة من نوع `app_download`
+### 3. تحسين Lightbox المنشورات (PostCard)
+- استبدال Lightbox الحالي البسيط بالمكون الجديد
+- إضافة تأثيرات حركية أفضل
+
+### 4. تحسين Lightbox صفحة التحليلات (AnalysesPage)
+- توحيد استخدام المكون الجديد
 
 ---
 
 ## التفاصيل التقنية
 
-### تغييرات قاعدة البيانات (Migration)
-```sql
-ALTER TABLE public.services 
-  ADD COLUMN card_type text DEFAULT 'default',
-  ADD COLUMN app_store_url text,
-  ADD COLUMN play_store_url text,
-  ADD COLUMN apk_url text;
+### الملفات الجديدة:
+- `src/components/ui/premium-image-viewer.tsx` - المكون الرئيسي
 
-INSERT INTO public.services (name_ar, name_en, description_ar, description_en, icon, color, is_active, sort_order, card_type, link_url, link_label_ar, link_label_en, is_external_link)
-VALUES (
-  'تطبيق الخدمات الرقمية',
-  'Digital Services App',
-  'حمّل تطبيقنا المستقل للخدمات الرقمية واستمتع بتجربة متكاملة',
-  'Download our standalone digital services app for a complete experience',
-  'Smartphone',
-  '#8B5CF6',
-  true,
-  0,
-  'app_download',
-  '',
-  'تحميل التطبيق',
-  'Download App',
-  true
-);
-```
+### الملفات المعدلة:
+- `src/pages/ProfilePage.tsx` - استبدال Avatar Preview Dialog
+- `src/components/profile/PostCard.tsx` - استبدال Image Lightbox
+- `src/pages/AnalysesPage.tsx` - استبدال Image Lightbox
 
-### تصميم بطاقة التحميل
-- تدرج لوني بنفسجي مع خلفية متوهجة (مشابه لبطاقة USDT لكن بلون مختلف)
-- ايقونة هاتف ذكي كبيرة
-- ازرار Google Play و App Store بتصميم رسمي
-- حالة "قريبا" عندما لا تتوفر روابط
-
-### الملفات المتاثرة
-- `src/pages/ServicesPage.tsx` - اضافة عرض بطاقة التحميل الخاصة
-- `src/components/admin/ServicesAndBrokersManagement.tsx` - اضافة حقول ادارة روابط التطبيق
-- Migration SQL جديد لتحديث هيكل الجدول
+### المميزات التقنية:
+- استخدام `framer-motion` للتأثيرات الحركية (متوفر بالفعل)
+- دعم إيماءات اللمس (swipe to dismiss)
+- تحميل كسول للصور عالية الدقة
+- تصميم متوافق مع الوضع الداكن والفاتح
+- دعم RTL بالكامل
