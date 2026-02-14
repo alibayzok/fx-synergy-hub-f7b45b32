@@ -111,6 +111,9 @@ export const NotificationsPanel = () => {
       case 'analysis_like':
         if (data?.analysis_id) target = '/analyses';
         break;
+      case 'support_reply':
+        target = '/support';
+        break;
     }
 
     if (target) {

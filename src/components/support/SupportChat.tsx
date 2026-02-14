@@ -126,6 +126,16 @@ const SupportChat = ({
     if (!ticket.assigned_to) {
       onTicketUpdate({ ...ticket, assigned_to: userId });
     }
+    // Send notification to the ticket owner
+    if (ticket.user_id !== userId) {
+      await supabase.from('user_notifications').insert({
+        user_id: ticket.user_id,
+        title: 'رد من الدعم الفني',
+        message: `تم الرد على تذكرتك: ${ticket.subject}`,
+        type: 'support_reply',
+        data: { ticket_id: ticket.id },
+      });
+    }
     setInput('');
     setPendingFiles([]);
     setSending(false);
