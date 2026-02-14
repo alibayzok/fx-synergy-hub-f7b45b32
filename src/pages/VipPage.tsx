@@ -438,7 +438,7 @@ const VipPage = () => {
             </div>
             <Button
               variant="outline"
-              onClick={() => navigate('/services')}
+              onClick={() => navigate('/services?tab=brokers')}
               className="border-amber-500/50 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
             >
               {isRTL ? 'افتح حساب الآن' : 'Open Account Now'}
