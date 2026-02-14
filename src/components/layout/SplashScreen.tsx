@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { useAppSettings } from '@/hooks/useAppSettings';
-import appLogo from '@/assets/logo-clean.png';
+import appLogo from '@/assets/logo-dark.png';
 
 interface SplashScreenProps {
   onComplete: () => void;
