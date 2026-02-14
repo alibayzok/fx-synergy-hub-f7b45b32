@@ -6,7 +6,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { PremiumImageViewer } from '@/components/ui/premium-image-viewer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAnalyses } from '@/hooks/useAnalyses';
@@ -247,18 +247,12 @@ const AnalysesPage = () => {
           )}
         </div>
 
-        {/* Image Lightbox Dialog */}
-        <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
-          <DialogContent className="max-w-4xl p-2 bg-black/90 border-none">
-            {selectedImage && (
-              <img
-                src={selectedImage}
-                alt="Chart"
-                className="w-full h-auto max-h-[85vh] object-contain rounded-lg"
-              />
-            )}
-          </DialogContent>
-        </Dialog>
+        {/* Premium Image Lightbox */}
+        <PremiumImageViewer
+          src={selectedImage}
+          open={!!selectedImage}
+          onClose={() => setSelectedImage(null)}
+        />
       </div>
     </AppLayout>
   );
