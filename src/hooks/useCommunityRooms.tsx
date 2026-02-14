@@ -26,29 +26,28 @@ export const useCommunityRooms = () => {
   const fetchRooms = async () => {
     setLoading(true);
     try {
-      // Fetch rooms
-      const { data: roomsData, error: roomsError } = await supabase
-        .from('community_rooms')
-        .select('*')
-        .order('created_at', { ascending: true });
+      // Fetch rooms + member counts in parallel
+      const [roomsRes, membersRes] = await Promise.all([
+        supabase.from('community_rooms').select('*').order('created_at', { ascending: true }),
+        supabase.from('room_members').select('room_id').eq('status', 'approved'),
+      ]);
 
-      if (roomsError) throw roomsError;
-
-      // Fetch member counts per room
-      const { data: membersData } = await supabase
-        .from('room_members')
-        .select('room_id')
-        .eq('status', 'approved');
+      if (roomsRes.error) throw roomsRes.error;
+      const roomsData = roomsRes.data || [];
 
       const memberCountMap: Record<string, number> = {};
-      membersData?.forEach(m => {
+      membersRes.data?.forEach(m => {
         memberCountMap[m.room_id] = (memberCountMap[m.room_id] || 0) + 1;
       });
 
-      // Fetch user's last read timestamps if logged in
+      // Compute unread counts in parallel (not sequentially)
       let unreadMap: Record<string, number> = {};
       if (user) {
-        // Get user's membership records for last read tracking
+        const lastVisits: Record<string, string> = JSON.parse(
+          localStorage.getItem(`community_last_visits_${user.id}`) || '{}'
+        );
+
+        // Get user memberships
         const { data: membershipData } = await supabase
           .from('room_members')
           .select('room_id, joined_at')
@@ -60,52 +59,48 @@ export const useCommunityRooms = () => {
           joinedRooms.set(m.room_id, m.joined_at || new Date(0).toISOString());
         });
 
-        // For each room the user is a member of, count messages after their join
-        // We'll use a simple approach: count recent messages (last 24h) as "unread" indicator
-        // A proper solution would track last_read_at per room
-        if (joinedRooms.size > 0) {
-          const roomIds = Array.from(joinedRooms.keys());
-          
-          // Get last visit timestamp from localStorage
-          const lastVisits: Record<string, string> = JSON.parse(
-            localStorage.getItem(`community_last_visits_${user.id}`) || '{}'
-          );
+        // Build all unread queries in parallel
+        const unreadQueries: { roomId: string; promise: Promise<{ count: number | null }> }[] = [];
 
-          for (const roomId of roomIds) {
-            const lastVisit = lastVisits[roomId] || joinedRooms.get(roomId) || new Date(0).toISOString();
-            const { count } = await supabase
+        // Joined rooms
+        for (const roomId of joinedRooms.keys()) {
+          const lastVisit = lastVisits[roomId] || joinedRooms.get(roomId) || new Date(0).toISOString();
+          unreadQueries.push({
+            roomId,
+            promise: supabase
               .from('room_messages')
               .select('*', { count: 'exact', head: true })
               .eq('room_id', roomId)
               .gt('created_at', lastVisit)
-              .neq('user_id', user.id);
-            
-            if (count && count > 0) {
-              unreadMap[roomId] = count;
-            }
-          }
+              .neq('user_id', user.id) as any,
+          });
         }
 
-        // For broadcast channels, count unread for all logged-in users
-        const broadcastRooms = roomsData?.filter(r => r.is_broadcast && !joinedRooms.has(r.id)) || [];
+        // Broadcast rooms not joined
+        const broadcastRooms = roomsData.filter(r => r.is_broadcast && !joinedRooms.has(r.id));
         for (const room of broadcastRooms) {
-          const lastVisit = JSON.parse(
-            localStorage.getItem(`community_last_visits_${user.id}`) || '{}'
-          )[room.id] || new Date(0).toISOString();
-          
-          const { count } = await supabase
-            .from('room_messages')
-            .select('*', { count: 'exact', head: true })
-            .eq('room_id', room.id)
-            .gt('created_at', lastVisit);
-          
-          if (count && count > 0) {
-            unreadMap[room.id] = count;
-          }
+          const lastVisit = lastVisits[room.id] || new Date(0).toISOString();
+          unreadQueries.push({
+            roomId: room.id,
+            promise: supabase
+              .from('room_messages')
+              .select('*', { count: 'exact', head: true })
+              .eq('room_id', room.id)
+              .gt('created_at', lastVisit) as any,
+          });
         }
+
+        // Execute all in parallel
+        const results = await Promise.all(unreadQueries.map(q => q.promise));
+        results.forEach((res, i) => {
+          const count = (res as any)?.count ?? 0;
+          if (count > 0) {
+            unreadMap[unreadQueries[i].roomId] = count;
+          }
+        });
       }
 
-      const enrichedRooms: RoomWithCounts[] = (roomsData || []).map(room => ({
+      const enrichedRooms: RoomWithCounts[] = roomsData.map(room => ({
         id: room.id,
         name: room.name,
         name_ar: room.name_ar,
@@ -135,9 +130,7 @@ export const useCommunityRooms = () => {
     const lastVisits = JSON.parse(localStorage.getItem(key) || '{}');
     lastVisits[roomId] = new Date().toISOString();
     localStorage.setItem(key, JSON.stringify(lastVisits));
-    
-    // Update local state
-    setRooms(prev => prev.map(r => 
+    setRooms(prev => prev.map(r =>
       r.id === roomId ? { ...r, unread_count: 0 } : r
     ));
   };
