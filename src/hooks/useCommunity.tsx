@@ -478,6 +478,9 @@ export const useRoomChat = (roomId: string) => {
 
       if (error) throw error;
 
+      // Track daily quest - send_message
+      import('@/lib/quest-tracker').then(({ trackQuestProgress }) => trackQuestProgress(user.id, 'send_message'));
+
       return message;
     } catch (error) {
       console.error('Error sending message:', error);

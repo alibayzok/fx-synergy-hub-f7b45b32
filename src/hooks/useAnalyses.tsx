@@ -148,6 +148,10 @@ export const useAnalyses = () => {
       .from('analysis_likes')
       .insert({ analysis_id: analysisId, user_id: user.id });
 
+    if (!error) {
+      // Track daily quest - like_content
+      import('@/lib/quest-tracker').then(({ trackQuestProgress }) => trackQuestProgress(user.id, 'like_content'));
+    }
     return !error;
   };
 
