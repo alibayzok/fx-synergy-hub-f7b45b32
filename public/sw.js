@@ -4,11 +4,20 @@
  * ============================================================
  * 
  * يدير:
+ * - Firebase Cloud Messaging (FCM)
  * - Push Notifications
  * - Background Sync (مستقبلاً)
  * 
  * ============================================================
  */
+
+// Import Firebase Messaging SW (if available)
+try {
+  importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
+  importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');
+} catch (e) {
+  console.log('Firebase scripts not loaded (config may not be set)');
+}
 
 const CACHE_NAME = 'assassin-fx-v1';
 
@@ -39,9 +48,13 @@ self.addEventListener('push', (event) => {
   if (event.data) {
     try {
       const data = event.data.json();
+      const notification = data.notification || {};
       notificationData = {
-        ...notificationData,
-        ...data
+        title: notification.title || notificationData.title,
+        body: notification.body || notificationData.body,
+        icon: notification.icon || notificationData.icon,
+        badge: notificationData.badge,
+        data: data.data || {}
       };
     } catch (e) {
       notificationData.body = event.data.text();
@@ -55,6 +68,8 @@ self.addEventListener('push', (event) => {
       badge: notificationData.badge,
       data: notificationData.data,
       vibrate: [200, 100, 200],
+      tag: notificationData.data?.type || 'general',
+      renotify: true,
       requireInteraction: false
     })
   );
@@ -66,19 +81,21 @@ self.addEventListener('notificationclick', (event) => {
   
   event.notification.close();
 
-  // Navigate to app
+  const url = event.notification.data?.url || '/';
+
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // If app is already open, focus it
       for (const client of clientList) {
         if (client.url.includes(self.location.origin) && 'focus' in client) {
-          return client.focus();
+          client.focus();
+          if (url !== '/') {
+            client.navigate(url);
+          }
+          return;
         }
       }
       
-      // Otherwise open a new window
       if (clients.openWindow) {
-        const url = event.notification.data?.url || '/';
         return clients.openWindow(url);
       }
     })

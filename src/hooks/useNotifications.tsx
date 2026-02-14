@@ -9,6 +9,8 @@ import {
   requestNotificationPermission,
   isPushSupported 
 } from '@/lib/push-notifications';
+import { registerFcmForUser, unregisterFcm } from '@/lib/fcm-manager';
+import { isFirebaseConfigured } from '@/lib/firebase-config';
 
 export interface UserNotification {
   id: string;
@@ -38,6 +40,19 @@ export const useNotifications = () => {
       setPushPermission(Notification.permission);
     }
   }, []);
+
+  // Register FCM token when user logs in
+  useEffect(() => {
+    if (user && isFirebaseConfigured()) {
+      registerFcmForUser(user.id).then((success) => {
+        if (success) console.log('FCM registered for user');
+      });
+    }
+
+    return () => {
+      // Cleanup on logout handled separately
+    };
+  }, [user]);
 
   const fetchNotifications = useCallback(async () => {
     if (!user) return;
