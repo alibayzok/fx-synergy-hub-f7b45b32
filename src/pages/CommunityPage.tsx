@@ -8,19 +8,15 @@ import { RoomChatPanel } from '@/components/community/RoomChatPanel';
 import { RoomModerationPanel } from '@/components/community/RoomModerationPanel';
 import { LearningRoomPanel } from '@/components/community/LearningRoomPanel';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useCommunityRooms, RoomWithCounts } from '@/hooks/useCommunityRooms';
+import { cn } from '@/lib/utils';
 
 type ViewMode = 'list' | 'chat' | 'learning' | 'moderation';
-
-const SectionHeader = ({ icon: Icon, title }: { icon: React.ComponentType<{ className?: string }>; title: string }) => (
-  <div className="flex items-center gap-2 mb-2 mt-4 first:mt-0">
-    <Icon className="w-4 h-4 text-primary" />
-    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{title}</h3>
-  </div>
-);
 
 const CommunityPage = () => {
   const { t, i18n } = useTranslation();
@@ -36,10 +32,13 @@ const CommunityPage = () => {
 
   const selectedRoom = rooms.find(r => r.id === selectedRoomId) || null;
 
-  // Group rooms by category
   const channels = rooms.filter(r => r.category === 'channels');
   const discussions = rooms.filter(r => r.category === 'discussions');
   const learningRooms = rooms.filter(r => r.category === 'learning');
+
+  const channelsUnread = channels.reduce((s, r) => s + r.unread_count, 0);
+  const discussionsUnread = discussions.reduce((s, r) => s + r.unread_count, 0);
+  const learningUnread = learningRooms.reduce((s, r) => s + r.unread_count, 0);
 
   const handleRoomClick = (room: RoomWithCounts) => {
     if (room.is_private && !isVipUser) {
@@ -50,10 +49,8 @@ const CommunityPage = () => {
       });
       return;
     }
-
     setSelectedRoomId(room.id);
     markRoomAsRead(room.id);
-
     if (room.id === 'learning') {
       setViewMode('learning');
     } else {
@@ -66,7 +63,6 @@ const CommunityPage = () => {
     setSelectedRoomId(null);
   };
 
-  // Login prompt
   if (!authLoading && !user) {
     return (
       <AppLayout>
@@ -92,16 +88,10 @@ const CommunityPage = () => {
     );
   }
 
-  // Learning panel
   if (viewMode === 'learning') {
-    return (
-      <AppLayout>
-        <LearningRoomPanel onBack={handleBackToList} />
-      </AppLayout>
-    );
+    return <AppLayout><LearningRoomPanel onBack={handleBackToList} /></AppLayout>;
   }
 
-  // Chat panel
   if (viewMode === 'chat' && selectedRoom) {
     return (
       <AppLayout>
@@ -116,7 +106,6 @@ const CommunityPage = () => {
     );
   }
 
-  // Moderation panel
   if (viewMode === 'moderation' && selectedRoom) {
     return (
       <AppLayout>
@@ -156,6 +145,15 @@ const CommunityPage = () => {
     </motion.div>
   );
 
+  const UnreadBadge = ({ count }: { count: number }) => {
+    if (count <= 0) return null;
+    return (
+      <span className="min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1 trading-number">
+        {count > 99 ? '99+' : count}
+      </span>
+    );
+  };
+
   return (
     <AppLayout>
       <header className="sticky top-0 z-30 glass-card border-b border-border/30">
@@ -164,45 +162,63 @@ const CommunityPage = () => {
         </div>
       </header>
 
-      <div className="px-4 py-4">
-        {roomsLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      {roomsLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        </div>
+      ) : (
+        <Tabs defaultValue="channels" className="flex-1 flex flex-col" dir={isArabic ? 'rtl' : 'ltr'}>
+          <div className="px-4 pt-3">
+            <TabsList className="w-full grid grid-cols-3 h-11">
+              <TabsTrigger value="channels" className="gap-1.5 text-xs">
+                <Megaphone className="w-3.5 h-3.5" />
+                {isArabic ? 'القنوات' : 'Channels'}
+                <UnreadBadge count={channelsUnread} />
+              </TabsTrigger>
+              <TabsTrigger value="discussions" className="gap-1.5 text-xs">
+                <MessageSquare className="w-3.5 h-3.5" />
+                {isArabic ? 'النقاشات' : 'Discussions'}
+                <UnreadBadge count={discussionsUnread} />
+              </TabsTrigger>
+              <TabsTrigger value="learning" className="gap-1.5 text-xs">
+                <GraduationCap className="w-3.5 h-3.5" />
+                {isArabic ? 'التعليم' : 'Learning'}
+                <UnreadBadge count={learningUnread} />
+              </TabsTrigger>
+            </TabsList>
           </div>
-        ) : (
-          <div className="space-y-2">
-            {/* Channels Section */}
-            {channels.length > 0 && (
-              <>
-                <SectionHeader icon={Megaphone} title={isArabic ? 'القنوات' : 'Channels'} />
-                <div className="space-y-2">
-                  {channels.map((room, i) => renderRoomCard(room, i))}
-                </div>
-              </>
-            )}
 
-            {/* Discussions Section */}
-            {discussions.length > 0 && (
-              <>
-                <SectionHeader icon={MessageSquare} title={isArabic ? 'النقاشات' : 'Discussions'} />
-                <div className="space-y-2">
-                  {discussions.map((room, i) => renderRoomCard(room, i))}
-                </div>
-              </>
-            )}
+          <TabsContent value="channels" className="flex-1 px-4 py-3 mt-0">
+            <div className="space-y-2">
+              {channels.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">{isArabic ? 'لا توجد قنوات حالياً' : 'No channels yet'}</p>
+              ) : (
+                channels.map((room, i) => renderRoomCard(room, i))
+              )}
+            </div>
+          </TabsContent>
 
-            {/* Learning Section */}
-            {learningRooms.length > 0 && (
-              <>
-                <SectionHeader icon={GraduationCap} title={isArabic ? 'التعليم' : 'Learning'} />
-                <div className="space-y-2">
-                  {learningRooms.map((room, i) => renderRoomCard(room, i))}
-                </div>
-              </>
-            )}
-          </div>
-        )}
-      </div>
+          <TabsContent value="discussions" className="flex-1 px-4 py-3 mt-0">
+            <div className="space-y-2">
+              {discussions.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">{isArabic ? 'لا توجد نقاشات حالياً' : 'No discussions yet'}</p>
+              ) : (
+                discussions.map((room, i) => renderRoomCard(room, i))
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="learning" className="flex-1 px-4 py-3 mt-0">
+            <div className="space-y-2">
+              {learningRooms.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">{isArabic ? 'لا توجد غرف تعليم حالياً' : 'No learning rooms yet'}</p>
+              ) : (
+                learningRooms.map((room, i) => renderRoomCard(room, i))
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
+      )}
     </AppLayout>
   );
 };
