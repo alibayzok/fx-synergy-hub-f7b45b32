@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { LogIn, MessageCircle } from 'lucide-react';
+import { LogIn, Megaphone, MessageSquare, GraduationCap } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { LegacyRoomCard } from '@/components/community/RoomCard';
 import { RoomChatPanel } from '@/components/community/RoomChatPanel';
@@ -11,9 +11,16 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import { useCommunityRooms } from '@/hooks/useCommunityRooms';
+import { useCommunityRooms, RoomWithCounts } from '@/hooks/useCommunityRooms';
 
 type ViewMode = 'list' | 'chat' | 'learning' | 'moderation';
+
+const SectionHeader = ({ icon: Icon, title }: { icon: React.ComponentType<{ className?: string }>; title: string }) => (
+  <div className="flex items-center gap-2 mb-2 mt-4 first:mt-0">
+    <Icon className="w-4 h-4 text-primary" />
+    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{title}</h3>
+  </div>
+);
 
 const CommunityPage = () => {
   const { t, i18n } = useTranslation();
@@ -29,10 +36,12 @@ const CommunityPage = () => {
 
   const selectedRoom = rooms.find(r => r.id === selectedRoomId) || null;
 
-  const handleRoomClick = (roomId: string) => {
-    const room = rooms.find(r => r.id === roomId);
-    if (!room) return;
+  // Group rooms by category
+  const channels = rooms.filter(r => r.category === 'channels');
+  const discussions = rooms.filter(r => r.category === 'discussions');
+  const learningRooms = rooms.filter(r => r.category === 'learning');
 
+  const handleRoomClick = (room: RoomWithCounts) => {
     if (room.is_private && !isVipUser) {
       toast({
         title: t('community.vipOnly'),
@@ -41,11 +50,11 @@ const CommunityPage = () => {
       });
       return;
     }
-    
-    setSelectedRoomId(roomId);
-    markRoomAsRead(roomId);
-    
-    if (roomId === 'learning') {
+
+    setSelectedRoomId(room.id);
+    markRoomAsRead(room.id);
+
+    if (room.id === 'learning') {
       setViewMode('learning');
     } else {
       setViewMode('chat');
@@ -57,7 +66,7 @@ const CommunityPage = () => {
     setSelectedRoomId(null);
   };
 
-  // Show login prompt if not authenticated
+  // Login prompt
   if (!authLoading && !user) {
     return (
       <AppLayout>
@@ -83,7 +92,7 @@ const CommunityPage = () => {
     );
   }
 
-  // Show Learning panel
+  // Learning panel
   if (viewMode === 'learning') {
     return (
       <AppLayout>
@@ -92,7 +101,7 @@ const CommunityPage = () => {
     );
   }
 
-  // Show chat panel
+  // Chat panel
   if (viewMode === 'chat' && selectedRoom) {
     return (
       <AppLayout>
@@ -107,7 +116,7 @@ const CommunityPage = () => {
     );
   }
 
-  // Show moderation panel
+  // Moderation panel
   if (viewMode === 'moderation' && selectedRoom) {
     return (
       <AppLayout>
@@ -119,6 +128,33 @@ const CommunityPage = () => {
       </AppLayout>
     );
   }
+
+  const renderRoomCard = (room: RoomWithCounts, index: number) => (
+    <motion.div
+      key={room.id}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.04 }}
+    >
+      <LegacyRoomCard
+        room={{
+          id: room.id,
+          type: room.id as any,
+          name_ar: room.name_ar,
+          name_en: room.name,
+          description_ar: room.description_ar || '',
+          description_en: room.description || '',
+          members_count: room.members_count,
+          is_vip: room.is_private,
+          is_broadcast: room.is_broadcast,
+          last_activity: '',
+        }}
+        isLocked={room.is_private && !isVipUser}
+        unreadCount={room.unread_count}
+        onClick={() => handleRoomClick(room)}
+      />
+    </motion.div>
+  );
 
   return (
     <AppLayout>
@@ -134,46 +170,36 @@ const CommunityPage = () => {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
           </div>
         ) : (
-          <div className="space-y-3">
-            {rooms.map((room, index) => (
-              <motion.div
-                key={room.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-              >
-                <LegacyRoomCard
-                  room={{
-                    id: room.id,
-                    type: room.id as any,
-                    name_ar: room.name_ar,
-                    name_en: room.name,
-                    description_ar: room.description_ar || '',
-                    description_en: room.description || '',
-                    members_count: room.members_count,
-                    is_vip: room.is_private,
-                    is_broadcast: room.is_broadcast,
-                    last_activity: '',
-                  }}
-                  isLocked={room.is_private && !isVipUser}
-                  unreadCount={room.unread_count}
-                  onClick={() => handleRoomClick(room.id)}
-                />
-              </motion.div>
-            ))}
+          <div className="space-y-2">
+            {/* Channels Section */}
+            {channels.length > 0 && (
+              <>
+                <SectionHeader icon={Megaphone} title={isArabic ? 'القنوات' : 'Channels'} />
+                <div className="space-y-2">
+                  {channels.map((room, i) => renderRoomCard(room, i))}
+                </div>
+              </>
+            )}
 
-            {/* Chat hint */}
-            <div className="mt-6 p-4 rounded-xl bg-primary/5 border border-primary/20">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-primary/20">
-                  <MessageCircle className="w-5 h-5 text-primary" />
+            {/* Discussions Section */}
+            {discussions.length > 0 && (
+              <>
+                <SectionHeader icon={MessageSquare} title={isArabic ? 'النقاشات' : 'Discussions'} />
+                <div className="space-y-2">
+                  {discussions.map((room, i) => renderRoomCard(room, i))}
                 </div>
-                <div>
-                  <h4 className="font-medium text-foreground">{t('community.chatHint')}</h4>
-                  <p className="text-sm text-muted-foreground">{t('community.chatHintDesc')}</p>
+              </>
+            )}
+
+            {/* Learning Section */}
+            {learningRooms.length > 0 && (
+              <>
+                <SectionHeader icon={GraduationCap} title={isArabic ? 'التعليم' : 'Learning'} />
+                <div className="space-y-2">
+                  {learningRooms.map((room, i) => renderRoomCard(room, i))}
                 </div>
-              </div>
-            </div>
+              </>
+            )}
           </div>
         )}
       </div>

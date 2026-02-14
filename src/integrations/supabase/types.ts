@@ -315,6 +315,7 @@ export type Database = {
       }
       community_rooms: {
         Row: {
+          category: string
           color: string | null
           created_at: string | null
           created_by: string | null
@@ -330,6 +331,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          category?: string
           color?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -345,6 +347,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          category?: string
           color?: string | null
           created_at?: string | null
           created_by?: string | null
