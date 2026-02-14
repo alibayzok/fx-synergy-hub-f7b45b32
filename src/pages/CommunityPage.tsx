@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { LogIn, MessageCircle } from 'lucide-react';
+import { LogIn, MessageCircle, Megaphone } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { RoomCard, LegacyRoomCard } from '@/components/community/RoomCard';
 import { RoomChatPanel } from '@/components/community/RoomChatPanel';
@@ -27,6 +27,7 @@ const roomsData = [
     description_en: 'General discussions about trading and markets',
     members_count: 1250,
     is_vip: false,
+    is_broadcast: false,
     last_activity: new Date().toISOString(),
   },
   {
@@ -38,6 +39,7 @@ const roomsData = [
     description_en: 'Lessons and tips for beginners and pros',
     members_count: 890,
     is_vip: false,
+    is_broadcast: false,
     last_activity: new Date().toISOString(),
   },
   {
@@ -49,6 +51,19 @@ const roomsData = [
     description_en: 'Exclusive discussions for VIP members',
     members_count: 156,
     is_vip: true,
+    is_broadcast: false,
+    last_activity: new Date().toISOString(),
+  },
+  {
+    id: 'announcements',
+    type: 'announcements' as const,
+    name_ar: 'الإعلانات',
+    name_en: 'Announcements',
+    description_ar: 'إعلانات وأخبار رسمية من فريق الإدارة',
+    description_en: 'Official announcements and news from the team',
+    members_count: 0,
+    is_vip: false,
+    is_broadcast: true,
     last_activity: new Date().toISOString(),
   },
   {
@@ -60,6 +75,7 @@ const roomsData = [
     description_en: 'Discuss latest market news',
     members_count: 678,
     is_vip: false,
+    is_broadcast: false,
     last_activity: new Date().toISOString(),
   },
 ];
@@ -147,6 +163,7 @@ const CommunityPage = () => {
           roomName={isArabic ? selectedRoom.name_ar : selectedRoom.name_en}
           onBack={handleBackToList}
           onManage={handleOpenModeration}
+          isBroadcast={selectedRoom.is_broadcast}
         />
       </AppLayout>
     );

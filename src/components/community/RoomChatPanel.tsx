@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Send, ArrowRight, ArrowLeft, Pencil, Trash2, X, Check, Shield, Crown, Settings, Lock, UserPlus } from 'lucide-react';
+import { Send, ArrowRight, ArrowLeft, Pencil, Trash2, X, Check, Shield, Crown, Settings, Lock, UserPlus, Megaphone } from 'lucide-react';
 import { useRoomChat, RoomMessage } from '@/hooks/useCommunity';
 import { useAuth } from '@/hooks/useAuth';
 import { useRoomModeration } from '@/hooks/useRoomManagement';
@@ -22,9 +22,10 @@ interface RoomChatPanelProps {
   roomName: string;
   onBack: () => void;
   onManage?: () => void;
+  isBroadcast?: boolean;
 }
 
-export const RoomChatPanel = ({ roomId, roomName, onBack, onManage }: RoomChatPanelProps) => {
+export const RoomChatPanel = ({ roomId, roomName, onBack, onManage, isBroadcast = false }: RoomChatPanelProps) => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
@@ -52,6 +53,13 @@ export const RoomChatPanel = ({ roomId, roomName, onBack, onManage }: RoomChatPa
 
       // Admins always have access
       if (isAdmin) {
+        setMembershipStatus('approved');
+        setMembershipLoading(false);
+        return;
+      }
+
+      // Broadcast channels are open for everyone to read
+      if (isBroadcast) {
         setMembershipStatus('approved');
         setMembershipLoading(false);
         return;
@@ -122,6 +130,7 @@ export const RoomChatPanel = ({ roomId, roomName, onBack, onManage }: RoomChatPa
 
   const canManage = isAdmin || isModerator;
   const isMember = membershipStatus === 'approved';
+  const canPost = isBroadcast ? (isAdmin || isModerator) : true;
 
   // Handle join request
   const handleJoinRequest = async (message?: string) => {
@@ -281,23 +290,30 @@ export const RoomChatPanel = ({ roomId, roomName, onBack, onManage }: RoomChatPa
 
           {/* Input Area */}
           <div className="p-4 border-t border-border/30">
-            <div className="flex gap-2">
-              <Input
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={t('community.typeMessage')}
-                className="flex-1"
-                disabled={!user || sending}
-              />
-              <Button
-                onClick={handleSend}
-                disabled={!newMessage.trim() || !user || sending}
-                size="icon"
-              >
-                <Send className="w-4 h-4" />
-              </Button>
-            </div>
+            {isBroadcast && !canPost ? (
+              <div className="flex items-center justify-center gap-2 py-2 text-muted-foreground text-sm">
+                <Megaphone className="w-4 h-4" />
+                <span>{isArabic ? 'هذه قناة إعلانات - للقراءة فقط' : 'This is an announcements channel - read only'}</span>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Input
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder={t('community.typeMessage')}
+                  className="flex-1"
+                  disabled={!user || sending}
+                />
+                <Button
+                  onClick={handleSend}
+                  disabled={!newMessage.trim() || !user || sending}
+                  size="icon"
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
           </div>
         </>
       )}
