@@ -44,9 +44,17 @@ const PROHIBITED_WORDS = [
   'discount code', 'promo code'
 ];
 
+// Inappropriate/explicit content patterns
+const EXPLICIT_PATTERNS = [
+  // Common explicit English words/phrases
+  /\b(porn|xxx|nude|nudes|naked|sex\s?chat|onlyfans|nsfw|dick\s?pic|send\s?nudes)\b/gi,
+  // Arabic explicit words
+  /(?:سكس|بورن|عاري|عارية|صور\s?ساخنة|فيديو\s?ساخن|نود|نيك|طيز|كس|زب)/gi,
+];
+
 export interface ModerationResult {
   isAllowed: boolean;
-  reason?: 'link' | 'spam' | 'prohibited_content' | 'too_short' | 'too_long';
+  reason?: 'link' | 'spam' | 'prohibited_content' | 'explicit_content' | 'too_short' | 'too_long';
   message?: string;
   detectedLinks?: string[];
   detectedSpam?: string[];
@@ -174,6 +182,17 @@ export function moderateContent(
       };
     }
   }
+
+  // Check for explicit/inappropriate content
+  for (const pattern of EXPLICIT_PATTERNS) {
+    if (pattern.test(content)) {
+      return {
+        isAllowed: false,
+        reason: 'explicit_content',
+        message: 'محتوى غير لائق'
+      };
+    }
+  }
   
   return { isAllowed: true };
 }
@@ -210,6 +229,10 @@ export function getModerationErrorMessage(result: ModerationResult, isArabic: bo
     prohibited_content: {
       ar: '🚫 هذا المحتوى غير مسموح به',
       en: '🚫 This content is not allowed'
+    },
+    explicit_content: {
+      ar: '🚫 محتوى غير لائق - هذا النوع من المحتوى محظور',
+      en: '🚫 Inappropriate content - this type of content is prohibited'
     },
     too_short: {
       ar: '📝 الرسالة قصيرة جداً',

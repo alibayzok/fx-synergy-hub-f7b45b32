@@ -157,7 +157,17 @@
       "friendsOnly": "Friends only",
       "followersOnly": "Followers only",
       "nobody": "Nobody"
-    }
+    },
+    "blockUser": "Block User",
+    "unblockUser": "Unblock User",
+    "userBlocked": "User blocked",
+    "userUnblocked": "User unblocked",
+    "alreadyBlocked": "User is already blocked",
+    "blockedUsers": "Blocked Users",
+    "noBlockedUsers": "No blocked users",
+    "confirmBlock": "Are you sure you want to block this user? They won't be able to message you.",
+    "userIsBlocked": "This user is blocked",
+    "youAreBlocked": "You can't message this user"
   },
   "messages": {
     "title": "Messages",

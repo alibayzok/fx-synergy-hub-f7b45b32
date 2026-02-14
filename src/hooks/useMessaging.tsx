@@ -310,7 +310,27 @@ export const useConversationMessages = (conversationId: string | null) => {
         .eq('id', conversationId)
         .single();
 
-      setConversation(convData);
+      // Fetch participants with profiles
+      const { data: participants } = await supabase
+        .from('conversation_participants')
+        .select('*')
+        .eq('conversation_id', conversationId);
+
+      let participantsWithProfiles: any[] = [];
+      if (participants && participants.length > 0) {
+        const pUserIds = participants.map(p => p.user_id);
+        const { data: profiles } = await supabase
+          .from('profiles_public')
+          .select('user_id, display_name, username, avatar_url')
+          .in('user_id', pUserIds);
+
+        participantsWithProfiles = participants.map(p => ({
+          ...p,
+          profile: profiles?.find(pr => pr.user_id === p.user_id)
+        }));
+      }
+
+      setConversation(convData ? { ...convData, participants: participantsWithProfiles } : null);
 
       // Fetch messages
       const { data: messagesData, error } = await supabase

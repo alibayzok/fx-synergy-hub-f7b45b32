@@ -158,7 +158,17 @@
       "friendsOnly": "الأصدقاء فقط",
       "followersOnly": "المتابعون فقط",
       "nobody": "لا أحد"
-    }
+    },
+    "blockUser": "حظر المستخدم",
+    "unblockUser": "إلغاء الحظر",
+    "userBlocked": "تم حظر المستخدم",
+    "userUnblocked": "تم إلغاء حظر المستخدم",
+    "alreadyBlocked": "المستخدم محظور بالفعل",
+    "blockedUsers": "المستخدمون المحظورون",
+    "noBlockedUsers": "لا يوجد مستخدمون محظورون",
+    "confirmBlock": "هل أنت متأكد من حظر هذا المستخدم؟ لن يتمكن من مراسلتك.",
+    "userIsBlocked": "هذا المستخدم محظور",
+    "youAreBlocked": "لا يمكنك مراسلة هذا المستخدم"
   },
   "messages": {
     "title": "الرسائل",
