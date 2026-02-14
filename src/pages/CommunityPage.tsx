@@ -196,7 +196,7 @@ const CommunityPage = () => {
               <span
                 className="absolute top-1 bottom-1 rounded-lg bg-primary shadow-md transition-all duration-300 ease-out"
                 style={{
-                  [isArabic ? 'right' : 'left']: indicator.left,
+                  left: indicator.left,
                   width: indicator.width,
                 }}
               />
