@@ -32,6 +32,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { useConversations, useConversationMessages, Conversation } from '@/hooks/useMessaging';
 import { useBlockUser } from '@/hooks/useBlockUser';
+import { usePresence } from '@/hooks/usePresence';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
@@ -43,6 +44,7 @@ const MessagesPage = () => {
   const { user } = useAuth();
   const { conversations, loading: convsLoading, unreadTotal } = useConversations();
   const { blockedUsers, isUserBlocked } = useBlockUser();
+  const { isOnline } = usePresence();
   
   const selectedConversationId = searchParams.get('conv');
   const [searchQuery, setSearchQuery] = useState('');
@@ -186,19 +188,27 @@ const MessagesPage = () => {
                             conv.unread_count && conv.unread_count > 0 && "bg-primary/5"
                           )}
                         >
-                          <Avatar className="w-12 h-12">
-                            <AvatarImage src={getConversationAvatar(conv) || undefined} />
-                            <AvatarFallback className={cn(
-                              "text-lg",
-                              conv.type === 'group' ? "bg-primary/20 text-primary" : "bg-muted"
-                            )}>
-                              {conv.type === 'group' ? (
-                                <Users className="w-5 h-5" />
-                              ) : (
-                                getConversationName(conv).charAt(0)
-                              )}
-                            </AvatarFallback>
-                          </Avatar>
+                          <div className="relative">
+                            <Avatar className="w-12 h-12">
+                              <AvatarImage src={getConversationAvatar(conv) || undefined} />
+                              <AvatarFallback className={cn(
+                                "text-lg",
+                                conv.type === 'group' ? "bg-primary/20 text-primary" : "bg-muted"
+                              )}>
+                                {conv.type === 'group' ? (
+                                  <Users className="w-5 h-5" />
+                                ) : (
+                                  getConversationName(conv).charAt(0)
+                                )}
+                              </AvatarFallback>
+                            </Avatar>
+                            {conv.type === 'direct' && (() => {
+                              const other = conv.participants?.find(p => p.user_id !== user?.id);
+                              return other && isOnline(other.user_id) ? (
+                                <span className="absolute bottom-0 end-0 w-3 h-3 bg-green-500 border-2 border-background rounded-full" />
+                              ) : null;
+                            })()}
+                          </div>
                           
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
@@ -251,6 +261,7 @@ const MessagesPage = () => {
                 <ChatView 
                   conversationId={selectedConversationId} 
                   onBack={closeConversation}
+                  isOnline={isOnline}
                 />
               </motion.div>
             )}
@@ -264,9 +275,10 @@ const MessagesPage = () => {
 interface ChatViewProps {
   conversationId: string;
   onBack: () => void;
+  isOnline: (userId: string) => boolean;
 }
 
-const ChatView = ({ conversationId, onBack }: ChatViewProps) => {
+const ChatView = ({ conversationId, onBack, isOnline }: ChatViewProps) => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -344,23 +356,28 @@ const ChatView = ({ conversationId, onBack }: ChatViewProps) => {
     <div className="flex flex-col h-full">
       {/* Chat Header */}
       <div className="p-4 border-b border-border/30 flex items-center gap-3">
-        <Avatar 
-          className="w-10 h-10 cursor-pointer hover:opacity-80 transition-opacity"
-          onClick={() => {
-            if (otherUserId) {
-              navigate(`/user/${otherUserId}`);
-            }
-          }}
-        >
-          <AvatarImage src={otherParticipant?.profile?.avatar_url || undefined} />
-          <AvatarFallback className="bg-primary/20 text-primary">
-            {conversation?.type === 'group' ? (
-              <Users className="w-4 h-4" />
-            ) : (
-              (conversationName || '?').charAt(0)
-            )}
-          </AvatarFallback>
-        </Avatar>
+        <div className="relative">
+          <Avatar 
+            className="w-10 h-10 cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => {
+              if (otherUserId) {
+                navigate(`/user/${otherUserId}`);
+              }
+            }}
+          >
+            <AvatarImage src={otherParticipant?.profile?.avatar_url || undefined} />
+            <AvatarFallback className="bg-primary/20 text-primary">
+              {conversation?.type === 'group' ? (
+                <Users className="w-4 h-4" />
+              ) : (
+                (conversationName || '?').charAt(0)
+              )}
+            </AvatarFallback>
+          </Avatar>
+          {otherUserId && isOnline(otherUserId) && (
+            <span className="absolute bottom-0 end-0 w-2.5 h-2.5 bg-green-500 border-2 border-background rounded-full" />
+          )}
+        </div>
         <div 
           className={cn(
             "flex-1",
@@ -373,6 +390,11 @@ const ChatView = ({ conversationId, onBack }: ChatViewProps) => {
           }}
         >
           <h2 className="font-semibold text-foreground">{conversationName}</h2>
+          {conversation?.type === 'direct' && otherUserId && (
+            <p className={cn("text-xs", isOnline(otherUserId) ? "text-green-500" : "text-muted-foreground")}>
+              {isOnline(otherUserId) ? t('messages.online') : t('messages.offline')}
+            </p>
+          )}
           {conversation?.type === 'group' && (
             <p className="text-xs text-muted-foreground">
               {(conversation as any).participants?.length || 0} {t('community.members')}

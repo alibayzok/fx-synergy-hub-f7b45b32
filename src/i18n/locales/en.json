@@ -176,7 +176,9 @@
     "noMessages": "No messages yet",
     "startTyping": "Start typing your message",
     "group": "Group",
-    "groupCreated": "Group created"
+    "groupCreated": "Group created",
+    "online": "Online",
+    "offline": "Offline"
   },
   "markets": {
     "title": "Markets",
