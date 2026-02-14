@@ -426,6 +426,54 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_quests: {
+        Row: {
+          created_at: string
+          description_ar: string
+          description_en: string
+          icon: string
+          id: string
+          is_active: boolean
+          points_reward: number
+          quest_key: string
+          quest_type: string
+          sort_order: number
+          target_count: number
+          title_ar: string
+          title_en: string
+        }
+        Insert: {
+          created_at?: string
+          description_ar?: string
+          description_en?: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          points_reward?: number
+          quest_key: string
+          quest_type?: string
+          sort_order?: number
+          target_count?: number
+          title_ar: string
+          title_en?: string
+        }
+        Update: {
+          created_at?: string
+          description_ar?: string
+          description_en?: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          points_reward?: number
+          quest_key?: string
+          quest_type?: string
+          sort_order?: number
+          target_count?: number
+          title_ar?: string
+          title_en?: string
+        }
+        Relationships: []
+      }
       direct_messages: {
         Row: {
           content: string
@@ -1629,6 +1677,50 @@ export type Database = {
           },
         ]
       }
+      user_daily_progress: {
+        Row: {
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          current_count: number
+          id: string
+          points_claimed: boolean
+          quest_date: string
+          quest_id: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          current_count?: number
+          id?: string
+          points_claimed?: boolean
+          quest_date?: string
+          quest_id: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          current_count?: number
+          id?: string
+          points_claimed?: boolean
+          quest_date?: string
+          quest_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_daily_progress_quest_id_fkey"
+            columns: ["quest_id"]
+            isOneToOne: false
+            referencedRelation: "daily_quests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_notifications: {
         Row: {
           created_at: string | null
@@ -1802,6 +1894,39 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_streaks: {
+        Row: {
+          created_at: string
+          current_streak: number
+          id: string
+          last_completed_date: string | null
+          longest_streak: number
+          total_quests_completed: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_streak?: number
+          id?: string
+          last_completed_date?: string | null
+          longest_streak?: number
+          total_quests_completed?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_streak?: number
+          id?: string
+          last_completed_date?: string | null
+          longest_streak?: number
+          total_quests_completed?: number
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -2046,6 +2171,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_quest_progress: {
+        Args: { p_increment?: number; p_quest_key: string; p_user_id: string }
+        Returns: Json
       }
       is_admin: { Args: never; Returns: boolean }
       is_conversation_admin: {
