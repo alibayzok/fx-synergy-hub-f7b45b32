@@ -12,7 +12,8 @@ import {
   CheckCircle2,
   GraduationCap,
   DollarSign,
-  Newspaper
+  Newspaper,
+  Megaphone
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -35,11 +36,13 @@ const roomIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   vip: Crown,
   usdt: DollarSign,
   news: Newspaper,
+  announcements: Megaphone,
   MessageSquare: MessageSquare,
   GraduationCap: GraduationCap,
   Crown: Crown,
   DollarSign: DollarSign,
   Newspaper: Newspaper,
+  Megaphone: Megaphone,
 };
 
 const roomColors: Record<string, string> = {
@@ -181,13 +184,14 @@ export const RoomCard = ({
 // Legacy compatibility wrapper
 interface LegacyRoom {
   id: string;
-  type: 'general' | 'learning' | 'vip' | 'usdt' | 'news';
+  type: 'general' | 'learning' | 'vip' | 'usdt' | 'news' | 'announcements';
   name_ar: string;
   name_en: string;
   description_ar: string;
   description_en: string;
   members_count: number;
   is_vip: boolean;
+  is_broadcast?: boolean;
   last_activity: string;
 }
 
@@ -236,6 +240,11 @@ export const LegacyRoomCard = ({ room, onClick, isLocked = false }: LegacyRoomCa
           {room.is_vip && (
             <Badge variant="outline" className="bg-vip/10 text-vip border-vip/30 text-[10px] px-1.5">
               VIP
+            </Badge>
+          )}
+          {room.is_broadcast && (
+            <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/30 text-[10px] px-1.5">
+              {isArabic ? 'قناة' : 'Channel'}
             </Badge>
           )}
           {isLocked && <Lock className="w-3 h-3 text-muted-foreground" />}
