@@ -177,7 +177,9 @@
     "noMessages": "لا توجد رسائل",
     "startTyping": "ابدأ بكتابة رسالتك",
     "group": "مجموعة",
-    "groupCreated": "تم إنشاء المجموعة"
+    "groupCreated": "تم إنشاء المجموعة",
+    "online": "متصل",
+    "offline": "غير متصل"
   },
   "markets": {
     "title": "الأسواق",

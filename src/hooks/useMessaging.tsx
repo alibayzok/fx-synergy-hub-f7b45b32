@@ -355,6 +355,18 @@ export const useConversationMessages = (conversationId: string | null) => {
 
       setMessages(messagesWithSenders);
 
+      // Mark unread messages from others as read
+      const unreadIds = (messagesData || [])
+        .filter(m => m.sender_id !== user.id && !m.is_read)
+        .map(m => m.id);
+      
+      if (unreadIds.length > 0) {
+        await supabase
+          .from('direct_messages')
+          .update({ is_read: true })
+          .in('id', unreadIds);
+      }
+
       // Update last_read_at
       await supabase
         .from('conversation_participants')
@@ -399,12 +411,33 @@ export const useConversationMessages = (conversationId: string | null) => {
 
           setMessages(prev => [...prev, { ...newMsg, sender: profile }]);
 
-          // Update last_read_at if we're viewing
+          // Mark as read if from someone else (we're viewing the chat)
+          if (newMsg.sender_id !== user.id) {
+            await supabase
+              .from('direct_messages')
+              .update({ is_read: true })
+              .eq('id', newMsg.id);
+          }
+
+          // Update last_read_at
           await supabase
             .from('conversation_participants')
             .update({ last_read_at: new Date().toISOString() })
             .eq('conversation_id', conversationId)
             .eq('user_id', user.id);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'direct_messages',
+          filter: `conversation_id=eq.${conversationId}`
+        },
+        (payload) => {
+          const updated = payload.new as DirectMessage;
+          setMessages(prev => prev.map(m => m.id === updated.id ? { ...m, is_read: updated.is_read } : m));
         }
       )
       .subscribe();
