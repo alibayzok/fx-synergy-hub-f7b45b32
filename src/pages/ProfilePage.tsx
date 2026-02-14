@@ -20,7 +20,9 @@ import {
   Loader2,
   Trash2,
   ZoomIn,
-  Headset
+  Headset,
+  Ban,
+  ShieldAlert
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { cn } from '@/lib/utils';
@@ -49,7 +51,8 @@ import { NotificationSettings } from '@/components/notifications/NotificationSet
 import { FriendsSection } from '@/components/profile/FriendsSection';
 import { UserPostsSection } from '@/components/profile/UserPostsSection';
 import { useSupport } from '@/hooks/useSupport';
-
+import { useBlockUser } from '@/hooks/useBlockUser';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 const ProfilePage = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -59,6 +62,7 @@ const ProfilePage = () => {
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const { watchlist } = useMarketData();
   const { isSupportAgent } = useSupport();
+  const { blockedUsers, unblockUser, loading: blockLoading } = useBlockUser();
   
   const [showLanguageDialog, setShowLanguageDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -386,6 +390,51 @@ const ProfilePage = () => {
             transition={{ delay: 0.2 }}
           >
             <UserPostsSection userId={user.id} isOwnProfile={true} />
+          </motion.div>
+        )}
+
+        {/* Blocked Users Section */}
+        {user && blockedUsers.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.22 }}
+            className="space-y-3"
+          >
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4 text-destructive" />
+              {t('social.blockedUsers')} ({blockedUsers.length})
+            </h3>
+            <div className="space-y-2">
+              {blockedUsers.map(blocked => (
+                <div
+                  key={blocked.id}
+                  className="flex items-center justify-between p-3 rounded-xl bg-card/50 border border-border/30"
+                >
+                  <div className="flex items-center gap-3">
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage src={blocked.profile?.avatar_url || undefined} />
+                      <AvatarFallback className="bg-muted text-muted-foreground">
+                        {(blocked.profile?.display_name || blocked.profile?.username || '?').charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="font-medium text-foreground text-sm">
+                      {blocked.profile?.display_name || blocked.profile?.username || t('community.anonymous')}
+                    </span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => unblockUser(blocked.blocked_id)}
+                    disabled={blockLoading}
+                    className="text-primary border-primary/30 hover:bg-primary/10 gap-1 text-xs"
+                  >
+                    <Ban className="w-3 h-3" />
+                    {t('social.unblockUser')}
+                  </Button>
+                </div>
+              ))}
+            </div>
           </motion.div>
         )}
 

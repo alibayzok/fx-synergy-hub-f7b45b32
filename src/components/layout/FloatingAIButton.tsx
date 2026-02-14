@@ -64,7 +64,7 @@ export const FloatingAIButton = () => {
   const aiEnabled = getBoolean('enable_ai_chat', true);
   const supportEnabled = getBoolean('enable_support', true);
 
-  if (location.pathname === '/ai-chat') return null;
+  if (location.pathname === '/ai-chat' || location.pathname === '/messages') return null;
 
   const menuItems = [
     ...(aiEnabled ? [{
