@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -152,6 +153,7 @@ export const FriendsSection = () => {
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
             <DialogTitle>{t('social.friendRequests')}</DialogTitle>
+            <DialogDescription className="sr-only">Manage friend requests</DialogDescription>
           </DialogHeader>
           <ScrollArea className="max-h-[400px] pr-4">
             <div className="space-y-4 pt-2">
@@ -272,6 +274,7 @@ export const FriendsSection = () => {
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
             <DialogTitle>{t('social.friends')}</DialogTitle>
+            <DialogDescription className="sr-only">Friends list</DialogDescription>
           </DialogHeader>
           <ScrollArea className="max-h-[400px] pr-4">
             <div className="space-y-2 pt-2">
@@ -330,6 +333,7 @@ export const FriendsSection = () => {
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
             <DialogTitle>{t('social.privacy.title')}</DialogTitle>
+            <DialogDescription className="sr-only">Privacy settings</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-4">
             {/* Who can see my friends */}
