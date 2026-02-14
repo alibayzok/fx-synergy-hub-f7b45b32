@@ -27,7 +27,7 @@ import SupportPage from "./pages/SupportPage";
 import SupportDashboardPage from "./pages/SupportDashboardPage";
 import VipPage from "./pages/VipPage";
 import SubscriptionsPage from "./pages/SubscriptionsPage";
-import CardDetailsPage from "./pages/CardDetailsPage";
+
 import GamificationPage from "./pages/GamificationPage";
 
 import NotFound from "./pages/NotFound";
@@ -86,7 +86,7 @@ const App = () => {
                 <Route path="/support-dashboard" element={<SupportDashboardPage />} />
                 <Route path="/vip" element={<VipPage />} />
                 <Route path="/admin/subscriptions" element={<SubscriptionsPage />} />
-                <Route path="/card/:cardId" element={<CardDetailsPage />} />
+                
                 <Route path="/gamification" element={<GamificationPage />} />
                 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
