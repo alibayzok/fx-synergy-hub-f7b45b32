@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { useAppSettings } from '@/hooks/useAppSettings';
+import appLogo from '@/assets/logo.jpg';
 
 interface SplashScreenProps {
   onComplete: () => void;
@@ -111,12 +112,8 @@ export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
               />
               
               {/* Logo container */}
-              <div className="relative w-28 h-28 rounded-full bg-gradient-to-br from-primary via-primary/80 to-vip flex items-center justify-center border-2 border-primary/30 shadow-2xl overflow-hidden">
-                {logoUrl ? (
-                  <img src={logoUrl} alt={appName} className="w-16 h-16 object-contain" />
-                ) : (
-                  <span className="text-4xl font-bold text-primary-foreground">FX</span>
-                )}
+              <div className="relative w-32 h-32 rounded-full bg-gradient-to-br from-background via-card to-background flex items-center justify-center border-2 border-primary/40 shadow-2xl overflow-hidden">
+                <img src={appLogo} alt={appName} className="w-full h-full object-cover" />
               </div>
             </motion.div>
 
