@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useServiceRequests } from '@/hooks/useServiceRequests';
 import { MyRequestsSection } from '@/components/services/MyRequestsSection';
 import { UsdtServiceSection } from '@/components/services/UsdtServiceSection';
@@ -57,13 +57,14 @@ interface Broker {
 const ServicesPage = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const isRTL = i18n.language === 'ar';
   const { requests, loading: reqLoading } = useServiceRequests();
   const { user, loading: authLoading } = useAuth();
   const [services, setServices] = useState<Service[]>([]);
   const [brokers, setBrokers] = useState<Broker[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('main');
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'main');
 
   useEffect(() => {
     const fetchData = async () => {
