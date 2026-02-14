@@ -118,6 +118,10 @@ export const useSignals = () => {
   const likeSignal = async (signalId: string) => {
     if (!user) return false;
     const { error } = await supabase.from('signal_likes').insert({ signal_id: signalId, user_id: user.id });
+    if (!error) {
+      // Track daily quest - like_content
+      import('@/lib/quest-tracker').then(({ trackQuestProgress }) => trackQuestProgress(user.id, 'like_content'));
+    }
     return !error;
   };
 

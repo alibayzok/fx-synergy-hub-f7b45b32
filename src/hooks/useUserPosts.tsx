@@ -129,6 +129,10 @@ export const useUserPosts = (userId?: string) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-posts'] });
       toast.success(t('posts.created', 'تم نشر المنشور بنجاح'));
+      // Track daily quest - create_post
+      if (user) {
+        import('@/lib/quest-tracker').then(({ trackQuestProgress }) => trackQuestProgress(user.id, 'create_post'));
+      }
     },
     onError: (error) => {
       console.error('Error creating post:', error);
@@ -173,6 +177,8 @@ export const useUserPosts = (userId?: string) => {
           .from('post_likes')
           .insert({ post_id: postId, user_id: user.id });
         if (error) throw error;
+        // Track daily quest - like_content
+        import('@/lib/quest-tracker').then(({ trackQuestProgress }) => trackQuestProgress(user.id, 'like_content'));
       }
     },
     onSuccess: () => {
