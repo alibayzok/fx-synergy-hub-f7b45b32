@@ -40,6 +40,7 @@ import { UserPost, useUserPosts, usePostComments } from '@/hooks/useUserPosts';
 import { useAuth } from '@/hooks/useAuth';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { PremiumImageViewer } from '@/components/ui/premium-image-viewer';
 
 interface PostCardProps {
   post: UserPost;
@@ -210,24 +211,12 @@ export const PostCard = ({ post, onDelete }: PostCardProps) => {
         )}
       </motion.div>
 
-      {/* Image Lightbox */}
-      {selectedImage && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-background/90 backdrop-blur-sm flex items-center justify-center p-4"
-          onClick={() => setSelectedImage(null)}
-        >
-          <motion.img
-            initial={{ scale: 0.9 }}
-            animate={{ scale: 1 }}
-            src={selectedImage}
-            alt=""
-            className="max-w-full max-h-full object-contain rounded-lg"
-          />
-        </motion.div>
-      )}
+      {/* Premium Image Lightbox */}
+      <PremiumImageViewer
+        src={selectedImage}
+        open={!!selectedImage}
+        onClose={() => setSelectedImage(null)}
+      />
 
       {/* Delete Confirmation */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

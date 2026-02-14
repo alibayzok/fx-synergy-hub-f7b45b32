@@ -58,6 +58,7 @@ import { UserPostsSection } from '@/components/profile/UserPostsSection';
 import { useSupport } from '@/hooks/useSupport';
 import { useBlockUser } from '@/hooks/useBlockUser';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { PremiumImageViewer } from '@/components/ui/premium-image-viewer';
 
 const ProfilePage = () => {
   const { t, i18n } = useTranslation();
@@ -693,54 +694,39 @@ const ProfilePage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Avatar Preview Dialog */}
-      <Dialog open={showAvatarPreview} onOpenChange={setShowAvatarPreview}>
-        <DialogContent className="sm:max-w-[420px] p-0 overflow-hidden">
-          <DialogHeader className="p-4 pb-0">
-            <DialogTitle>الصورة الشخصية</DialogTitle>
-            <DialogDescription className="sr-only">Preview avatar</DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col items-center gap-4 p-4">
-            {profile?.avatar_url ? (
-              <img
-                src={profile.avatar_url}
-                alt="Avatar preview"
-                className="w-64 h-64 rounded-xl object-cover border border-border"
-              />
-            ) : (
-              <div className="w-64 h-64 rounded-xl bg-muted flex items-center justify-center text-6xl font-bold text-muted-foreground">
-                {initials}
-              </div>
-            )}
-            <div className="flex gap-2 w-full">
-              <Button
-                variant="outline"
-                className="flex-1 gap-2"
-                onClick={() => {
+      {/* Premium Avatar Preview */}
+      <PremiumImageViewer
+        src={profile?.avatar_url || null}
+        open={showAvatarPreview}
+        onClose={() => setShowAvatarPreview(false)}
+        glowColor={isAdmin ? 'hsl(var(--primary))' : isVip ? 'hsl(45, 100%, 50%)' : 'hsl(var(--primary))'}
+        actions={
+          <>
+            <button
+              onClick={() => {
+                setShowAvatarPreview(false);
+                avatarInputRef.current?.click();
+              }}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-white/90 hover:text-white hover:bg-white/10 transition-colors text-sm font-medium"
+            >
+              <Camera className="w-4 h-4" />
+              {profile?.avatar_url ? 'تغيير' : 'رفع صورة'}
+            </button>
+            {profile?.avatar_url && (
+              <button
+                onClick={async () => {
+                  await deleteAvatar();
                   setShowAvatarPreview(false);
-                  avatarInputRef.current?.click();
                 }}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors text-sm font-medium"
               >
-                <Camera className="w-4 h-4" />
-                {profile?.avatar_url ? 'تغيير الصورة' : 'رفع صورة'}
-              </Button>
-              {profile?.avatar_url && (
-                <Button
-                  variant="outline"
-                  className="gap-2 border-destructive/30 text-destructive hover:bg-destructive/10"
-                  onClick={async () => {
-                    await deleteAvatar();
-                    setShowAvatarPreview(false);
-                  }}
-                >
-                  <Trash2 className="w-4 h-4" />
-                  حذف
-                </Button>
-              )}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+                <Trash2 className="w-4 h-4" />
+                حذف
+              </button>
+            )}
+          </>
+        }
+      />
     </AppLayout>
   );
 };
