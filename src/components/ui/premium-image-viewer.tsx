@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from 'framer-motion';
-import { X, ZoomIn, ZoomOut, Loader2 } from 'lucide-react';
+import { X, ZoomIn, ZoomOut, Loader2, ImageOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface PremiumImageViewerProps {
@@ -21,6 +21,7 @@ export const PremiumImageViewer = ({
   actions,
 }: PremiumImageViewerProps) => {
   const [isLoaded, setIsLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
   const [zoomed, setZoomed] = useState(false);
   const constraintsRef = useRef<HTMLDivElement>(null);
 
@@ -42,6 +43,7 @@ export const PremiumImageViewer = ({
   const handleClose = useCallback(() => {
     setZoomed(false);
     setIsLoaded(false);
+    setHasError(false);
     onClose();
   }, [onClose]);
 
@@ -93,7 +95,7 @@ export const PremiumImageViewer = ({
           {/* Image container */}
           <div ref={constraintsRef} className="relative w-full h-full flex items-center justify-center overflow-hidden">
             {/* Loading spinner */}
-            {!isLoaded && (
+            {!isLoaded && !hasError && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -106,6 +108,18 @@ export const PremiumImageViewer = ({
                   />
                   <Loader2 className="w-6 h-6 text-white/60 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-spin" />
                 </div>
+              </motion.div>
+            )}
+
+            {/* Error state */}
+            {hasError && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-white/60"
+              >
+                <ImageOff className="w-12 h-12" />
+                <p className="text-sm">تعذر تحميل الصورة</p>
               </motion.div>
             )}
 
@@ -129,6 +143,7 @@ export const PremiumImageViewer = ({
               src={src}
               alt={alt}
               onLoad={() => setIsLoaded(true)}
+              onError={() => setHasError(true)}
               onClick={(e) => e.stopPropagation()}
               onDoubleClick={handleDoubleClick}
               drag={!zoomed ? 'y' : false}
