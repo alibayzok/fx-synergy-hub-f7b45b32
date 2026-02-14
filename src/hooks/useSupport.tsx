@@ -77,6 +77,23 @@ export const useSupport = () => {
         } as any);
       if (msgError) throw msgError;
 
+      // Notify support agents about the new ticket
+      const { data: agentsData } = await supabase.from('support_agents').select('user_id').eq('is_active', true);
+      if (agentsData && agentsData.length > 0) {
+        const notifications = agentsData
+          .filter(a => a.user_id !== user.id)
+          .map(agent => ({
+            user_id: agent.user_id,
+            title: 'تذكرة دعم جديدة',
+            message: `تذكرة جديدة: ${subject}`,
+            type: 'support_ticket',
+            data: { ticket_id: (ticket as any).id },
+          }));
+        if (notifications.length > 0) {
+          await supabase.from('user_notifications').insert(notifications);
+        }
+      }
+
       await fetchTickets();
       return ticket as SupportTicket;
     } catch (e) {
@@ -152,11 +169,7 @@ export const useSupport = () => {
     const { data: urlData } = supabase.storage
       .from('support-attachments')
       .getPublicUrl(path);
-    // Since bucket is private, use createSignedUrl instead
-    const { data: signedData } = await supabase.storage
-      .from('support-attachments')
-      .createSignedUrl(path, 3600 * 24 * 7); // 7 days
-    return signedData?.signedUrl || path;
+    return urlData?.publicUrl || path;
   };
 
   useEffect(() => {
