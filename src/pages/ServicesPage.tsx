@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { LogIn, Briefcase, ClipboardList, ExternalLink, CheckCircle, Star, ChevronRight, Loader2, Coins } from 'lucide-react';
+import { LogIn, Briefcase, ClipboardList, ExternalLink, CheckCircle, Star, ChevronRight, Loader2, Coins, Smartphone, Download, Clock } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +29,10 @@ interface Service {
   is_active: boolean;
   is_external_link: boolean;
   sort_order: number;
+  card_type?: string;
+  app_store_url?: string;
+  play_store_url?: string;
+  apk_url?: string;
 }
 
 interface BrokerStat {
@@ -154,6 +158,83 @@ const ServicesPage = () => {
             ) : (
               services.map((service, index) => {
                 const isUsdt = service.icon === 'Coins' || service.name_en?.toLowerCase().includes('usdt');
+                const isAppDownload = (service as any).card_type === 'app_download';
+
+                if (isAppDownload) {
+                  const hasLinks = (service as any).app_store_url || (service as any).play_store_url || (service as any).apk_url;
+                  return (
+                    <motion.div
+                      key={service.id}
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="relative rounded-2xl overflow-hidden border border-violet-500/30 bg-gradient-to-br from-violet-500/15 via-purple-500/8 to-transparent"
+                    >
+                      <div className="absolute top-0 end-0 w-40 h-40 bg-violet-500/10 rounded-full blur-3xl pointer-events-none" />
+                      <div className="absolute bottom-0 start-0 w-24 h-24 bg-purple-500/10 rounded-full blur-2xl pointer-events-none" />
+
+                      <div className="relative p-5 space-y-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-gradient-to-br from-violet-500 to-purple-600 shadow-lg shadow-violet-500/30">
+                            <Smartphone className="w-7 h-7 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-lg font-bold text-foreground">{isRTL ? service.name_ar : (service.name_en || service.name_ar)}</h3>
+                              <Badge className="text-[10px] bg-violet-500/20 text-violet-400 border-violet-500/30">
+                                {hasLinks ? (isRTL ? 'جديد' : 'New') : (isRTL ? 'قريباً' : 'Soon')}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {isRTL ? service.description_ar : (service.description_en || service.description_ar)}
+                            </p>
+                          </div>
+                        </div>
+
+                        {hasLinks ? (
+                          <div className="flex flex-col gap-2">
+                            {(service as any).play_store_url && (
+                              <Button
+                                onClick={() => window.open((service as any).play_store_url, '_blank', 'noopener,noreferrer')}
+                                className="w-full h-11 gap-2 text-white font-bold bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700"
+                              >
+                                <Download className="w-4 h-4" />
+                                Google Play
+                              </Button>
+                            )}
+                            {(service as any).app_store_url && (
+                              <Button
+                                onClick={() => window.open((service as any).app_store_url, '_blank', 'noopener,noreferrer')}
+                                className="w-full h-11 gap-2 text-white font-bold bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+                              >
+                                <Download className="w-4 h-4" />
+                                App Store
+                              </Button>
+                            )}
+                            {(service as any).apk_url && (
+                              <Button
+                                onClick={() => window.open((service as any).apk_url, '_blank', 'noopener,noreferrer')}
+                                variant="outline"
+                                className="w-full h-11 gap-2 border-violet-500/30 text-violet-400 hover:bg-violet-500/10"
+                              >
+                                <Download className="w-4 h-4" />
+                                {isRTL ? 'تحميل APK مباشر' : 'Direct APK Download'}
+                              </Button>
+                            )}
+                          </div>
+                        ) : (
+                          <Button
+                            disabled
+                            className="w-full h-11 gap-2 opacity-60"
+                          >
+                            <Clock className="w-4 h-4" />
+                            {isRTL ? 'قريباً...' : 'Coming Soon...'}
+                          </Button>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                }
 
                 if (isUsdt) {
                   return (

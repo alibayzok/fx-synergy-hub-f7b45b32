@@ -31,6 +31,10 @@ interface Service {
   is_active: boolean;
   is_external_link: boolean;
   sort_order: number;
+  card_type?: string;
+  app_store_url?: string;
+  play_store_url?: string;
+  apk_url?: string;
 }
 
 interface BrokerStat {
@@ -59,7 +63,12 @@ interface Broker {
 const ICON_OPTIONS = [
   'Briefcase', 'Coins', 'TrendingUp', 'Shield', 'Zap', 'Gift', 'Globe',
   'Headphones', 'Star', 'Heart', 'DollarSign', 'CreditCard', 'Wallet',
-  'BarChart', 'PieChart', 'Target', 'Award', 'BookOpen', 'Users'
+  'BarChart', 'PieChart', 'Target', 'Award', 'BookOpen', 'Users', 'Smartphone'
+];
+
+const CARD_TYPE_OPTIONS = [
+  { value: 'default', label: 'عادي' },
+  { value: 'app_download', label: 'تحميل تطبيق' },
 ];
 
 export const ServicesAndBrokersManagement = () => {
@@ -456,6 +465,33 @@ export const ServicesAndBrokersManagement = () => {
               <Switch checked={serviceForm.is_external_link || false}
                 onCheckedChange={(v) => setServiceForm(p => ({ ...p, is_external_link: v }))} />
             </div>
+            <div>
+              <Label>نوع البطاقة</Label>
+              <select
+                className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                value={(serviceForm as any).card_type || 'default'}
+                onChange={(e) => setServiceForm(p => ({ ...p, card_type: e.target.value }))}
+              >
+                {CARD_TYPE_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+              </select>
+            </div>
+            {(serviceForm as any).card_type === 'app_download' && (
+              <div className="space-y-3 p-3 rounded-xl border border-violet-500/20 bg-violet-500/5">
+                <Label className="text-violet-400 font-bold">روابط التحميل</Label>
+                <div>
+                  <Label>رابط Google Play</Label>
+                  <Input value={(serviceForm as any).play_store_url || ''} onChange={(e) => setServiceForm(p => ({ ...p, play_store_url: e.target.value }))} dir="ltr" placeholder="https://play.google.com/..." />
+                </div>
+                <div>
+                  <Label>رابط App Store</Label>
+                  <Input value={(serviceForm as any).app_store_url || ''} onChange={(e) => setServiceForm(p => ({ ...p, app_store_url: e.target.value }))} dir="ltr" placeholder="https://apps.apple.com/..." />
+                </div>
+                <div>
+                  <Label>رابط APK مباشر</Label>
+                  <Input value={(serviceForm as any).apk_url || ''} onChange={(e) => setServiceForm(p => ({ ...p, apk_url: e.target.value }))} dir="ltr" placeholder="https://example.com/app.apk" />
+                </div>
+              </div>
+            )}
             <div className="flex items-center justify-between">
               <Label>مفعّلة</Label>
               <Switch checked={serviceForm.is_active !== false}
