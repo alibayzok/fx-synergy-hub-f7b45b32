@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Settings, 
   Globe, 
@@ -22,7 +22,11 @@ import {
   ZoomIn,
   Headset,
   Ban,
-  ShieldAlert
+  ShieldAlert,
+  UserX,
+  ChevronDown,
+  ChevronUp,
+  Sparkles
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { cn } from '@/lib/utils';
@@ -53,6 +57,7 @@ import { UserPostsSection } from '@/components/profile/UserPostsSection';
 import { useSupport } from '@/hooks/useSupport';
 import { useBlockUser } from '@/hooks/useBlockUser';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
 const ProfilePage = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -70,6 +75,7 @@ const ProfilePage = () => {
   const [showFollowedDialog, setShowFollowedDialog] = useState(false);
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   const [showAvatarPreview, setShowAvatarPreview] = useState(false);
+  const [showBlockedUsers, setShowBlockedUsers] = useState(false);
   
   const [editData, setEditData] = useState({
     display_name: '',
@@ -178,167 +184,205 @@ const ProfilePage = () => {
     );
   }
 
+  const displayName = profile?.display_name || user?.user_metadata?.display_name || user?.email?.split('@')[0];
+  const initials = displayName?.charAt(0).toUpperCase() || 'U';
+
   return (
     <AppLayout showNotifications={false}>
-      {/* Header */}
-      <header className="sticky top-0 z-40 glass-card border-b border-border/30">
+      {/* Premium Header with gradient */}
+      <header className="sticky top-0 z-40 glass-premium border-b border-primary/10">
         <div className="flex items-center justify-between px-4 py-3">
-          <h1 className="text-xl font-bold text-foreground">{t('profile.title')}</h1>
-          <Button variant="ghost" size="sm" className="h-9" onClick={() => setShowEditDialog(true)}>
-            <Settings className="w-4 h-4" />
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-primary" />
+            <h1 className="text-xl font-bold gold-gradient">{t('profile.title')}</h1>
+          </div>
+          <Button variant="ghost" size="sm" className="h-9 hover:bg-primary/10" onClick={() => setShowEditDialog(true)}>
+            <Settings className="w-4 h-4 text-primary" />
           </Button>
         </div>
       </header>
 
-      <div className="px-4 py-4 space-y-6">
-        {/* Profile Card */}
+      <div className="px-4 py-4 space-y-5">
+        {/* ═══════════════════════════════════════════ */}
+        {/* ★ PREMIUM PROFILE HERO CARD ★ */}
+        {/* ═══════════════════════════════════════════ */}
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className={cn(
-            "p-5 rounded-xl border",
-            isAdmin 
-              ? "bg-gradient-to-br from-primary/10 to-transparent border-primary/30"
-              : isVip 
-                ? "bg-gradient-to-br from-vip/10 to-transparent border-vip/30" 
-                : "bg-card border-border/30"
-          )}
+          className="relative overflow-hidden rounded-2xl"
         >
-          <div className="flex items-center gap-4">
-            {/* Avatar with upload */}
-            <input
-              ref={avatarInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              className="hidden"
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (file) await uploadAvatar(file);
-                e.target.value = '';
-              }}
-            />
-            <div className="relative">
-              <button
-                onClick={() => profile?.avatar_url ? setShowAvatarPreview(true) : avatarInputRef.current?.click()}
-                disabled={uploadingAvatar}
-                className="relative group"
-              >
-                {profile?.avatar_url ? (
-                  <img
-                    src={profile.avatar_url}
-                    alt="Avatar"
-                    className={cn(
-                      "w-16 h-16 rounded-full object-cover border-2",
-                      isAdmin ? "border-primary" : isVip ? "border-vip" : "border-border"
-                    )}
-                  />
-                ) : (
-                  <div className={cn(
-                    "w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold",
-                    isAdmin ? "bg-primary/20 text-primary" :
-                    isVip ? "bg-vip/20 text-vip" : "bg-primary/20 text-primary"
-                  )}>
-                    {profile?.display_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
-                  </div>
-                )}
-                <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  {uploadingAvatar ? (
-                    <Loader2 className="w-5 h-5 text-white animate-spin" />
-                  ) : profile?.avatar_url ? (
-                    <ZoomIn className="w-5 h-5 text-white" />
+          {/* Background decorative gradient */}
+          <div className={cn(
+            "absolute inset-0",
+            isAdmin 
+              ? "bg-gradient-to-br from-primary/20 via-primary/5 to-transparent"
+              : isVip 
+                ? "bg-gradient-to-br from-vip/20 via-vip/5 to-transparent" 
+                : "bg-gradient-to-br from-primary/10 via-transparent to-muted/30"
+          )} />
+          <div className="absolute top-0 end-0 w-32 h-32 rounded-full bg-primary/5 blur-3xl" />
+          <div className="absolute bottom-0 start-0 w-24 h-24 rounded-full bg-vip/5 blur-2xl" />
+          
+          <div className="relative glass-premium rounded-2xl p-6">
+            {/* Top section: Avatar + Name */}
+            <div className="flex flex-col items-center text-center gap-4">
+              {/* Avatar with glow ring */}
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (file) await uploadAvatar(file);
+                  e.target.value = '';
+                }}
+              />
+              <div className="relative">
+                <div className={cn(
+                  "absolute -inset-1 rounded-full opacity-60 blur-sm",
+                  isAdmin ? "bg-gradient-to-r from-primary to-accent" 
+                    : isVip ? "bg-gradient-to-r from-vip to-amber-400"
+                    : "bg-gradient-to-r from-primary/40 to-primary/20"
+                )} />
+                <button
+                  onClick={() => profile?.avatar_url ? setShowAvatarPreview(true) : avatarInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                  className="relative group"
+                >
+                  {profile?.avatar_url ? (
+                    <img
+                      src={profile.avatar_url}
+                      alt="Avatar"
+                      className={cn(
+                        "w-24 h-24 rounded-full object-cover border-3",
+                        isAdmin ? "border-primary" : isVip ? "border-vip" : "border-primary/30"
+                      )}
+                    />
                   ) : (
-                    <Camera className="w-5 h-5 text-white" />
+                    <div className={cn(
+                      "w-24 h-24 rounded-full flex items-center justify-center text-3xl font-bold border-3",
+                      isAdmin ? "bg-primary/20 text-primary border-primary" :
+                      isVip ? "bg-vip/20 text-vip border-vip" : "bg-primary/20 text-primary border-primary/30"
+                    )}>
+                      {initials}
+                    </div>
+                  )}
+                  <div className="absolute inset-0 rounded-full bg-background/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm">
+                    {uploadingAvatar ? (
+                      <Loader2 className="w-6 h-6 text-foreground animate-spin" />
+                    ) : profile?.avatar_url ? (
+                      <ZoomIn className="w-6 h-6 text-foreground" />
+                    ) : (
+                      <Camera className="w-6 h-6 text-foreground" />
+                    )}
+                  </div>
+                  {uploadingAvatar && (
+                    <div className="absolute inset-0 rounded-full bg-background/60 flex items-center justify-center backdrop-blur-sm">
+                      <Loader2 className="w-6 h-6 text-foreground animate-spin" />
+                    </div>
+                  )}
+                </button>
+              </div>
+
+              {/* Name + Role badges */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-center gap-2">
+                  <h2 className="text-xl font-bold text-foreground">
+                    {displayName}
+                  </h2>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-primary/10" onClick={() => setShowEditDialog(true)}>
+                    <Edit className="w-3.5 h-3.5 text-muted-foreground" />
+                  </Button>
+                </div>
+                <p className="text-sm text-muted-foreground">{user?.email}</p>
+                
+                <div className="flex items-center justify-center gap-2 flex-wrap">
+                  {isAdmin && (
+                    <Badge className="bg-primary/15 text-primary border border-primary/30 gap-1 px-3 py-1">
+                      <Shield className="w-3 h-3" />
+                      Admin
+                    </Badge>
+                  )}
+                  {isVip && !isAdmin && (
+                    <Badge className="bg-vip/15 text-vip border border-vip/30 gap-1 px-3 py-1 vip-glow">
+                      <Crown className="w-3 h-3" />
+                      VIP
+                    </Badge>
+                  )}
+                  {profile?.country && (
+                    <Badge variant="outline" className="text-muted-foreground border-border/50 px-3 py-1">
+                      {countries.find(c => c.code === profile.country)?.name[i18n.language === 'ar' ? 'ar' : 'en'] || profile.country}
+                    </Badge>
                   )}
                 </div>
-                {uploadingAvatar && (
-                  <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center">
-                    <Loader2 className="w-5 h-5 text-white animate-spin" />
-                  </div>
-                )}
-              </button>
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold text-foreground">
-                  {profile?.display_name || user?.user_metadata?.display_name || user?.email?.split('@')[0]}
-                </h2>
-                {isAdmin && (
-                  <Badge className="bg-primary text-primary-foreground gap-1">
-                    <Shield className="w-3 h-3" />
-                    Admin
-                  </Badge>
-                )}
-                {isVip && !isAdmin && (
-                  <Badge className="bg-vip text-vip-foreground gap-1">
-                    <Crown className="w-3 h-3" />
-                    VIP
-                  </Badge>
-                )}
               </div>
-              <p className="text-sm text-muted-foreground">{user?.email}</p>
-              {profile?.country && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  {countries.find(c => c.code === profile.country)?.name[i18n.language === 'ar' ? 'ar' : 'en'] || profile.country}
-                </p>
-              )}
             </div>
-            <Button variant="ghost" size="icon" onClick={() => setShowEditDialog(true)}>
-              <Edit className="w-4 h-4" />
-            </Button>
-          </div>
 
-          {!isVip && !isAdmin && (
-            <Button 
-              onClick={() => navigate('/vip')}
-              className="w-full mt-4 bg-gradient-to-r from-vip to-amber-500 text-vip-foreground gap-2"
-            >
-              <Crown className="w-4 h-4" />
-              {t('profile.upgradeToVip')}
-            </Button>
-          )}
+            {/* VIP Upgrade CTA */}
+            {!isVip && !isAdmin && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className="mt-5"
+              >
+                <Button 
+                  onClick={() => navigate('/vip')}
+                  className="w-full bg-gradient-to-r from-vip to-amber-500 text-vip-foreground gap-2 h-11 rounded-xl shadow-lg hover:shadow-vip/20 transition-shadow"
+                >
+                  <Crown className="w-4 h-4" />
+                  {t('profile.upgradeToVip')}
+                </Button>
+              </motion.div>
+            )}
+          </div>
         </motion.div>
 
-        {/* Admin Link */}
-        {isAdmin && (
+        {/* ═══════════════════════════════════════════ */}
+        {/* ★ QUICK ACTIONS (Admin/Support) ★ */}
+        {/* ═══════════════════════════════════════════ */}
+        {(isAdmin || isSupportAgent) && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
+            transition={{ delay: 0.08 }}
+            className="grid grid-cols-2 gap-3"
           >
-            <button
-              onClick={() => navigate('/admin')}
-              className="w-full flex items-center justify-between p-4 rounded-xl bg-primary/10 border border-primary/30 hover:bg-primary/20 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <Shield className="w-5 h-5 text-primary" />
-                <span className="font-medium text-foreground">{t('admin.title')}</span>
-              </div>
-              <ChevronRight className="w-4 h-4 text-primary rtl:rotate-180" />
-            </button>
-          </motion.div>
-        )}
-
-        {/* Support Dashboard for admins and support agents */}
-        {(isAdmin || isSupportAgent) && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.055 }}>
-            <button onClick={() => navigate('/support-dashboard')}
-              className="w-full flex items-center justify-between p-4 rounded-xl bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-colors">
-              <div className="flex items-center gap-3">
-                <Headset className="w-5 h-5 text-primary" />
-                <span className="font-medium text-foreground">لوحة الدعم الفني</span>
-              </div>
-              <ChevronRight className="w-4 h-4 text-primary rtl:rotate-180" />
-            </button>
+            {isAdmin && (
+              <button
+                onClick={() => navigate('/admin')}
+                className="flex flex-col items-center gap-2 p-4 rounded-xl glass-card hover-glow transition-all"
+              >
+                <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center">
+                  <Shield className="w-5 h-5 text-primary" />
+                </div>
+                <span className="text-sm font-medium text-foreground">{t('admin.title')}</span>
+              </button>
+            )}
+            {(isAdmin || isSupportAgent) && (
+              <button
+                onClick={() => navigate('/support-dashboard')}
+                className="flex flex-col items-center gap-2 p-4 rounded-xl glass-card hover-glow transition-all"
+              >
+                <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center">
+                  <Headset className="w-5 h-5 text-primary" />
+                </div>
+                <span className="text-sm font-medium text-foreground">لوحة الدعم</span>
+              </button>
+            )}
           </motion.div>
         )}
 
         {/* Support Button for users */}
         {user && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }}>
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
             <button onClick={() => navigate('/support')}
-              className="w-full flex items-center justify-between p-4 rounded-xl bg-card/50 border border-border/30 hover:bg-card/80 transition-colors">
+              className="w-full flex items-center justify-between p-4 rounded-xl glass-card hover-glow transition-all">
               <div className="flex items-center gap-3">
-                <Headset className="w-5 h-5 text-primary" />
+                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Headset className="w-4 h-4 text-primary" />
+                </div>
                 <span className="font-medium text-foreground">الدعم الفني</span>
               </div>
               <ChevronRight className="w-4 h-4 text-muted-foreground rtl:rotate-180" />
@@ -346,23 +390,27 @@ const ProfilePage = () => {
           </motion.div>
         )}
 
-        {/* Menu Items */}
+        {/* ═══════════════════════════════════════════ */}
+        {/* ★ SETTINGS MENU ★ */}
+        {/* ═══════════════════════════════════════════ */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="space-y-2"
+          transition={{ delay: 0.12 }}
+          className="rounded-2xl overflow-hidden glass-card divide-y divide-border/20"
         >
-          {menuItems.map((item, index) => {
+          {menuItems.map((item) => {
             const Icon = item.icon;
             return (
               <button
                 key={item.label}
                 onClick={item.onClick}
-                className="w-full flex items-center justify-between p-4 rounded-xl bg-card/50 border border-border/30 hover:bg-card transition-colors"
+                className="w-full flex items-center justify-between p-4 hover:bg-muted/30 transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <Icon className="w-5 h-5 text-muted-foreground" />
+                  <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Icon className="w-4 h-4 text-primary" />
+                  </div>
                   <span className="font-medium text-foreground">{t(item.label)}</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -370,7 +418,9 @@ const ProfilePage = () => {
                     <span className="text-sm text-muted-foreground">{item.value}</span>
                   )}
                   {item.count !== undefined && (
-                    <span className="trading-number text-sm text-muted-foreground">{item.count}</span>
+                    <Badge variant="secondary" className="text-xs">
+                      <span className="trading-number">{item.count}</span>
+                    </Badge>
                   )}
                   <ChevronRight className="w-4 h-4 text-muted-foreground rtl:rotate-180" />
                 </div>
@@ -393,48 +443,89 @@ const ProfilePage = () => {
           </motion.div>
         )}
 
-        {/* Blocked Users Section */}
-        {user && blockedUsers.length > 0 && (
+        {/* ═══════════════════════════════════════════ */}
+        {/* ★ BLOCKED USERS SECTION ★ */}
+        {/* ═══════════════════════════════════════════ */}
+        {user && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.22 }}
-            className="space-y-3"
           >
-            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <ShieldAlert className="w-4 h-4 text-destructive" />
-              {t('social.blockedUsers')} ({blockedUsers.length})
-            </h3>
-            <div className="space-y-2">
-              {blockedUsers.map(blocked => (
-                <div
-                  key={blocked.id}
-                  className="flex items-center justify-between p-3 rounded-xl bg-card/50 border border-border/30"
-                >
-                  <div className="flex items-center gap-3">
-                    <Avatar className="w-10 h-10">
-                      <AvatarImage src={blocked.profile?.avatar_url || undefined} />
-                      <AvatarFallback className="bg-muted text-muted-foreground">
-                        {(blocked.profile?.display_name || blocked.profile?.username || '?').charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="font-medium text-foreground text-sm">
-                      {blocked.profile?.display_name || blocked.profile?.username || t('community.anonymous')}
-                    </span>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => unblockUser(blocked.blocked_id)}
-                    disabled={blockLoading}
-                    className="text-primary border-primary/30 hover:bg-primary/10 gap-1 text-xs"
-                  >
-                    <Ban className="w-3 h-3" />
-                    {t('social.unblockUser')}
-                  </Button>
+            <button
+              onClick={() => setShowBlockedUsers(!showBlockedUsers)}
+              className="w-full flex items-center justify-between p-4 rounded-2xl glass-card hover-glow transition-all"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-destructive/10 flex items-center justify-center">
+                  <UserX className="w-4 h-4 text-destructive" />
                 </div>
-              ))}
-            </div>
+                <span className="font-medium text-foreground">{t('social.blockedUsers')}</span>
+                {blockedUsers.length > 0 && (
+                  <Badge variant="secondary" className="text-xs">{blockedUsers.length}</Badge>
+                )}
+              </div>
+              {showBlockedUsers ? (
+                <ChevronUp className="w-4 h-4 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              )}
+            </button>
+
+            <AnimatePresence>
+              {showBlockedUsers && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="pt-2 space-y-2">
+                    {blockedUsers.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-8 text-center">
+                        <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
+                          <ShieldAlert className="w-5 h-5 text-muted-foreground" />
+                        </div>
+                        <p className="text-sm text-muted-foreground">{t('social.noBlockedUsers')}</p>
+                      </div>
+                    ) : (
+                      blockedUsers.map((blocked, idx) => (
+                        <motion.div
+                          key={blocked.id}
+                          initial={{ opacity: 0, x: isRTL ? 10 : -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: idx * 0.05 }}
+                          className="flex items-center justify-between p-3 rounded-xl glass-card"
+                        >
+                          <div className="flex items-center gap-3">
+                            <Avatar className="w-10 h-10 border border-border/50">
+                              <AvatarImage src={blocked.profile?.avatar_url || undefined} />
+                              <AvatarFallback className="bg-muted text-muted-foreground text-sm">
+                                {(blocked.profile?.display_name || blocked.profile?.username || '?').charAt(0)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="font-medium text-foreground text-sm">
+                              {blocked.profile?.display_name || blocked.profile?.username || t('community.anonymous')}
+                            </span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => unblockUser(blocked.blocked_id)}
+                            disabled={blockLoading}
+                            className="text-primary hover:bg-primary/10 gap-1 text-xs h-8"
+                          >
+                            <Ban className="w-3 h-3" />
+                            {t('social.unblockUser')}
+                          </Button>
+                        </motion.div>
+                      ))
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         )}
 
@@ -446,7 +537,7 @@ const ProfilePage = () => {
         >
           <Button 
             variant="outline" 
-            className="w-full border-loss/30 text-loss hover:bg-loss/10 gap-2"
+            className="w-full border-destructive/20 text-destructive hover:bg-destructive/10 gap-2 rounded-xl h-11"
             onClick={handleLogout}
           >
             <LogOut className="w-4 h-4" />
@@ -455,7 +546,7 @@ const ProfilePage = () => {
         </motion.div>
 
         {/* Disclaimer */}
-        <p className="text-center text-xs text-muted-foreground px-4">
+        <p className="text-center text-xs text-muted-foreground/60 px-4 pb-4">
           {t('disclaimer.text')}
         </p>
       </div>
@@ -590,7 +681,6 @@ const ProfilePage = () => {
         </DialogContent>
       </Dialog>
 
-
       {/* Notification Settings Dialog */}
       <Dialog open={showNotificationSettings} onOpenChange={setShowNotificationSettings}>
         <DialogContent className="sm:max-w-[400px]">
@@ -613,7 +703,7 @@ const ProfilePage = () => {
               />
             ) : (
               <div className="w-64 h-64 rounded-xl bg-muted flex items-center justify-center text-6xl font-bold text-muted-foreground">
-                {profile?.display_name?.charAt(0).toUpperCase() || 'U'}
+                {initials}
               </div>
             )}
             <div className="flex gap-2 w-full">
