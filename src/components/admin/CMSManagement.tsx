@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import {
   Settings, Globe, Type, Link2, ToggleRight, Megaphone,
-  Save, Plus, Trash2, Check, X, Palette, ImageIcon, Upload, Loader2, RotateCcw
+  Save, Plus, Trash2, Check, X, Palette, ImageIcon, Upload, Loader2, RotateCcw,
+  ArrowLeft, ChevronRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -33,13 +35,13 @@ interface Setting {
 }
 
 const CATEGORIES = [
-  { key: 'general', label: 'عام', icon: Settings },
-  { key: 'texts', label: 'النصوص', icon: Type },
-  { key: 'links', label: 'الروابط', icon: Link2 },
-  { key: 'features', label: 'الميزات', icon: ToggleRight },
-  { key: 'services', label: 'الخدمات', icon: Globe },
-  { key: 'announcements', label: 'الإعلانات', icon: Megaphone },
-  { key: 'images', label: 'الصور', icon: ImageIcon },
+  { key: 'general', label: 'عام', icon: Settings, color: 'from-primary/20 to-primary/5', iconColor: 'text-primary', borderColor: 'border-primary/20' },
+  { key: 'texts', label: 'النصوص', icon: Type, color: 'from-blue-500/20 to-cyan-500/20', iconColor: 'text-blue-500', borderColor: 'border-blue-500/20' },
+  { key: 'links', label: 'الروابط', icon: Link2, color: 'from-emerald-500/20 to-green-500/20', iconColor: 'text-emerald-500', borderColor: 'border-emerald-500/20' },
+  { key: 'features', label: 'الميزات', icon: ToggleRight, color: 'from-violet-500/20 to-purple-500/20', iconColor: 'text-violet-500', borderColor: 'border-violet-500/20' },
+  { key: 'services', label: 'الخدمات', icon: Globe, color: 'from-teal-500/20 to-cyan-500/20', iconColor: 'text-teal-500', borderColor: 'border-teal-500/20' },
+  { key: 'announcements', label: 'الإعلانات', icon: Megaphone, color: 'from-amber-500/20 to-yellow-500/20', iconColor: 'text-amber-500', borderColor: 'border-amber-500/20' },
+  { key: 'images', label: 'الصور', icon: ImageIcon, color: 'from-rose-500/20 to-pink-500/20', iconColor: 'text-rose-500', borderColor: 'border-rose-500/20' },
 ];
 
 export const CMSManagement = () => {
@@ -52,6 +54,7 @@ export const CMSManagement = () => {
   const [editedValues, setEditedValues] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState<string | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [newSetting, setNewSetting] = useState({
     category: 'general',
     setting_key: '',
@@ -537,170 +540,223 @@ export const CMSManagement = () => {
         <div className="relative flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-rose-500/20 border border-rose-500/20">
-              <Palette className="w-5 h-5 text-rose-400" />
+              {activeCategory ? (() => {
+                const cat = CATEGORIES.find(c => c.key === activeCategory);
+                const CatIcon = cat?.icon || Palette;
+                return <CatIcon className={cn("w-5 h-5", cat?.iconColor || 'text-rose-400')} />;
+              })() : <Palette className="w-5 h-5 text-rose-400" />}
             </div>
             <div>
-              <h2 className="text-lg font-bold text-foreground">إدارة المحتوى (CMS)</h2>
-              <p className="text-xs text-muted-foreground/70">{settings.length} إعداد في {CATEGORIES.length} أقسام</p>
+              <h2 className="text-lg font-bold text-foreground">
+                {activeCategory ? CATEGORIES.find(c => c.key === activeCategory)?.label : 'إدارة المحتوى (CMS)'}
+              </h2>
+              <p className="text-xs text-muted-foreground/70">
+                {activeCategory 
+                  ? `${settings.filter(s => s.category === activeCategory).length} إعداد`
+                  : `${settings.length} إعداد في ${CATEGORIES.length} أقسام`
+                }
+              </p>
             </div>
           </div>
-        <div className="flex items-center gap-2">
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button size="sm" variant="outline" className="gap-1 text-muted-foreground">
-                <RotateCcw className="w-4 h-4" />
-                استعادة الافتراضيات
+          <div className="flex items-center gap-2">
+            {activeCategory && (
+              <Button size="sm" variant="outline" className="gap-1" onClick={() => setActiveCategory(null)}>
+                <ArrowLeft className="w-4 h-4 rtl:rotate-180" />
+                رجوع
               </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>استعادة الإعدادات الافتراضية؟</AlertDialogTitle>
-                <AlertDialogDescription>
-                  سيتم إعادة جميع الإعدادات إلى قيمها الافتراضية. هذا الإجراء لا يمكن التراجع عنه.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                <AlertDialogAction onClick={handleRestoreDefaults} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                  استعادة
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-          <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-            <DialogTrigger asChild>
-              <Button size="sm" variant="outline" className="gap-1">
-                <Plus className="w-4 h-4" />
-                إضافة إعداد
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>إضافة إعداد جديد</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-3">
-                <div>
-                  <Label>القسم</Label>
-                  <Select value={newSetting.category} onValueChange={(v) => setNewSetting(p => ({ ...p, category: v }))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {CATEGORIES.map(c => (
-                        <SelectItem key={c.key} value={c.key}>{c.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+            )}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="sm" variant="outline" className="gap-1 text-muted-foreground">
+                  <RotateCcw className="w-4 h-4" />
+                  <span className="hidden sm:inline">استعادة</span>
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>استعادة الإعدادات الافتراضية؟</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    سيتم إعادة جميع الإعدادات إلى قيمها الافتراضية. هذا الإجراء لا يمكن التراجع عنه.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleRestoreDefaults} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    استعادة
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+              <DialogTrigger asChild>
+                <Button size="sm" variant="outline" className="gap-1">
+                  <Plus className="w-4 h-4" />
+                  <span className="hidden sm:inline">إضافة</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>إضافة إعداد جديد</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-3">
+                  <div>
+                    <Label>القسم</Label>
+                    <Select value={newSetting.category} onValueChange={(v) => setNewSetting(p => ({ ...p, category: v }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {CATEGORIES.map(c => (
+                          <SelectItem key={c.key} value={c.key}>{c.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>المفتاح (بالإنجليزية)</Label>
+                    <Input
+                      value={newSetting.setting_key}
+                      onChange={(e) => setNewSetting(p => ({ ...p, setting_key: e.target.value }))}
+                      dir="ltr"
+                      placeholder="my_setting_key"
+                    />
+                  </div>
+                  <div>
+                    <Label>الاسم بالعربية *</Label>
+                    <Input
+                      value={newSetting.label_ar}
+                      onChange={(e) => setNewSetting(p => ({ ...p, label_ar: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label>النوع</Label>
+                    <Select value={newSetting.setting_type} onValueChange={(v) => setNewSetting(p => ({ ...p, setting_type: v }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="text">نص</SelectItem>
+                        <SelectItem value="url">رابط</SelectItem>
+                        <SelectItem value="boolean">تبديل (نعم/لا)</SelectItem>
+                        <SelectItem value="color">لون</SelectItem>
+                        <SelectItem value="image">صورة</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>القيمة الافتراضية</Label>
+                    <Input
+                      value={newSetting.setting_value}
+                      onChange={(e) => setNewSetting(p => ({ ...p, setting_value: e.target.value }))}
+                    />
+                  </div>
+                  <Button onClick={handleAddSetting} className="w-full">إضافة</Button>
                 </div>
-                <div>
-                  <Label>المفتاح (بالإنجليزية)</Label>
-                  <Input
-                    value={newSetting.setting_key}
-                    onChange={(e) => setNewSetting(p => ({ ...p, setting_key: e.target.value }))}
-                    dir="ltr"
-                    placeholder="my_setting_key"
-                  />
-                </div>
-                <div>
-                  <Label>الاسم بالعربية *</Label>
-                  <Input
-                    value={newSetting.label_ar}
-                    onChange={(e) => setNewSetting(p => ({ ...p, label_ar: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label>النوع</Label>
-                  <Select value={newSetting.setting_type} onValueChange={(v) => setNewSetting(p => ({ ...p, setting_type: v }))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="text">نص</SelectItem>
-                      <SelectItem value="url">رابط</SelectItem>
-                      <SelectItem value="boolean">تبديل (نعم/لا)</SelectItem>
-                      <SelectItem value="color">لون</SelectItem>
-                      <SelectItem value="image">صورة</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>القيمة الافتراضية</Label>
-                  <Input
-                    value={newSetting.setting_value}
-                    onChange={(e) => setNewSetting(p => ({ ...p, setting_value: e.target.value }))}
-                  />
-                </div>
-                <Button onClick={handleAddSetting} className="w-full">إضافة</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
       </motion.div>
 
-      <p className="text-sm text-muted-foreground">
-        تحكم بمحتوى التطبيق بالكامل من هنا. أي تغيير سينعكس فوراً على جميع المستخدمين.
-      </p>
-
-      <Tabs defaultValue="general">
-        <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${CATEGORIES.length}, 1fr)` }}>
-          {CATEGORIES.map(cat => {
-            const Icon = cat.icon;
-            const count = settings.filter(s => s.category === cat.key).length;
+      {activeCategory ? (
+        // Settings list for active category
+        <motion.div
+          key={activeCategory}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.25 }}
+          className="space-y-3"
+        >
+          {(() => {
+            const categorySettings = settings.filter(s => s.category === activeCategory);
+            const hasAnyChanges = categorySettings.some(hasChanges);
             return (
-              <TabsTrigger key={cat.key} value={cat.key} className="gap-1 text-xs">
-                <Icon className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{cat.label}</span>
-                <Badge variant="secondary" className="h-4 px-1 text-[10px]">{count}</Badge>
-              </TabsTrigger>
+              <>
+                {hasAnyChanges && (
+                  <div className="flex justify-end">
+                    <Button 
+                      onClick={() => handleSaveAll(activeCategory)} 
+                      disabled={saving === 'all'}
+                      className="gap-2"
+                    >
+                      <Save className="w-4 h-4" />
+                      حفظ جميع التغييرات
+                    </Button>
+                  </div>
+                )}
+
+                {categorySettings.map((setting, idx) => (
+                  <motion.div
+                    key={setting.id}
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.03 }}
+                    className="p-4 rounded-xl bg-card/50 border border-border/30 relative group"
+                  >
+                    {renderSettingInput(setting)}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-2 end-2 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 text-muted-foreground hover:text-destructive"
+                      onClick={() => handleDelete(setting.id)}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </motion.div>
+                ))}
+
+                {categorySettings.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    لا توجد إعدادات في هذا القسم
+                  </div>
+                )}
+              </>
             );
-          })}
-        </TabsList>
-
-        {CATEGORIES.map(cat => {
-          const categorySettings = settings.filter(s => s.category === cat.key);
-          const hasAnyChanges = categorySettings.some(hasChanges);
-
-          return (
-            <TabsContent key={cat.key} value={cat.key} className="space-y-3">
-              {hasAnyChanges && (
-                <div className="flex justify-end">
-                  <Button 
-                    onClick={() => handleSaveAll(cat.key)} 
-                    disabled={saving === 'all'}
-                    className="gap-2"
-                  >
-                    <Save className="w-4 h-4" />
-                    حفظ جميع التغييرات
-                  </Button>
-                </div>
-              )}
-
-              {categorySettings.map((setting, idx) => (
-                <motion.div
-                  key={setting.id}
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.03 }}
-                  className="p-4 rounded-xl bg-card/50 border border-border/30 relative group"
+          })()}
+        </motion.div>
+      ) : (
+        // Cards grid
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <p className="text-sm text-muted-foreground mb-4">
+            تحكم بمحتوى التطبيق بالكامل من هنا. أي تغيير سينعكس فوراً على جميع المستخدمين.
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+            {CATEGORIES.map((cat, idx) => {
+              const Icon = cat.icon;
+              const count = settings.filter(s => s.category === cat.key).length;
+              return (
+                <motion.button
+                  key={cat.key}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.1 + idx * 0.04 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => setActiveCategory(cat.key)}
+                  className={cn(
+                    "group relative flex flex-col items-center gap-2.5 p-4 rounded-2xl text-center",
+                    "bg-card/60 border border-border/30 backdrop-blur-sm",
+                    "hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5",
+                    "transition-all duration-200"
+                  )}
                 >
-                  {renderSettingInput(setting)}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-2 end-2 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 text-muted-foreground hover:text-loss"
-                    onClick={() => handleDelete(setting.id)}
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </Button>
-                </motion.div>
-              ))}
-
-              {categorySettings.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  لا توجد إعدادات في هذا القسم
-                </div>
-              )}
-            </TabsContent>
-          );
-        })}
-      </Tabs>
+                  <div className={cn(
+                    "w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br",
+                    cat.color, cat.borderColor, "border"
+                  )}>
+                    <Icon className={cn("w-5.5 h-5.5", cat.iconColor)} />
+                  </div>
+                  <div>
+                    <span className="text-xs font-semibold text-foreground block">{cat.label}</span>
+                    <span className="text-[10px] text-muted-foreground">{count} إعداد</span>
+                  </div>
+                  <ChevronRight className="absolute top-3 end-3 w-3.5 h-3.5 text-muted-foreground/30 group-hover:text-primary/60 transition-colors rtl:rotate-180" />
+                </motion.button>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 };
