@@ -1287,6 +1287,9 @@ export type Database = {
       }
       services: {
         Row: {
+          apk_url: string | null
+          app_store_url: string | null
+          card_type: string | null
           color: string
           created_at: string
           description_ar: string
@@ -1300,10 +1303,14 @@ export type Database = {
           link_url: string | null
           name_ar: string
           name_en: string
+          play_store_url: string | null
           sort_order: number
           updated_at: string
         }
         Insert: {
+          apk_url?: string | null
+          app_store_url?: string | null
+          card_type?: string | null
           color?: string
           created_at?: string
           description_ar?: string
@@ -1317,10 +1324,14 @@ export type Database = {
           link_url?: string | null
           name_ar: string
           name_en?: string
+          play_store_url?: string | null
           sort_order?: number
           updated_at?: string
         }
         Update: {
+          apk_url?: string | null
+          app_store_url?: string | null
+          card_type?: string | null
           color?: string
           created_at?: string
           description_ar?: string
@@ -1334,6 +1345,7 @@ export type Database = {
           link_url?: string | null
           name_ar?: string
           name_en?: string
+          play_store_url?: string | null
           sort_order?: number
           updated_at?: string
         }
