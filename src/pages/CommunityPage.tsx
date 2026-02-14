@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { LogIn, Megaphone, MessageSquare, GraduationCap } from 'lucide-react';
@@ -8,15 +8,21 @@ import { RoomChatPanel } from '@/components/community/RoomChatPanel';
 import { RoomModerationPanel } from '@/components/community/RoomModerationPanel';
 import { LearningRoomPanel } from '@/components/community/LearningRoomPanel';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useCommunityRooms, RoomWithCounts } from '@/hooks/useCommunityRooms';
 import { cn } from '@/lib/utils';
 
+type TabKey = 'channels' | 'discussions' | 'learning';
+
 type ViewMode = 'list' | 'chat' | 'learning' | 'moderation';
+
+const TABS: { key: TabKey; icon: typeof Megaphone; labelAr: string; labelEn: string }[] = [
+  { key: 'channels', icon: Megaphone, labelAr: 'القنوات', labelEn: 'Channels' },
+  { key: 'discussions', icon: MessageSquare, labelAr: 'النقاشات', labelEn: 'Discussions' },
+  { key: 'learning', icon: GraduationCap, labelAr: 'التعليم', labelEn: 'Learning' },
+];
 
 const CommunityPage = () => {
   const { t, i18n } = useTranslation();
@@ -24,6 +30,7 @@ const CommunityPage = () => {
   const { toast } = useToast();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabKey>('channels');
 
   const { user, isVip, isAdmin, loading: authLoading } = useAuth();
   const { rooms, loading: roomsLoading, markRoomAsRead } = useCommunityRooms();
@@ -36,9 +43,30 @@ const CommunityPage = () => {
   const discussions = rooms.filter(r => r.category === 'discussions');
   const learningRooms = rooms.filter(r => r.category === 'learning');
 
-  const channelsUnread = channels.reduce((s, r) => s + r.unread_count, 0);
-  const discussionsUnread = discussions.reduce((s, r) => s + r.unread_count, 0);
-  const learningUnread = learningRooms.reduce((s, r) => s + r.unread_count, 0);
+  const unreadMap: Record<TabKey, number> = {
+    channels: channels.reduce((s, r) => s + r.unread_count, 0),
+    discussions: discussions.reduce((s, r) => s + r.unread_count, 0),
+    learning: learningRooms.reduce((s, r) => s + r.unread_count, 0),
+  };
+
+  const roomsMap: Record<TabKey, RoomWithCounts[]> = { channels, discussions, learning: learningRooms };
+  const emptyMap: Record<TabKey, string> = {
+    channels: isArabic ? 'لا توجد قنوات حالياً' : 'No channels yet',
+    discussions: isArabic ? 'لا توجد نقاشات حالياً' : 'No discussions yet',
+    learning: isArabic ? 'لا توجد غرف تعليم حالياً' : 'No learning rooms yet',
+  };
+
+  // Sliding indicator
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
+  const activeIndex = TABS.findIndex(t => t.key === activeTab);
+
+  useEffect(() => {
+    const el = tabRefs.current[activeIndex];
+    if (el) {
+      setIndicator({ left: el.offsetLeft, width: el.offsetWidth });
+    }
+  }, [activeIndex]);
 
   const handleRoomClick = (room: RoomWithCounts) => {
     if (room.is_private && !isVipUser) {
@@ -145,14 +173,7 @@ const CommunityPage = () => {
     </motion.div>
   );
 
-  const UnreadBadge = ({ count }: { count: number }) => {
-    if (count <= 0) return null;
-    return (
-      <span className="min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1 trading-number">
-        {count > 99 ? '99+' : count}
-      </span>
-    );
-  };
+  const currentRooms = roomsMap[activeTab];
 
   return (
     <AppLayout>
@@ -167,57 +188,70 @@ const CommunityPage = () => {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
       ) : (
-        <Tabs defaultValue="channels" className="flex-1 flex flex-col" dir={isArabic ? 'rtl' : 'ltr'}>
-          <div className="px-4 pt-3">
-            <TabsList className="w-full grid grid-cols-3 h-11">
-              <TabsTrigger value="channels" className="gap-1.5 text-xs">
-                <Megaphone className="w-3.5 h-3.5" />
-                {isArabic ? 'القنوات' : 'Channels'}
-                <UnreadBadge count={channelsUnread} />
-              </TabsTrigger>
-              <TabsTrigger value="discussions" className="gap-1.5 text-xs">
-                <MessageSquare className="w-3.5 h-3.5" />
-                {isArabic ? 'النقاشات' : 'Discussions'}
-                <UnreadBadge count={discussionsUnread} />
-              </TabsTrigger>
-              <TabsTrigger value="learning" className="gap-1.5 text-xs">
-                <GraduationCap className="w-3.5 h-3.5" />
-                {isArabic ? 'التعليم' : 'Learning'}
-                <UnreadBadge count={learningUnread} />
-              </TabsTrigger>
-            </TabsList>
+        <div className="flex-1 flex flex-col" dir={isArabic ? 'rtl' : 'ltr'}>
+          {/* Custom Tab Bar */}
+          <div className="px-4 pt-3 pb-1">
+            <div className="relative flex items-center bg-muted/60 rounded-xl p-1">
+              {/* Sliding indicator */}
+              <span
+                className="absolute top-1 bottom-1 rounded-lg bg-primary shadow-md transition-all duration-300 ease-out"
+                style={{
+                  [isArabic ? 'right' : 'left']: indicator.left,
+                  width: indicator.width,
+                }}
+              />
+
+              {TABS.map((tab, i) => {
+                const isActive = activeTab === tab.key;
+                const Icon = tab.icon;
+                const unread = unreadMap[tab.key];
+                return (
+                  <button
+                    key={tab.key}
+                    ref={el => { tabRefs.current[i] = el; }}
+                    onClick={() => setActiveTab(tab.key)}
+                    className={cn(
+                      'relative z-10 flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-semibold transition-colors duration-200',
+                      isActive
+                        ? 'text-primary-foreground'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span>{isArabic ? tab.labelAr : tab.labelEn}</span>
+                    {unread > 0 && (
+                      <span className={cn(
+                        'min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[10px] font-bold px-1',
+                        isActive
+                          ? 'bg-primary-foreground/20 text-primary-foreground'
+                          : 'bg-destructive text-destructive-foreground'
+                      )}>
+                        {unread > 99 ? '99+' : unread}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          <TabsContent value="channels" className="flex-1 px-4 py-3 mt-0">
-            <div className="space-y-2">
-              {channels.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">{isArabic ? 'لا توجد قنوات حالياً' : 'No channels yet'}</p>
+          {/* Tab Content with fade animation */}
+          <div className="flex-1 px-4 py-3">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+              className="space-y-2"
+            >
+              {currentRooms.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">{emptyMap[activeTab]}</p>
               ) : (
-                channels.map((room, i) => renderRoomCard(room, i))
+                currentRooms.map((room, i) => renderRoomCard(room, i))
               )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="discussions" className="flex-1 px-4 py-3 mt-0">
-            <div className="space-y-2">
-              {discussions.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">{isArabic ? 'لا توجد نقاشات حالياً' : 'No discussions yet'}</p>
-              ) : (
-                discussions.map((room, i) => renderRoomCard(room, i))
-              )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="learning" className="flex-1 px-4 py-3 mt-0">
-            <div className="space-y-2">
-              {learningRooms.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">{isArabic ? 'لا توجد غرف تعليم حالياً' : 'No learning rooms yet'}</p>
-              ) : (
-                learningRooms.map((room, i) => renderRoomCard(room, i))
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
+            </motion.div>
+          </div>
+        </div>
       )}
     </AppLayout>
   );
