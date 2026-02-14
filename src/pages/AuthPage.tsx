@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { countries } from '@/data/countries';
 import { signInWithGoogle } from '@/lib/auth-helpers';
 import { useAppSettings } from '@/hooks/useAppSettings';
-import appLogo from '@/assets/logo.jpg';
+import appLogo from '@/assets/logo-clean.png';
 
 type AuthMode = 'login' | 'register' | 'forgot';
 
