@@ -43,6 +43,7 @@ interface Course {
   is_vip: boolean;
   is_published: boolean;
   sort_order: number;
+  channel_url?: string;
 }
 
 interface Lesson {
@@ -94,9 +95,10 @@ export const CoursesManagement = () => {
   const [courseForm, setCourseForm] = useState<{
     title_ar: string; title_en: string; description_ar: string; description_en: string;
     icon: string; level: 'beginner' | 'intermediate' | 'advanced'; is_vip: boolean; is_published: boolean;
+    channel_url: string;
   }>({
     title_ar: '', title_en: '', description_ar: '', description_en: '',
-    icon: 'BookOpen', level: 'beginner', is_vip: false, is_published: false
+    icon: 'BookOpen', level: 'beginner', is_vip: false, is_published: false, channel_url: ''
   });
   const [lessonForm, setLessonForm] = useState({
     title_ar: '', title_en: '', content_ar: '', content_en: '',
@@ -169,11 +171,12 @@ export const CoursesManagement = () => {
       setCourseForm({
         title_ar: course.title_ar, title_en: course.title_en,
         description_ar: course.description_ar, description_en: course.description_en,
-        icon: course.icon, level: course.level, is_vip: course.is_vip, is_published: course.is_published
+        icon: course.icon, level: course.level, is_vip: course.is_vip, is_published: course.is_published,
+        channel_url: course.channel_url || ''
       });
     } else {
       setEditingCourse(null);
-      setCourseForm({ title_ar: '', title_en: '', description_ar: '', description_en: '', icon: 'BookOpen', level: 'beginner', is_vip: false, is_published: false });
+      setCourseForm({ title_ar: '', title_en: '', description_ar: '', description_en: '', icon: 'BookOpen', level: 'beginner', is_vip: false, is_published: false, channel_url: '' });
     }
     setCourseDialog(true);
   };
@@ -491,6 +494,12 @@ export const CoursesManagement = () => {
                 <label className="text-sm">{isArabic ? 'منشور' : 'Published'}</label>
                 <Switch checked={courseForm.is_published} onCheckedChange={v => setCourseForm(p => ({ ...p, is_published: v }))} />
               </div>
+              <Input 
+                placeholder={isArabic ? 'رابط القناة التعليمية (تلغرام/يوتيوب)' : 'Educational channel URL (Telegram/YouTube)'} 
+                value={courseForm.channel_url} 
+                onChange={e => setCourseForm(p => ({ ...p, channel_url: e.target.value }))} 
+                dir="ltr"
+              />
               <Button onClick={saveCourse} className="w-full gap-1.5"><Save className="w-4 h-4" />{isArabic ? 'حفظ' : 'Save'}</Button>
             </div>
           </ScrollArea>

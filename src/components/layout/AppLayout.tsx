@@ -168,6 +168,14 @@ export const AppLayout = ({ children, showNotifications = true }: AppLayoutProps
       <main className={`pb-20 ${showNotifications && user ? (bannerActive && bannerText && !bannerDismissed ? 'pt-[88px]' : 'pt-[52px]') : (bannerActive && bannerText && !bannerDismissed ? 'pt-[36px]' : '')}`}>
         {children}
       </main>
+
+      {/* Copyright Footer */}
+      <div className="pb-20 text-center py-3 border-t border-border/20">
+        <p className="text-[10px] text-muted-foreground/40">
+          © {new Date().getFullYear()} Forex Assassin. جميع الحقوق محفوظة
+        </p>
+      </div>
+
       <FloatingAIButton />
       <BottomNav />
     </div>

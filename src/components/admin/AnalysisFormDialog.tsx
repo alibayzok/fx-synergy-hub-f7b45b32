@@ -365,6 +365,25 @@ export const AnalysisFormDialog = ({ open, onOpenChange, analysis, onSuccess }: 
             </div>
           )}
 
+          {/* Asset Type Selector */}
+          <div className="space-y-2">
+            <Label>نوع الأصل</Label>
+            <Select
+              value={formData.asset_type || 'none'}
+              onValueChange={(v: any) => setFormData({ ...formData, asset_type: v === 'none' ? null : v })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="اختر نوع الأصل" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">بدون تحديد</SelectItem>
+                <SelectItem value="forex">فوركس</SelectItem>
+                <SelectItem value="metals">معادن (ذهب/فضة)</SelectItem>
+                <SelectItem value="crypto">عملات رقمية</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>الإطار الزمني</Label>

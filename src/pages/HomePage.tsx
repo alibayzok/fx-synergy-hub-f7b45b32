@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, LogIn, Radio, Clock, Eye, Heart, Megaphone, BookOpen, TrendingUp, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, LogIn, Radio, Clock, Eye, Heart, Megaphone, BookOpen, TrendingUp, Sparkles, BarChart3 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { QuickActions } from '@/components/home/QuickActions';
 import { DailyQuestsWidget } from '@/components/home/DailyQuestsWidget';
@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useSignals } from '@/hooks/useSignals';
+import { useAnalyses } from '@/hooks/useAnalyses';
 import { useProfile } from '@/hooks/useProfile';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { supabase } from '@/integrations/supabase/client';
@@ -37,6 +38,7 @@ const HomePage = () => {
   
   const { user, isAdmin, loading: authLoading } = useAuth();
   const { signals, loading: signalsLoading } = useSignals();
+  const { analyses, loading: analysesLoading } = useAnalyses();
   const { profile, loading: profileLoading } = useProfile();
   const { getSetting, getBoolean } = useAppSettings();
   const appName = getSetting('app_name', 'ASSASSIN FX');
@@ -76,6 +78,7 @@ const HomePage = () => {
   }, []);
 
   const latestSignals = signals.slice(0, 3);
+  const latestAnalyses = analyses.slice(0, 3);
 
   const handleQuickAction = (action: string) => {
     switch (action) {
@@ -186,13 +189,6 @@ const HomePage = () => {
               <Sparkles className="w-6 h-6 text-primary/60" />
             </motion.div>
           </motion.div>
-        )}
-
-        {/* Daily Quests Widget */}
-        {user && (
-          <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-            <DailyQuestsWidget />
-          </motion.section>
         )}
 
         {/* Quick Actions */}
@@ -320,6 +316,65 @@ const HomePage = () => {
             ) : (
               <div className="text-center py-6 text-muted-foreground glass-card rounded-xl text-sm">
                 {isRTL ? 'لا توجد مقالات حالياً' : 'No articles yet'}
+              </div>
+            )}
+          </div>
+        </motion.section>
+
+        {/* Latest Analyses */}
+        <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-primary" />
+              {isRTL ? 'آخر التحليلات' : 'Latest Analyses'}
+            </h2>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/analyses')} className="text-primary h-8 gap-1 hover:bg-primary/10">
+              {t('home.viewAll')}
+              {isRTL ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+            </Button>
+          </div>
+          <div className="space-y-2.5">
+            {analysesLoading ? (
+              <>
+                <Skeleton className="h-20 w-full rounded-xl" />
+                <Skeleton className="h-20 w-full rounded-xl" />
+              </>
+            ) : latestAnalyses.length > 0 ? (
+              latestAnalyses.map((analysis, index) => (
+                <motion.div
+                  key={analysis.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 + index * 0.08 }}
+                  onClick={() => navigate('/analyses')}
+                  className="cursor-pointer group"
+                >
+                  <div className="rounded-xl bg-card/60 border border-border/40 p-3.5 group-hover:border-primary/30 group-hover:bg-card/80 transition-all duration-200">
+                    <div className="flex items-center gap-2 mb-1">
+                      {analysis.symbol && (
+                        <Badge variant="outline" className="font-mono text-xs bg-primary/10 border-primary/30 text-primary">
+                          {analysis.symbol}
+                        </Badge>
+                      )}
+                      {analysis.timeframe && <Badge variant="secondary" className="text-[10px]">{analysis.timeframe}</Badge>}
+                      <div className="flex-1" />
+                      <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                        <Clock className="w-3 h-3" />
+                        {formatDistanceToNow(new Date(analysis.created_at), { addSuffix: true, locale })}
+                      </span>
+                    </div>
+                    <h3 className="font-semibold text-sm leading-snug">{analysis.title}</h3>
+                    <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{analysis.content}</p>
+                    <div className="flex items-center gap-3 text-[11px] text-muted-foreground pt-1">
+                      <span className="flex items-center gap-1"><Heart className="w-3 h-3" />{analysis.likes_count || 0}</span>
+                      <span className="flex items-center gap-1"><Eye className="w-3 h-3" />{analysis.views_count || 0}</span>
+                    </div>
+                  </div>
+                </motion.div>
+              ))
+            ) : (
+              <div className="text-center py-6 text-muted-foreground glass-card rounded-xl text-sm">
+                {isRTL ? 'لا توجد تحليلات حالياً' : 'No analyses yet'}
               </div>
             )}
           </div>

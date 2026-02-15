@@ -288,7 +288,7 @@
       "sell": "بيع",
       "buyDesc": "اشترِ USDT بأفضل سعر",
       "sellDesc": "بِع USDT واحصل على نقدك",
-      "currency": "LBP",
+      "currency": "USD",
       "buyRequest": "طلب شراء USDT",
       "sellRequest": "طلب بيع USDT",
       "paymentMethod": "طريقة الدفع",
@@ -303,7 +303,7 @@
       "commission": "العمولة",
       "min": "الحد الأدنى",
       "max": "الحد الأقصى",
-      "infoNote": "سيتم التواصل معك عبر الواتساب أو الهاتف لإتمام العملية بعد إرسال الطلب",
+      "infoNote": "سيتم التواصل معك عبر الواتساب أو التلغرام لإتمام العملية بعد إرسال الطلب. للتواصل المباشر: @ForexAssassin على تلغرام",
       "paymentMethods": {
         "bank_transfer": "تحويل بنكي",
         "omt": "OMT",
