@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Radio, Eye, Heart, Lock, Share2, LogIn, Crown, Zap, 
-  TrendingUp, Clock, Sparkles, Shield, ChevronDown
+  TrendingUp, Clock, Sparkles, Shield, ChevronDown, Plus
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Badge } from '@/components/ui/badge';
@@ -17,10 +17,11 @@ import { useNavigate } from 'react-router-dom';
 import { formatFullDateTime } from '@/lib/date-utils';
 import { useBatchUpdates } from '@/hooks/useSignalUpdates';
 import { UpdatesSection } from '@/components/updates/UpdatesSection';
+import { SignalFormDialog } from '@/components/admin/SignalFormDialog';
 
 const SignalsPage = () => {
   const { t, i18n } = useTranslation();
-  const { signals, loading, likeSignal, unlikeSignal } = useSignals();
+  const { signals, loading, likeSignal, unlikeSignal, fetchSignals } = useSignals();
   const { user, isVip, isAdmin } = useAuth();
   const { getSetting } = useAppSettings();
   const navigate = useNavigate();
@@ -28,6 +29,7 @@ const SignalsPage = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string>('all');
   const [activeTab, setActiveTab] = useState<'all' | 'vip'>('all');
+  const [showSignalForm, setShowSignalForm] = useState(false);
 
   const appName = getSetting('app_name', 'ASSASSIN FX');
   const isVipUser = isVip || isAdmin;
@@ -142,7 +144,7 @@ const SignalsPage = () => {
               <Zap className="w-3 h-3 text-profit-foreground" />
             </div>
           </div>
-          <div className="flex-1">
+           <div className="flex-1">
             <div className="flex items-center gap-2">
               <h1 className="text-lg font-bold gold-gradient">{appName}</h1>
               <Badge className="bg-gradient-to-r from-primary/20 to-accent/20 text-primary border-primary/30 text-[10px] px-2 py-0 font-semibold">
@@ -154,6 +156,16 @@ const SignalsPage = () => {
               {signals.length} إشارة • {freeCount} مجانية • {vipCount} VIP
             </p>
           </div>
+          {isAdmin && (
+            <Button
+              size="sm"
+              onClick={() => setShowSignalForm(true)}
+              className="gap-1.5 rounded-xl text-xs shadow-lg shadow-primary/20"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              إشارة جديدة
+            </Button>
+          )}
         </div>
 
         {/* Tab switcher - All / VIP */}
@@ -449,6 +461,15 @@ const SignalsPage = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Admin Quick Create Signal */}
+      {isAdmin && (
+        <SignalFormDialog
+          open={showSignalForm}
+          onOpenChange={setShowSignalForm}
+          onSuccess={() => fetchSignals()}
+        />
+      )}
     </AppLayout>
   );
 };
