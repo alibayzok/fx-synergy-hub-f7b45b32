@@ -15,6 +15,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { useNavigate } from 'react-router-dom';
 import { formatFullDateTime } from '@/lib/date-utils';
+import { useBatchUpdates } from '@/hooks/useSignalUpdates';
+import { UpdatesSection } from '@/components/updates/UpdatesSection';
 
 const SignalsPage = () => {
   const { t, i18n } = useTranslation();
@@ -29,6 +31,9 @@ const SignalsPage = () => {
 
   const appName = getSetting('app_name', 'ASSASSIN FX');
   const isVipUser = isVip || isAdmin;
+
+  const signalIds = useMemo(() => signals.map(s => s.id), [signals]);
+  const { updatesMap } = useBatchUpdates(signalIds, 'signal');
 
   const filteredSignals = useMemo(() => {
     let filtered = signals;
@@ -378,6 +383,14 @@ const SignalsPage = () => {
                           </div>
                         )}
                       </div>
+
+                      {/* Updates Section */}
+                      {!isLocked && (
+                        <UpdatesSection
+                          updates={updatesMap[post.id] || []}
+                          language={i18n.language}
+                        />
+                      )}
 
                       {/* Footer - Premium reactions bar */}
                       <div className="flex items-center justify-between pt-2 border-t border-border/20">

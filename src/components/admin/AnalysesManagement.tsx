@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Pencil, Trash2, Eye, Heart, Crown, FileText, Clock, BarChart3, Sparkles } from 'lucide-react';
@@ -11,6 +11,9 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useAnalyses } from '@/hooks/useAnalyses';
 import { AnalysisFormDialog } from './AnalysisFormDialog';
+import { useBatchUpdates } from '@/hooks/useSignalUpdates';
+import { UpdatesSection } from '@/components/updates/UpdatesSection';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
 interface Analysis {
@@ -35,6 +38,17 @@ export const AnalysesManagement = () => {
   const [selectedAnalysis, setSelectedAnalysis] = useState<Analysis | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
+  const analysisIds = useMemo(() => analyses.map(a => a.id), [analyses]);
+  const { updatesMap } = useBatchUpdates(analysisIds, 'analysis');
+
+  const handleAddUpdate = async (analysisId: string, content: string) => {
+    const { error } = await supabase.from('signal_updates').insert({
+      parent_id: analysisId,
+      parent_type: 'analysis',
+      content,
+    });
+    return !error;
+  };
   const handleEdit = (analysis: Analysis) => {
     setSelectedAnalysis(analysis);
     setShowFormDialog(true);
@@ -170,6 +184,12 @@ export const AnalysesManagement = () => {
                     </Button>
                   </div>
                 </div>
+                {/* Updates */}
+                <UpdatesSection
+                  updates={updatesMap[analysis.id] || []}
+                  language="ar"
+                  onAddUpdate={(content) => handleAddUpdate(analysis.id, content)}
+                />
               </motion.div>
             ))}
           </div>
