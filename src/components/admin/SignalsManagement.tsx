@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Pencil, Trash2, Eye, Heart, Crown, Radio, Clock, Check, ChevronsUpDown, TrendingUp, TrendingDown, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Eye, Heart, Crown, Radio, Clock, Check, ChevronsUpDown, TrendingUp, TrendingDown, X, MessageSquarePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -25,6 +25,9 @@ import {
 import { useSignals } from '@/hooks/useSignals';
 import { useAuth } from '@/hooks/useAuth';
 import { useMarketData } from '@/hooks/useMarketData';
+import { useBatchUpdates } from '@/hooks/useSignalUpdates';
+import { UpdatesSection } from '@/components/updates/UpdatesSection';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
 interface SignalForm {
@@ -53,6 +56,17 @@ export const SignalsManagement = () => {
   const [symbolOpen, setSymbolOpen] = useState(false);
   const [customSymbol, setCustomSymbol] = useState('');
   const { symbols: marketSymbols } = useMarketData(true, 5000);
+  const signalIds = useMemo(() => signals.map(s => s.id), [signals]);
+  const { updatesMap } = useBatchUpdates(signalIds, 'signal');
+
+  const handleAddUpdate = async (signalId: string, content: string) => {
+    const { error } = await supabase.from('signal_updates').insert({
+      parent_id: signalId,
+      parent_type: 'signal',
+      content,
+    });
+    return !error;
+  };
 
   const currentMarketPrice = useMemo(() => {
     if (!form.symbol) return null;
@@ -193,9 +207,15 @@ export const SignalsManagement = () => {
                     <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setDeleteId(signal.id)}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
+                    </div>
                   </div>
-                </div>
-              </motion.div>
+                  {/* Updates */}
+                  <UpdatesSection
+                    updates={updatesMap[signal.id] || []}
+                    language="ar"
+                    onAddUpdate={(content) => handleAddUpdate(signal.id, content)}
+                  />
+                </motion.div>
             ))}
           </div>
         )}

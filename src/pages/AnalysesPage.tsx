@@ -14,6 +14,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { useNavigate } from 'react-router-dom';
 import { formatFullDateTime } from '@/lib/date-utils';
+import { useBatchUpdates } from '@/hooks/useSignalUpdates';
+import { UpdatesSection } from '@/components/updates/UpdatesSection';
 
 const AnalysesPage = () => {
   const { t, i18n } = useTranslation();
@@ -26,6 +28,9 @@ const AnalysesPage = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const enabled = getBoolean('enable_analyses', true);
+
+  const analysisIds = analyses.map(a => a.id);
+  const { updatesMap } = useBatchUpdates(analysisIds, 'analysis');
 
   useEffect(() => {
     if (!enabled) navigate('/', { replace: true });
@@ -208,6 +213,14 @@ const AnalysesPage = () => {
                           </div>
                         )}
                       </div>
+
+                      {/* Updates Section */}
+                      {!isLocked && (
+                        <UpdatesSection
+                          updates={updatesMap[analysis.id] || []}
+                          language={i18n.language}
+                        />
+                      )}
 
                       {/* Footer */}
                       <div className="flex items-center justify-between pt-2 border-t border-border/50">
