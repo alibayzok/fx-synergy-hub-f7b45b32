@@ -16,8 +16,26 @@ interface CalendarEvent {
   date: string;
 }
 
-function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, '').trim();
+interface FFEvent {
+  title: string;
+  country: string;
+  date: string;
+  impact: string;
+  forecast: string;
+  previous: string;
+  actual?: string;
+}
+
+function getImpact(impact: string): 'low' | 'medium' | 'high' {
+  switch (impact?.toLowerCase()) {
+    case 'high':
+    case 'holiday':
+      return 'high';
+    case 'medium':
+      return 'medium';
+    default:
+      return 'low';
+  }
 }
 
 async function translateEvents(events: CalendarEvent[]): Promise<CalendarEvent[]> {
@@ -68,18 +86,18 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Fetch from Investing.com economic calendar RSS or use scraping
-    const today = new Date();
-    const dateStr = today.toISOString().split('T')[0];
+    // Get requested date from query params
+    const url = new URL(req.url);
+    const requestedDate = url.searchParams.get('date') || new Date().toISOString().split('T')[0];
 
-    // Try fetching from FX Street economic calendar
+    // Fetch real data from Forex Factory JSON feed
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
 
-    const response = await fetch('https://www.investing.com/economic-calendar/', {
+    const response = await fetch('https://nfs.faireconomy.media/ff_calendar_thisweek.json', {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'text/html,application/xhtml+xml',
+        'Accept': 'application/json',
       },
       signal: controller.signal,
     });
@@ -88,109 +106,44 @@ Deno.serve(async (req) => {
     const events: CalendarEvent[] = [];
 
     if (response.ok) {
-      const html = await response.text();
+      const ffEvents: FFEvent[] = await response.json();
       
-      // Parse economic calendar events from HTML
-      const eventRegex = /<tr[^>]*class="[^"]*js-event-item[^"]*"[^>]*>([\s\S]*?)<\/tr>/gi;
-      let match;
+      // Filter events for the requested date
       let eventId = 0;
+      for (const ev of ffEvents) {
+        // FF date format: "2026-02-15T13:30:00-05:00" or similar
+        const eventDate = ev.date ? ev.date.split('T')[0] : '';
+        
+        if (eventDate !== requestedDate) continue;
 
-      while ((match = eventRegex.exec(html)) !== null && events.length < 30) {
-        const row = match[1];
-        
-        // Extract time
-        const timeMatch = row.match(/<td[^>]*class="[^"]*time[^"]*"[^>]*>([\s\S]*?)<\/td>/i);
-        const time = timeMatch ? stripHtml(timeMatch[1]) : '';
-        
-        // Extract currency
-        const currMatch = row.match(/<td[^>]*class="[^"]*flagCur[^"]*"[^>]*>([\s\S]*?)<\/td>/i);
-        const currency = currMatch ? stripHtml(currMatch[1]).trim() : '';
-        
-        // Extract impact (bull icons count)
-        const impactMatch = row.match(/sentiment/gi);
-        const impactCount = impactMatch ? impactMatch.length : 0;
-        const impact: 'low' | 'medium' | 'high' = impactCount >= 3 ? 'high' : impactCount >= 2 ? 'medium' : 'low';
-        
-        // Extract event name
-        const eventMatch = row.match(/<td[^>]*class="[^"]*event[^"]*"[^>]*>([\s\S]*?)<\/td>/i);
-        const eventName = eventMatch ? stripHtml(eventMatch[1]).trim() : '';
-        
-        // Extract actual, forecast, previous
-        const actualMatch = row.match(/<td[^>]*class="[^"]*act[^"]*"[^>]*>([\s\S]*?)<\/td>/i);
-        const forecastMatch = row.match(/<td[^>]*class="[^"]*fore[^"]*"[^>]*>([\s\S]*?)<\/td>/i);
-        const prevMatch = row.match(/<td[^>]*class="[^"]*prev[^"]*"[^>]*>([\s\S]*?)<\/td>/i);
-        
-        if (eventName && currency) {
-          events.push({
-            id: `cal-${eventId++}`,
-            time: time || '--:--',
-            currency,
-            impact,
-            event: eventName,
-            event_ar: eventName,
-            actual: actualMatch ? stripHtml(actualMatch[1]).trim() : '-',
-            forecast: forecastMatch ? stripHtml(forecastMatch[1]).trim() : '-',
-            previous: prevMatch ? stripHtml(prevMatch[1]).trim() : '-',
-            date: dateStr,
-          });
-        }
+        // Extract time from date string
+        let time = '--:--';
+        try {
+          const d = new Date(ev.date);
+          const hours = d.getUTCHours().toString().padStart(2, '0');
+          const minutes = d.getUTCMinutes().toString().padStart(2, '0');
+          time = `${hours}:${minutes}`;
+        } catch { /* keep default */ }
+
+        events.push({
+          id: `cal-${eventId++}`,
+          time,
+          currency: ev.country || '',
+          impact: getImpact(ev.impact),
+          event: ev.title || '',
+          event_ar: ev.title || '',
+          actual: ev.actual || '-',
+          forecast: ev.forecast || '-',
+          previous: ev.previous || '-',
+          date: requestedDate,
+        });
       }
     }
 
-    // If scraping failed, provide sample data structure
-    if (events.length === 0) {
-      // Fallback: Use AI to generate today's expected economic events
-      const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-      if (LOVABLE_API_KEY) {
-        try {
-          const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-            },
-            body: JSON.stringify({
-              model: 'google/gemini-2.5-flash-lite',
-              messages: [
-                {
-                  role: 'system',
-                  content: 'You are an economic calendar assistant. Generate realistic economic calendar events for today. Return ONLY a JSON array with objects having: time (HH:MM format), currency (3-letter code), impact ("low"/"medium"/"high"), event (English name), event_ar (Arabic name), actual ("-" if not released), forecast (number or "-"), previous (number). Generate 15-20 events for major currencies (USD, EUR, GBP, JPY, CHF, AUD, CAD, NZD). No markdown.'
-                },
-                { role: 'user', content: `Generate economic calendar events for today ${dateStr}. Include real-world typical events like NFP, CPI, PMI, interest rate decisions, etc.` }
-              ]
-            })
-          });
-
-          if (aiResponse.ok) {
-            const aiData = await aiResponse.json();
-            const content = aiData.choices?.[0]?.message?.content || '';
-            const jsonMatch = content.match(/\[[\s\S]*\]/);
-            if (jsonMatch) {
-              const aiEvents = JSON.parse(jsonMatch[0]);
-              if (Array.isArray(aiEvents)) {
-                aiEvents.forEach((e: any, i: number) => {
-                  events.push({
-                    id: `cal-ai-${i}`,
-                    time: e.time || '--:--',
-                    currency: e.currency || 'USD',
-                    impact: e.impact || 'medium',
-                    event: e.event || '',
-                    event_ar: e.event_ar || e.event || '',
-                    actual: e.actual || '-',
-                    forecast: e.forecast || '-',
-                    previous: e.previous || '-',
-                    date: dateStr,
-                  });
-                });
-              }
-            }
-          }
-        } catch (err) {
-          console.error('AI calendar error:', err);
-        }
-      }
-    } else {
-      // Translate scraped events
+    // If no events found for the requested date (could be outside this week's range),
+    // return empty array - do NOT generate fake data
+    if (events.length > 0) {
+      // Translate event names to Arabic
       const translated = await translateEvents(events);
       events.length = 0;
       events.push(...translated);
@@ -199,10 +152,10 @@ Deno.serve(async (req) => {
     // Sort by time
     events.sort((a, b) => a.time.localeCompare(b.time));
 
-    console.log(`Calendar: ${events.length} events`);
+    console.log(`Calendar: ${events.length} events for ${requestedDate}`);
 
     return new Response(
-      JSON.stringify({ success: true, data: events, date: dateStr }),
+      JSON.stringify({ success: true, data: events, date: requestedDate }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
