@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { Crown, User, Shield, Search, ChevronDown, Check, Users, Sparkles } from 'lucide-react';
+import { Crown, User, Shield, Search, ChevronDown, Check, Users, Sparkles, Headphones, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -31,10 +31,12 @@ interface UserProfile {
   roles: string[];
 }
 
-type AppRole = 'admin' | 'vip' | 'free';
+type AppRole = 'admin' | 'moderator' | 'support' | 'vip' | 'free';
 
 const ROLES: { value: AppRole; labelKey: string; icon: React.ReactNode; color: string }[] = [
   { value: 'admin', labelKey: 'admin.roles.admin', icon: <Shield className="w-4 h-4" />, color: 'text-primary' },
+  { value: 'moderator', labelKey: 'admin.roles.moderator', icon: <Eye className="w-4 h-4" />, color: 'text-emerald-500' },
+  { value: 'support', labelKey: 'admin.roles.support', icon: <Headphones className="w-4 h-4" />, color: 'text-cyan-500' },
   { value: 'vip', labelKey: 'admin.roles.vip', icon: <Crown className="w-4 h-4" />, color: 'text-vip' },
   { value: 'free', labelKey: 'admin.roles.free', icon: <User className="w-4 h-4" />, color: 'text-muted-foreground' },
 ];
@@ -129,12 +131,16 @@ export const UserManagement = () => {
 
   const getRoleIcon = (roles: string[]) => {
     if (roles.includes('admin')) return <Shield className="w-4 h-4 text-primary" />;
+    if (roles.includes('moderator')) return <Eye className="w-4 h-4 text-emerald-500" />;
+    if (roles.includes('support')) return <Headphones className="w-4 h-4 text-cyan-500" />;
     if (roles.includes('vip')) return <Crown className="w-4 h-4 text-vip" />;
     return <User className="w-4 h-4 text-muted-foreground" />;
   };
 
   const getCurrentRole = (roles: string[]): AppRole => {
     if (roles.includes('admin')) return 'admin';
+    if (roles.includes('moderator')) return 'moderator';
+    if (roles.includes('support')) return 'support';
     if (roles.includes('vip')) return 'vip';
     return 'free';
   };
@@ -145,6 +151,8 @@ export const UserManagement = () => {
   };
 
   const adminCount = users.filter(u => u.roles.includes('admin')).length;
+  const modCount = users.filter(u => u.roles.includes('moderator')).length;
+  const supportCount = users.filter(u => u.roles.includes('support')).length;
   const vipCount = users.filter(u => u.roles.includes('vip')).length;
 
   return (
@@ -164,7 +172,7 @@ export const UserManagement = () => {
             <div>
               <h2 className="text-lg font-bold text-foreground">{t('admin.manageUsers')}</h2>
               <p className="text-xs text-muted-foreground/70">
-                {users.length} مستخدم • {adminCount} مدير • {vipCount} VIP
+                {users.length} مستخدم • {adminCount} مدير • {modCount} مشرف • {supportCount} دعم • {vipCount} VIP
               </p>
             </div>
           </div>
@@ -205,6 +213,8 @@ export const UserManagement = () => {
           {filteredUsers.map((user, index) => {
             const currentRole = getCurrentRole(user.roles);
             const isAdmin = user.roles.includes('admin');
+            const isMod = user.roles.includes('moderator');
+            const isSup = user.roles.includes('support');
             const isVip = user.roles.includes('vip');
             const isUpdating = updatingUser === user.user_id;
 
@@ -217,6 +227,8 @@ export const UserManagement = () => {
                 className={cn(
                   "p-4 rounded-2xl border backdrop-blur-sm transition-all hover:scale-[1.01]",
                   isAdmin ? "bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/25 shadow-[0_0_15px_rgba(var(--primary),0.08)]" :
+                  isMod ? "bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent border-emerald-500/25" :
+                  isSup ? "bg-gradient-to-br from-cyan-500/10 via-cyan-500/5 to-transparent border-cyan-500/25" :
                   isVip ? "bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border-amber-500/25 shadow-[0_0_15px_rgba(245,158,11,0.08)]" : 
                   "bg-card/50 border-border/25 hover:border-border/40"
                 )}
@@ -226,6 +238,8 @@ export const UserManagement = () => {
                     <div className={cn(
                       "w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border",
                       isAdmin ? "bg-primary/15 border-primary/20" :
+                      isMod ? "bg-emerald-500/15 border-emerald-500/20" :
+                      isSup ? "bg-cyan-500/15 border-cyan-500/20" :
                       isVip ? "bg-amber-500/15 border-amber-500/20" : "bg-muted/50 border-border/20"
                     )}>
                       {getRoleIcon(user.roles)}
@@ -261,6 +275,8 @@ export const UserManagement = () => {
                     <Badge className={cn(
                       "hidden sm:flex rounded-lg border",
                       isAdmin ? "bg-primary/15 text-primary border-primary/20" :
+                      isMod ? "bg-emerald-500/15 text-emerald-500 border-emerald-500/20" :
+                      isSup ? "bg-cyan-500/15 text-cyan-500 border-cyan-500/20" :
                       isVip ? "bg-amber-500/15 text-amber-500 border-amber-500/20" : 
                       "bg-muted/50 text-muted-foreground border-border/20"
                     )}>

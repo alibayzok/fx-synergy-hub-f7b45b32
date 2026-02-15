@@ -450,6 +450,8 @@
     "roleUpdated": "User role updated",
     "roles": {
       "admin": "Admin",
+      "moderator": "Moderator",
+      "support": "Support",
       "vip": "VIP",
       "free": "Free"
     },

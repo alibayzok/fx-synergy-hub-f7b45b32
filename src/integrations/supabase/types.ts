@@ -2232,6 +2232,7 @@ export type Database = {
         Args: { check_user_id?: string; conv_id: string }
         Returns: boolean
       }
+      is_moderator: { Args: never; Returns: boolean }
       is_room_member: {
         Args: { p_room_id: string; p_user_id?: string }
         Returns: boolean
@@ -2241,6 +2242,7 @@ export type Database = {
         Returns: boolean
       }
       is_support_agent: { Args: { p_user_id?: string }; Returns: boolean }
+      is_support_role: { Args: never; Returns: boolean }
       is_vip: { Args: never; Returns: boolean }
       list_public_tables: {
         Args: never
@@ -2256,7 +2258,7 @@ export type Database = {
       request_vip_subscription: { Args: { p_plan: string }; Returns: undefined }
     }
     Enums: {
-      app_role: "admin" | "vip" | "free"
+      app_role: "admin" | "vip" | "free" | "moderator" | "support"
       asset_type: "forex" | "metals" | "crypto"
       content_visibility: "free" | "vip"
       conversation_type: "direct" | "group"
@@ -2409,7 +2411,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "vip", "free"],
+      app_role: ["admin", "vip", "free", "moderator", "support"],
       asset_type: ["forex", "metals", "crypto"],
       content_visibility: ["free", "vip"],
       conversation_type: ["direct", "group"],

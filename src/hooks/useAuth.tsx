@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { AUTH_CONFIG } from '@/config/environment';
 import { useToast } from '@/hooks/use-toast';
 
-type AppRole = 'admin' | 'vip' | 'free';
+type AppRole = 'admin' | 'moderator' | 'support' | 'vip' | 'free';
 
 interface AuthContextType {
   user: User | null;
@@ -12,6 +12,8 @@ interface AuthContextType {
   loading: boolean;
   roles: AppRole[];
   isAdmin: boolean;
+  isModerator: boolean;
+  isSupport: boolean;
   isVip: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, userData?: { firstName?: string; lastName?: string; country?: string; phone?: string }) => Promise<{ error: Error | null }>;
@@ -211,6 +213,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const isAdmin = roles.includes('admin');
+  const isModerator = roles.includes('moderator') || isAdmin;
+  const isSupport = roles.includes('support') || isAdmin;
   const isVip = roles.includes('vip') || isAdmin;
 
   return (
@@ -220,6 +224,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       loading,
       roles,
       isAdmin,
+      isModerator,
+      isSupport,
       isVip,
       signIn,
       signUp,
