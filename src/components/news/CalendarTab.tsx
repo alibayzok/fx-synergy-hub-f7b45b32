@@ -240,7 +240,14 @@ export const CalendarTab = () => {
                     {dateEvents.map((event) => (
                       <div
                         key={event.id}
-                        className="flex items-center gap-3 px-4 py-3 hover:bg-muted/20 transition-colors"
+                        className={cn(
+                          "flex items-center gap-3 px-4 py-3 transition-colors border-s-4",
+                          event.impact === 'high' 
+                            ? "bg-destructive/8 border-s-destructive hover:bg-destructive/12" 
+                            : event.impact === 'medium' 
+                            ? "bg-amber-500/8 border-s-amber-500 hover:bg-amber-500/12" 
+                            : "bg-muted/20 border-s-muted-foreground/30 hover:bg-muted/30"
+                        )}
                       >
                         {/* Impact indicator */}
                         <div className="shrink-0">
