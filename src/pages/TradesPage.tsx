@@ -14,8 +14,7 @@ import { useSignals } from '@/hooks/useSignals';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { useNavigate } from 'react-router-dom';
-import { formatDistanceToNow } from 'date-fns';
-import { ar, enUS } from 'date-fns/locale';
+import { formatFullDateTime } from '@/lib/date-utils';
 
 const SignalsPage = () => {
   const { t, i18n } = useTranslation();
@@ -29,7 +28,6 @@ const SignalsPage = () => {
   const [activeTab, setActiveTab] = useState<'all' | 'vip'>('all');
 
   const appName = getSetting('app_name', 'ASSASSIN FX');
-  const locale = i18n.language === 'ar' ? ar : enUS;
   const isVipUser = isVip || isAdmin;
 
   const filteredSignals = useMemo(() => {
@@ -415,7 +413,7 @@ const SignalsPage = () => {
                           </span>
                           <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
-                            {formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale })}
+                            {formatFullDateTime(post.created_at, i18n.language)}
                           </span>
                         </div>
                       </div>

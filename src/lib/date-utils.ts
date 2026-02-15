@@ -58,3 +58,25 @@ export const formatLocalTime = (
   const result = new Date(dateStr).toLocaleTimeString(locale);
   return toLatinNumerals(result);
 };
+
+/**
+ * Format full date and time (e.g., "15 فبراير 2026 - 10:30 م") with Latin numerals
+ */
+export const formatFullDateTime = (
+  dateStr: string,
+  language: string
+): string => {
+  const locale = language === 'ar' ? 'ar-EG' : 'en-US';
+  const date = new Date(dateStr);
+  const dateFormatted = date.toLocaleDateString(locale, {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+  const timeFormatted = date.toLocaleTimeString(locale, {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+  return toLatinNumerals(`${dateFormatted} - ${timeFormatted}`);
+};

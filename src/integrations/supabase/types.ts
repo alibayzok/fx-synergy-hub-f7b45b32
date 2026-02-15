@@ -1009,6 +1009,7 @@ export type Database = {
           last_name: string | null
           onboarding_completed: boolean | null
           phone: string | null
+          referral_code: string | null
           trading_preferences: Json | null
           updated_at: string
           user_id: string
@@ -1025,6 +1026,7 @@ export type Database = {
           last_name?: string | null
           onboarding_completed?: boolean | null
           phone?: string | null
+          referral_code?: string | null
           trading_preferences?: Json | null
           updated_at?: string
           user_id: string
@@ -1041,6 +1043,7 @@ export type Database = {
           last_name?: string | null
           onboarding_completed?: boolean | null
           phone?: string | null
+          referral_code?: string | null
           trading_preferences?: Json | null
           updated_at?: string
           user_id?: string
@@ -1391,6 +1394,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      signal_updates: {
+        Row: {
+          attachments: string[] | null
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          parent_id: string
+          parent_type: string
+          telegram_message_id: number | null
+        }
+        Insert: {
+          attachments?: string[] | null
+          content: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          parent_id: string
+          parent_type: string
+          telegram_message_id?: number | null
+        }
+        Update: {
+          attachments?: string[] | null
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          parent_id?: string
+          parent_type?: string
+          telegram_message_id?: number | null
+        }
+        Relationships: []
       }
       signals: {
         Row: {

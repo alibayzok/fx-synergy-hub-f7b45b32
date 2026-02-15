@@ -55,11 +55,14 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: true }), { headers: corsHeaders });
     }
 
-    // Check for publish hashtag (#نشر or #publish)
+    // Check for publish hashtag (#نشر or #publish) or update hashtag (#تحديث or #update)
     const hasPublishTag = /#نشر|#publish/i.test(rawText);
-    if (!hasPublishTag) {
-      console.log("No publish hashtag found, ignoring");
-      return new Response(JSON.stringify({ ok: true, message: "No publish tag" }), { headers: corsHeaders });
+    const hasUpdateTag = /#تحديث|#update/i.test(rawText);
+    const isReply = !!post.reply_to_message;
+
+    if (!hasPublishTag && !hasUpdateTag && !isReply) {
+      console.log("No publish/update hashtag and not a reply, ignoring");
+      return new Response(JSON.stringify({ ok: true, message: "No action tag" }), { headers: corsHeaders });
     }
 
     // Extract category from hashtags (for news/articles channel)
@@ -80,7 +83,7 @@ Deno.serve(async (req) => {
 
     // Remove all known hashtags from the text
     const cleanText = rawText
-      .replace(/#نشر|#publish/gi, "")
+      .replace(/#نشر|#publish|#تحديث|#update/gi, "")
       .replace(/#تعليم|#education|#عام|#general|#تحليل|#analysis|#اخبار|#news/gi, "")
       .trim();
     if (!cleanText) {
@@ -163,7 +166,46 @@ Deno.serve(async (req) => {
 
     let result;
 
-    if (channelType === "news") {
+    // Check if this is a reply/update to an existing signal
+    const isUpdate = isReply || hasUpdateTag;
+
+    if (isUpdate && isReply && channelType !== "news") {
+      // This is a reply to an existing message - find the parent signal by telegram_message_id
+      const replyToMsgId = post.reply_to_message?.message_id;
+      if (replyToMsgId) {
+        // Look for parent signal that was created from this telegram message
+        // We store telegram_message_id in signal_updates to track replies
+        const parentType = "signal";
+        
+        // Find latest signal (since we don't store telegram msg id on signals, use time-based matching)
+        // For now, insert as an update to the most recent signal in this channel
+        const visibility = channelType === "vip" ? "vip" : "free";
+        const { data: latestSignals } = await supabase
+          .from("signals")
+          .select("id")
+          .eq("visibility", visibility)
+          .order("created_at", { ascending: false })
+          .limit(10);
+
+        if (latestSignals && latestSignals.length > 0) {
+          // Insert as update to the most recent signal
+          const { data, error } = await supabase.from("signal_updates").insert({
+            parent_id: latestSignals[0].id,
+            parent_type: parentType,
+            content: cleanText,
+            attachments: attachments.length > 0 ? attachments : null,
+            telegram_message_id: post.message_id,
+          });
+          result = { data, error };
+          if (!error) console.log(`Update added to signal ${latestSignals[0].id}`);
+        } else {
+          console.log("No parent signal found for reply");
+          result = { data: null, error: null };
+        }
+      } else {
+        result = { data: null, error: null };
+      }
+    } else if (channelType === "news") {
       // Insert into articles table
       const { data, error } = await supabase.from("articles").insert({
         title_ar: title,

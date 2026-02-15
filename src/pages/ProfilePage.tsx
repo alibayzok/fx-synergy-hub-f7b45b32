@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare, Link2, Copy, Check as CheckIcon2 } from 'lucide-react';
 import { 
   Settings, 
   Globe, 
@@ -79,6 +79,7 @@ const ProfilePage = () => {
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   const [showAvatarPreview, setShowAvatarPreview] = useState(false);
   const [showBlockedUsers, setShowBlockedUsers] = useState(false);
+  const [refCopied, setRefCopied] = useState(false);
   
   const [editData, setEditData] = useState({
     display_name: '',
@@ -89,6 +90,17 @@ const ProfilePage = () => {
   });
 
   const isRTL = i18n.language === 'ar';
+  const referralCode = profile?.referral_code || '';
+  const referralLink = referralCode ? `https://fx-synergy-hub.lovable.app/?ref=${referralCode}` : '';
+
+  const copyReferralLink = () => {
+    if (referralLink) {
+      navigator.clipboard.writeText(referralLink);
+      setRefCopied(true);
+      toast({ title: isRTL ? 'تم نسخ رابط الإحالة' : 'Referral link copied' });
+      setTimeout(() => setRefCopied(false), 2000);
+    }
+  };
 
   useEffect(() => {
     if (profile) {
@@ -410,7 +422,36 @@ const ProfilePage = () => {
         )}
 
         {/* ═══════════════════════════════════════════ */}
-        {/* ★ SETTINGS MENU ★ */}
+        {/* ★ REFERRAL LINK ★ */}
+        {/* ═══════════════════════════════════════════ */}
+        {user && referralCode && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.11 }}
+            className="p-4 rounded-2xl glass-card border border-primary/20 space-y-3"
+          >
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
+                <Link2 className="w-4 h-4 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground text-sm">{isRTL ? 'رابط الإحالة' : 'Referral Link'}</h3>
+                <p className="text-[10px] text-muted-foreground">{isRTL ? 'شارك الرابط واكسب 50 نقطة لكل صديق' : 'Share & earn 50 pts per friend'}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 bg-muted/50 rounded-lg px-3 py-2 text-xs text-muted-foreground font-mono truncate dir-ltr" dir="ltr">
+                {referralLink}
+              </div>
+              <Button variant="outline" size="sm" onClick={copyReferralLink} className="gap-1.5 h-9 shrink-0">
+                {refCopied ? <CheckIcon2 className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                {refCopied ? (isRTL ? 'تم' : 'Copied') : (isRTL ? 'نسخ' : 'Copy')}
+              </Button>
+            </div>
+          </motion.div>
+        )}
+
         {/* ═══════════════════════════════════════════ */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
