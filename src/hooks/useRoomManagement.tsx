@@ -29,6 +29,9 @@ export interface RoomMember {
   approved_at: string | null;
   banned_until: string | null;
   ban_reason: string | null;
+  is_muted: boolean;
+  muted_until: string | null;
+  muted_reason: string | null;
   profile?: {
     display_name: string | null;
     username: string | null;
@@ -491,6 +494,71 @@ export const useRoomModeration = (roomId: string) => {
     }
   };
 
+  // Mute member
+  const muteMember = async (memberId: string, reason: string, durationHours?: number) => {
+    const targetMember = members.find(m => m.id === memberId);
+    if (!targetMember) return false;
+
+    if (targetMember.role === 'owner') {
+      toast({ title: 'لا يمكن كتم المالك', variant: 'destructive' });
+      return false;
+    }
+
+    if (targetMember.role === 'moderator' && currentUserRole === 'moderator') {
+      toast({ title: 'لا يمكنك كتم مشرف آخر', variant: 'destructive' });
+      return false;
+    }
+
+    try {
+      const mutedUntil = durationHours
+        ? new Date(Date.now() + durationHours * 60 * 60 * 1000).toISOString()
+        : null;
+
+      const { error } = await supabase
+        .from('room_members')
+        .update({
+          is_muted: true,
+          muted_reason: reason,
+          muted_until: mutedUntil
+        })
+        .eq('id', memberId);
+
+      if (error) throw error;
+
+      toast({ title: 'تم كتم العضو' });
+      await fetchMembers();
+      return true;
+    } catch (error) {
+      console.error('Error muting member:', error);
+      toast({ title: 'حدث خطأ', variant: 'destructive' });
+      return false;
+    }
+  };
+
+  // Unmute member
+  const unmuteMember = async (memberId: string) => {
+    try {
+      const { error } = await supabase
+        .from('room_members')
+        .update({
+          is_muted: false,
+          muted_reason: null,
+          muted_until: null
+        })
+        .eq('id', memberId);
+
+      if (error) throw error;
+
+      toast({ title: 'تم رفع الكتم' });
+      await fetchMembers();
+      return true;
+    } catch (error) {
+      console.error('Error unmuting member:', error);
+      toast({ title: 'حدث خطأ', variant: 'destructive' });
+      return false;
+    }
+  };
+
   // Remove member
   const removeMember = async (memberId: string) => {
     try {
@@ -500,7 +568,7 @@ export const useRoomModeration = (roomId: string) => {
         .eq('id', memberId);
 
       if (error) throw error;
-      
+
       toast({ title: 'تم إزالة العضو' });
       await fetchMembers();
       return true;
@@ -561,6 +629,8 @@ export const useRoomModeration = (roomId: string) => {
     updateMemberRole,
     banMember,
     unbanMember,
+    muteMember,
+    unmuteMember,
     removeMember
   };
 };

@@ -14,13 +14,15 @@ import {
   X,
   MoreVertical,
   Settings,
-  Info
+  Info,
+  VolumeX,
+  Volume2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,6 +42,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useRoomModeration, RoomMember } from '@/hooks/useRoomManagement';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
@@ -70,12 +73,17 @@ export const RoomModerationPanel = ({ roomId, roomName, onBack }: RoomModeration
     updateMemberRole,
     banMember,
     unbanMember,
+    muteMember,
+    unmuteMember,
     removeMember
   } = useRoomModeration(roomId);
 
   const [selectedMember, setSelectedMember] = useState<RoomMember | null>(null);
-  const [actionType, setActionType] = useState<'ban' | 'remove' | 'role' | null>(null);
+  const [actionType, setActionType] = useState<'ban' | 'remove' | 'role' | 'mute' | null>(null);
   const [banReason, setBanReason] = useState('');
+  const [banDuration, setBanDuration] = useState<string>('permanent');
+  const [muteReason, setMuteReason] = useState('');
+  const [muteDuration, setMuteDuration] = useState<string>('1');
 
   const roleColors = {
     owner: 'bg-amber-500/20 text-amber-500 border-amber-500/30',
@@ -96,29 +104,34 @@ export const RoomModerationPanel = ({ roomId, roomName, onBack }: RoomModeration
     });
   };
 
-  // Check if current user can manage a specific member
   const canManageMember = (member: RoomMember) => {
-    // Can't manage yourself
     if (member.user_id === user?.id) return false;
-    // Can't manage owner
     if (member.role === 'owner') return false;
-    // Only owner/admin can manage moderators
     if (member.role === 'moderator' && !isOwner && !isAdmin) return false;
-    // Must be moderator/owner/admin to manage anyone
     return isModerator || isOwner || isAdmin;
   };
 
-  // Check if current user can change roles
-  const canChangeRoles = () => {
-    return isOwner || isAdmin;
-  };
+  const canChangeRoles = () => isOwner || isAdmin;
 
   const handleBan = async () => {
     if (selectedMember && banReason) {
-      await banMember(selectedMember.id, banReason);
+      const duration = banDuration === 'permanent' ? undefined : parseInt(banDuration);
+      await banMember(selectedMember.id, banReason, duration);
       setSelectedMember(null);
       setActionType(null);
       setBanReason('');
+      setBanDuration('permanent');
+    }
+  };
+
+  const handleMute = async () => {
+    if (selectedMember && muteReason) {
+      const durationHours = parseInt(muteDuration);
+      await muteMember(selectedMember.id, muteReason, durationHours);
+      setSelectedMember(null);
+      setActionType(null);
+      setMuteReason('');
+      setMuteDuration('1');
     }
   };
 
@@ -140,12 +153,116 @@ export const RoomModerationPanel = ({ roomId, roomName, onBack }: RoomModeration
 
   const approvedMembers = members.filter(m => m.status === 'approved');
   const bannedMembers = members.filter(m => m.status === 'banned');
-  
-  // Sort members: owner first, then moderators, then regular members
+  const mutedMembers = approvedMembers.filter(m => m.is_muted);
+
   const sortedMembers = [...approvedMembers].sort((a, b) => {
     const roleOrder = { owner: 0, moderator: 1, member: 2 };
     return roleOrder[a.role] - roleOrder[b.role];
   });
+
+  const renderMemberCard = (member: RoomMember) => {
+    const RoleIcon = roleIcons[member.role];
+    const canManage = canManageMember(member);
+    const isCurrentUser = member.user_id === user?.id;
+
+    return (
+      <motion.div
+        key={member.id}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={cn(
+          "flex items-center gap-3 p-3 rounded-xl border transition-colors",
+          isCurrentUser
+            ? "bg-primary/5 border-primary/20"
+            : "bg-card/50 border-border/30 hover:bg-card/80"
+        )}
+      >
+        <Avatar className="h-11 w-11">
+          <AvatarImage src={member.profile?.avatar_url || undefined} />
+          <AvatarFallback className="bg-primary/20 text-primary font-medium">
+            {(member.profile?.display_name || member.profile?.username || 'U').charAt(0)}
+          </AvatarFallback>
+        </Avatar>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-medium text-foreground truncate">
+              {member.profile?.display_name || member.profile?.username || 'مستخدم'}
+            </span>
+            {isCurrentUser && (
+              <Badge variant="secondary" className="text-[10px] px-1.5">
+                {isArabic ? 'أنت' : 'You'}
+              </Badge>
+            )}
+            {member.is_muted && (
+              <Badge variant="outline" className="text-[10px] px-1.5 bg-amber-500/10 text-amber-500 border-amber-500/30 gap-0.5">
+                <VolumeX className="w-2.5 h-2.5" />
+                {isArabic ? 'مكتوم' : 'Muted'}
+              </Badge>
+            )}
+          </div>
+          <div className="flex items-center gap-2 mt-1">
+            <Badge variant="outline" className={cn("text-[10px] gap-0.5", roleColors[member.role])}>
+              <RoleIcon className="w-2.5 h-2.5" />
+              {isArabic
+                ? member.role === 'owner' ? 'مالك' : member.role === 'moderator' ? 'مشرف' : 'عضو'
+                : member.role
+              }
+            </Badge>
+            <span className="text-[10px] text-muted-foreground">
+              {formatTime(member.joined_at)}
+            </span>
+          </div>
+        </div>
+
+        {canManage && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
+                <MoreVertical className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              {canChangeRoles() && (
+                <>
+                  <DropdownMenuItem onClick={() => { setSelectedMember(member); setActionType('role'); }}>
+                    <Shield className="w-4 h-4 me-2 text-blue-500" />
+                    {isArabic ? 'تغيير الدور' : 'Change Role'}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
+              {member.is_muted ? (
+                <DropdownMenuItem onClick={() => unmuteMember(member.id)} className="text-emerald-500 focus:text-emerald-500">
+                  <Volume2 className="w-4 h-4 me-2" />
+                  {isArabic ? 'رفع الكتم' : 'Unmute'}
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem onClick={() => { setSelectedMember(member); setActionType('mute'); }} className="text-amber-500 focus:text-amber-500">
+                  <VolumeX className="w-4 h-4 me-2" />
+                  {isArabic ? 'كتم' : 'Mute'}
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem
+                onClick={() => { setSelectedMember(member); setActionType('ban'); }}
+                className="text-destructive focus:text-destructive"
+              >
+                <Ban className="w-4 h-4 me-2" />
+                {isArabic ? 'حظر' : 'Ban'}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => { setSelectedMember(member); setActionType('remove'); }}
+                className="text-destructive focus:text-destructive"
+              >
+                <UserMinus className="w-4 h-4 me-2" />
+                {isArabic ? 'إزالة' : 'Remove'}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </motion.div>
+    );
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -162,12 +279,11 @@ export const RoomModerationPanel = ({ roomId, roomName, onBack }: RoomModeration
             </h1>
             <p className="text-sm text-muted-foreground">{roomName}</p>
           </div>
-          {/* User's current role badge */}
           {currentUserRole && (
             <Badge variant="outline" className={cn("gap-1", roleColors[currentUserRole])}>
               {currentUserRole === 'owner' && <Crown className="w-3 h-3" />}
               {currentUserRole === 'moderator' && <Shield className="w-3 h-3" />}
-              {isArabic 
+              {isArabic
                 ? currentUserRole === 'owner' ? 'مالك' : currentUserRole === 'moderator' ? 'مشرف' : 'عضو'
                 : currentUserRole
               }
@@ -178,26 +294,33 @@ export const RoomModerationPanel = ({ roomId, roomName, onBack }: RoomModeration
 
       {/* Stats Cards */}
       <div className="px-4 py-4">
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-4 gap-2">
           <Card className="bg-card/50 border-border/30">
-            <CardContent className="p-3 text-center">
-              <Users className="w-5 h-5 mx-auto mb-1 text-primary" />
-              <p className="text-2xl font-bold text-foreground">{approvedMembers.length}</p>
-              <p className="text-xs text-muted-foreground">{isArabic ? 'الأعضاء' : 'Members'}</p>
+            <CardContent className="p-2.5 text-center">
+              <Users className="w-4 h-4 mx-auto mb-1 text-primary" />
+              <p className="text-xl font-bold text-foreground">{approvedMembers.length}</p>
+              <p className="text-[10px] text-muted-foreground">{isArabic ? 'الأعضاء' : 'Members'}</p>
             </CardContent>
           </Card>
           <Card className="bg-card/50 border-border/30">
-            <CardContent className="p-3 text-center">
-              <UserPlus className="w-5 h-5 mx-auto mb-1 text-amber-500" />
-              <p className="text-2xl font-bold text-foreground">{pendingRequests.length}</p>
-              <p className="text-xs text-muted-foreground">{isArabic ? 'طلبات' : 'Requests'}</p>
+            <CardContent className="p-2.5 text-center">
+              <UserPlus className="w-4 h-4 mx-auto mb-1 text-amber-500" />
+              <p className="text-xl font-bold text-foreground">{pendingRequests.length}</p>
+              <p className="text-[10px] text-muted-foreground">{isArabic ? 'طلبات' : 'Requests'}</p>
             </CardContent>
           </Card>
           <Card className="bg-card/50 border-border/30">
-            <CardContent className="p-3 text-center">
-              <Ban className="w-5 h-5 mx-auto mb-1 text-destructive" />
-              <p className="text-2xl font-bold text-foreground">{bannedMembers.length}</p>
-              <p className="text-xs text-muted-foreground">{isArabic ? 'محظورين' : 'Banned'}</p>
+            <CardContent className="p-2.5 text-center">
+              <VolumeX className="w-4 h-4 mx-auto mb-1 text-amber-500" />
+              <p className="text-xl font-bold text-foreground">{mutedMembers.length}</p>
+              <p className="text-[10px] text-muted-foreground">{isArabic ? 'مكتومين' : 'Muted'}</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-card/50 border-border/30">
+            <CardContent className="p-2.5 text-center">
+              <Ban className="w-4 h-4 mx-auto mb-1 text-destructive" />
+              <p className="text-xl font-bold text-foreground">{bannedMembers.length}</p>
+              <p className="text-[10px] text-muted-foreground">{isArabic ? 'محظورين' : 'Banned'}</p>
             </CardContent>
           </Card>
         </div>
@@ -207,13 +330,13 @@ export const RoomModerationPanel = ({ roomId, roomName, onBack }: RoomModeration
       <div className="flex-1 overflow-hidden">
         <Tabs defaultValue="members" className="h-full flex flex-col">
           <div className="px-4">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="members" className="gap-1.5 text-xs sm:text-sm">
-                <Users className="w-4 h-4" />
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="members" className="gap-1 text-[11px]">
+                <Users className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">{isArabic ? 'الأعضاء' : 'Members'}</span>
               </TabsTrigger>
-              <TabsTrigger value="requests" className="gap-1.5 text-xs sm:text-sm relative">
-                <UserPlus className="w-4 h-4" />
+              <TabsTrigger value="requests" className="gap-1 text-[11px] relative">
+                <UserPlus className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">{isArabic ? 'الطلبات' : 'Requests'}</span>
                 {pendingRequests.length > 0 && (
                   <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground text-[10px] rounded-full flex items-center justify-center">
@@ -221,9 +344,13 @@ export const RoomModerationPanel = ({ roomId, roomName, onBack }: RoomModeration
                   </span>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="banned" className="gap-1.5 text-xs sm:text-sm">
-                <Ban className="w-4 h-4" />
-                <span className="hidden sm:inline">{isArabic ? 'المحظورين' : 'Banned'}</span>
+              <TabsTrigger value="muted" className="gap-1 text-[11px]">
+                <VolumeX className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{isArabic ? 'مكتومين' : 'Muted'}</span>
+              </TabsTrigger>
+              <TabsTrigger value="banned" className="gap-1 text-[11px]">
+                <Ban className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{isArabic ? 'محظورين' : 'Banned'}</span>
               </TabsTrigger>
             </TabsList>
           </div>
@@ -237,101 +364,7 @@ export const RoomModerationPanel = ({ roomId, roomName, onBack }: RoomModeration
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
                   </div>
                 ) : sortedMembers.length > 0 ? (
-                  sortedMembers.map((member) => {
-                    const RoleIcon = roleIcons[member.role];
-                    const canManage = canManageMember(member);
-                    const isCurrentUser = member.user_id === user?.id;
-                    
-                    return (
-                      <motion.div
-                        key={member.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className={cn(
-                          "flex items-center gap-3 p-3 rounded-xl border transition-colors",
-                          isCurrentUser 
-                            ? "bg-primary/5 border-primary/20" 
-                            : "bg-card/50 border-border/30 hover:bg-card/80"
-                        )}
-                      >
-                        <Avatar className="h-11 w-11">
-                          <AvatarImage src={member.profile?.avatar_url || undefined} />
-                          <AvatarFallback className="bg-primary/20 text-primary font-medium">
-                            {(member.profile?.display_name || member.profile?.username || 'U').charAt(0)}
-                          </AvatarFallback>
-                        </Avatar>
-
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-medium text-foreground truncate">
-                              {member.profile?.display_name || member.profile?.username || 'مستخدم'}
-                            </span>
-                            {isCurrentUser && (
-                              <Badge variant="secondary" className="text-[10px] px-1.5">
-                                {isArabic ? 'أنت' : 'You'}
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Badge variant="outline" className={cn("text-[10px] gap-0.5", roleColors[member.role])}>
-                              <RoleIcon className="w-2.5 h-2.5" />
-                              {isArabic 
-                                ? member.role === 'owner' ? 'مالك' : member.role === 'moderator' ? 'مشرف' : 'عضو'
-                                : member.role
-                              }
-                            </Badge>
-                            <span className="text-[10px] text-muted-foreground">
-                              {formatTime(member.joined_at)}
-                            </span>
-                          </div>
-                        </div>
-
-                        {canManage && (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
-                                <MoreVertical className="w-4 h-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-48">
-                              {canChangeRoles() && (
-                                <>
-                                  <DropdownMenuItem onClick={() => {
-                                    setSelectedMember(member);
-                                    setActionType('role');
-                                  }}>
-                                    <Shield className="w-4 h-4 me-2 text-blue-500" />
-                                    {isArabic ? 'تغيير الدور' : 'Change Role'}
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                </>
-                              )}
-                              <DropdownMenuItem 
-                                onClick={() => {
-                                  setSelectedMember(member);
-                                  setActionType('ban');
-                                }}
-                                className="text-amber-500 focus:text-amber-500"
-                              >
-                                <Ban className="w-4 h-4 me-2" />
-                                {isArabic ? 'حظر' : 'Ban'}
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => {
-                                  setSelectedMember(member);
-                                  setActionType('remove');
-                                }}
-                                className="text-destructive focus:text-destructive"
-                              >
-                                <UserMinus className="w-4 h-4 me-2" />
-                                {isArabic ? 'إزالة' : 'Remove'}
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        )}
-                      </motion.div>
-                    );
-                  })
+                  sortedMembers.map(renderMemberCard)
                 ) : (
                   <div className="text-center py-12">
                     <Users className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
@@ -347,61 +380,138 @@ export const RoomModerationPanel = ({ roomId, roomName, onBack }: RoomModeration
             <ScrollArea className="h-full">
               <div className="space-y-2">
                 {pendingRequests.length > 0 ? (
-                  pendingRequests.map((request) => (
-                    <motion.div
-                      key={request.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/20"
-                    >
-                      <div className="flex items-start gap-3">
-                        <Avatar className="h-11 w-11">
-                          <AvatarImage src={request.profile?.avatar_url || undefined} />
-                          <AvatarFallback className="bg-amber-500/20 text-amber-600">
-                            {(request.profile?.display_name || request.profile?.username || 'U').charAt(0)}
-                          </AvatarFallback>
-                        </Avatar>
-
-                        <div className="flex-1 min-w-0">
-                          <span className="font-medium text-foreground block">
-                            {request.profile?.display_name || request.profile?.username || 'مستخدم'}
-                          </span>
-                          {request.message && (
-                            <p className="text-sm text-muted-foreground mt-1 bg-muted/50 p-2 rounded-lg">
-                              "{request.message}"
-                            </p>
-                          )}
-                          <p className="text-xs text-muted-foreground mt-2">
-                            {formatTime(request.created_at)}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-2 mt-3 justify-end">
+                  <>
+                    {/* Bulk Actions */}
+                    {pendingRequests.length > 1 && (
+                      <div className="flex gap-2 mb-3">
                         <Button
                           size="sm"
                           variant="outline"
-                          className="text-destructive border-destructive/30 hover:bg-destructive/10"
-                          onClick={() => rejectRequest(request.id)}
+                          className="text-destructive border-destructive/30"
+                          onClick={() => pendingRequests.forEach(r => rejectRequest(r.id))}
                         >
-                          <X className="w-4 h-4 me-1" />
-                          {isArabic ? 'رفض' : 'Reject'}
+                          <X className="w-3.5 h-3.5 me-1" />
+                          {isArabic ? 'رفض الكل' : 'Reject All'}
                         </Button>
                         <Button
                           size="sm"
                           className="bg-profit hover:bg-profit/90 text-white"
-                          onClick={() => approveRequest(request.id)}
+                          onClick={() => pendingRequests.forEach(r => approveRequest(r.id))}
                         >
-                          <Check className="w-4 h-4 me-1" />
-                          {isArabic ? 'قبول' : 'Accept'}
+                          <Check className="w-3.5 h-3.5 me-1" />
+                          {isArabic ? 'قبول الكل' : 'Accept All'}
                         </Button>
                       </div>
-                    </motion.div>
-                  ))
+                    )}
+                    {pendingRequests.map((request) => (
+                      <motion.div
+                        key={request.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/20"
+                      >
+                        <div className="flex items-start gap-3">
+                          <Avatar className="h-11 w-11">
+                            <AvatarImage src={request.profile?.avatar_url || undefined} />
+                            <AvatarFallback className="bg-amber-500/20 text-amber-600">
+                              {(request.profile?.display_name || request.profile?.username || 'U').charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <span className="font-medium text-foreground block">
+                              {request.profile?.display_name || request.profile?.username || 'مستخدم'}
+                            </span>
+                            {request.message && (
+                              <p className="text-sm text-muted-foreground mt-1 bg-muted/50 p-2 rounded-lg">
+                                "{request.message}"
+                              </p>
+                            )}
+                            <p className="text-xs text-muted-foreground mt-2">
+                              {formatTime(request.created_at)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 mt-3 justify-end">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                            onClick={() => rejectRequest(request.id)}
+                          >
+                            <X className="w-4 h-4 me-1" />
+                            {isArabic ? 'رفض' : 'Reject'}
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="bg-profit hover:bg-profit/90 text-white"
+                            onClick={() => approveRequest(request.id)}
+                          >
+                            <Check className="w-4 h-4 me-1" />
+                            {isArabic ? 'قبول' : 'Accept'}
+                          </Button>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </>
                 ) : (
                   <div className="text-center py-12">
                     <UserPlus className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
                     <p className="text-muted-foreground">{isArabic ? 'لا توجد طلبات معلقة' : 'No pending requests'}</p>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </TabsContent>
+
+          {/* Muted Tab */}
+          <TabsContent value="muted" className="flex-1 overflow-hidden px-4 pb-4 mt-4">
+            <ScrollArea className="h-full">
+              <div className="space-y-2">
+                {mutedMembers.length > 0 ? (
+                  mutedMembers.map((member) => (
+                    <motion.div
+                      key={member.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-amber-500/5 border border-amber-500/20"
+                    >
+                      <Avatar className="h-11 w-11 opacity-70">
+                        <AvatarImage src={member.profile?.avatar_url || undefined} />
+                        <AvatarFallback className="bg-muted text-muted-foreground">
+                          {(member.profile?.display_name || member.profile?.username || 'U').charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <span className="font-medium text-foreground">
+                          {member.profile?.display_name || member.profile?.username || 'مستخدم'}
+                        </span>
+                        {member.muted_reason && (
+                          <p className="text-xs text-amber-500 mt-0.5">
+                            <Info className="w-3 h-3 inline me-1" />
+                            {member.muted_reason}
+                          </p>
+                        )}
+                        {member.muted_until && (
+                          <p className="text-xs text-muted-foreground">
+                            {isArabic ? 'حتى' : 'Until'}: {new Date(member.muted_until).toLocaleString()}
+                          </p>
+                        )}
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-shrink-0 gap-1"
+                        onClick={() => unmuteMember(member.id)}
+                      >
+                        <Volume2 className="w-3.5 h-3.5" />
+                        {isArabic ? 'رفع الكتم' : 'Unmute'}
+                      </Button>
+                    </motion.div>
+                  ))
+                ) : (
+                  <div className="text-center py-12">
+                    <VolumeX className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
+                    <p className="text-muted-foreground">{isArabic ? 'لا يوجد مكتومين' : 'No muted members'}</p>
                   </div>
                 )}
               </div>
@@ -426,7 +536,6 @@ export const RoomModerationPanel = ({ roomId, roomName, onBack }: RoomModeration
                           {(member.profile?.display_name || member.profile?.username || 'U').charAt(0)}
                         </AvatarFallback>
                       </Avatar>
-
                       <div className="flex-1 min-w-0">
                         <span className="font-medium text-foreground">
                           {member.profile?.display_name || member.profile?.username || 'مستخدم'}
@@ -443,7 +552,6 @@ export const RoomModerationPanel = ({ roomId, roomName, onBack }: RoomModeration
                           </p>
                         )}
                       </div>
-
                       <Button
                         size="sm"
                         variant="outline"
@@ -471,29 +579,90 @@ export const RoomModerationPanel = ({ roomId, roomName, onBack }: RoomModeration
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <Ban className="w-5 h-5 text-amber-500" />
+              <Ban className="w-5 h-5 text-destructive" />
               {isArabic ? 'حظر العضو' : 'Ban Member'}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {isArabic 
+              {isArabic
                 ? `سيتم حظر ${selectedMember?.profile?.display_name || 'العضو'} من هذه الغرفة`
                 : `${selectedMember?.profile?.display_name || 'Member'} will be banned from this room`
               }
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <Input
-            placeholder={isArabic ? 'سبب الحظر (مطلوب)...' : 'Ban reason (required)...'}
-            value={banReason}
-            onChange={(e) => setBanReason(e.target.value)}
-          />
+          <div className="space-y-3">
+            <Input
+              placeholder={isArabic ? 'سبب الحظر (مطلوب)...' : 'Ban reason (required)...'}
+              value={banReason}
+              onChange={(e) => setBanReason(e.target.value)}
+            />
+            <Select value={banDuration} onValueChange={setBanDuration}>
+              <SelectTrigger>
+                <SelectValue placeholder={isArabic ? 'مدة الحظر' : 'Ban duration'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">{isArabic ? 'يوم واحد' : '1 Day'}</SelectItem>
+                <SelectItem value="3">{isArabic ? '3 أيام' : '3 Days'}</SelectItem>
+                <SelectItem value="7">{isArabic ? 'أسبوع' : '1 Week'}</SelectItem>
+                <SelectItem value="30">{isArabic ? 'شهر' : '1 Month'}</SelectItem>
+                <SelectItem value="permanent">{isArabic ? 'دائم' : 'Permanent'}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel>{isArabic ? 'إلغاء' : 'Cancel'}</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleBan} 
+            <AlertDialogAction
+              onClick={handleBan}
               disabled={!banReason.trim()}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {isArabic ? 'حظر' : 'Ban'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Mute Dialog */}
+      <AlertDialog open={actionType === 'mute'} onOpenChange={() => setActionType(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <VolumeX className="w-5 h-5 text-amber-500" />
+              {isArabic ? 'كتم العضو' : 'Mute Member'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {isArabic
+                ? `سيتم كتم ${selectedMember?.profile?.display_name || 'العضو'} - لن يستطيع إرسال رسائل`
+                : `${selectedMember?.profile?.display_name || 'Member'} won't be able to send messages`
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-3">
+            <Input
+              placeholder={isArabic ? 'سبب الكتم (مطلوب)...' : 'Mute reason (required)...'}
+              value={muteReason}
+              onChange={(e) => setMuteReason(e.target.value)}
+            />
+            <Select value={muteDuration} onValueChange={setMuteDuration}>
+              <SelectTrigger>
+                <SelectValue placeholder={isArabic ? 'مدة الكتم' : 'Mute duration'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">{isArabic ? 'ساعة واحدة' : '1 Hour'}</SelectItem>
+                <SelectItem value="6">{isArabic ? '6 ساعات' : '6 Hours'}</SelectItem>
+                <SelectItem value="24">{isArabic ? 'يوم كامل' : '24 Hours'}</SelectItem>
+                <SelectItem value="72">{isArabic ? '3 أيام' : '3 Days'}</SelectItem>
+                <SelectItem value="168">{isArabic ? 'أسبوع' : '1 Week'}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{isArabic ? 'إلغاء' : 'Cancel'}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleMute}
+              disabled={!muteReason.trim()}
+              className="bg-amber-500 text-white hover:bg-amber-600"
+            >
+              {isArabic ? 'كتم' : 'Mute'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -508,7 +677,7 @@ export const RoomModerationPanel = ({ roomId, roomName, onBack }: RoomModeration
               {isArabic ? 'إزالة العضو' : 'Remove Member'}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {isArabic 
+              {isArabic
                 ? `هل أنت متأكد من إزالة ${selectedMember?.profile?.display_name || 'العضو'}؟`
                 : `Are you sure you want to remove ${selectedMember?.profile?.display_name || 'this member'}?`
               }
@@ -532,7 +701,7 @@ export const RoomModerationPanel = ({ roomId, roomName, onBack }: RoomModeration
               {isArabic ? 'تغيير الدور' : 'Change Role'}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {isArabic 
+              {isArabic
                 ? `اختر الدور الجديد لـ ${selectedMember?.profile?.display_name || 'العضو'}`
                 : `Select new role for ${selectedMember?.profile?.display_name || 'this member'}`
               }
