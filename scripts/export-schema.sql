@@ -16,6 +16,7 @@
 -- 8. Realtime (البث المباشر)
 -- 9. Storage (التخزين)
 --
+-- آخر تحديث: 2026-02-15
 -- ============================================================
 
 
@@ -23,22 +24,20 @@
 -- 1. ENUMS (أنواع البيانات المخصصة)
 -- ============================================================
 
-CREATE TYPE public.app_role AS ENUM ('admin', 'vip', 'free');
+CREATE TYPE public.app_role AS ENUM ('admin', 'vip', 'free', 'moderator', 'support');
 CREATE TYPE public.asset_type AS ENUM ('forex', 'metals', 'crypto');
+CREATE TYPE public.content_visibility AS ENUM ('free', 'vip');
 CREATE TYPE public.conversation_type AS ENUM ('direct', 'group');
 CREATE TYPE public.course_level AS ENUM ('beginner', 'intermediate', 'advanced');
-CREATE TYPE public.entry_type AS ENUM ('market', 'limit', 'stop');
 CREATE TYPE public.friend_request_status AS ENUM ('pending', 'accepted', 'rejected');
 CREATE TYPE public.post_visibility AS ENUM ('everyone', 'friends_only', 'followers_only', 'nobody');
 CREATE TYPE public.privacy_setting AS ENUM ('everyone', 'friends_only', 'followers_only', 'nobody');
 CREATE TYPE public.room_membership_status AS ENUM ('pending', 'approved', 'rejected', 'banned');
 CREATE TYPE public.room_role AS ENUM ('member', 'moderator', 'owner');
 CREATE TYPE public.service_status AS ENUM ('pending', 'in_progress', 'approved', 'rejected', 'completed');
-CREATE TYPE public.service_type AS ENUM ('broker_deposit', 'broker_withdraw', 'usdt_buy', 'usdt_sell', 'broker_account');
+CREATE TYPE public.service_type AS ENUM ('broker_deposit', 'broker_withdraw', 'usdt_buy', 'usdt_sell', 'broker_account', 'card_fund');
+CREATE TYPE public.signal_type AS ENUM ('signal', 'tip');
 CREATE TYPE public.timeframe AS ENUM ('M5', 'M15', 'H1', 'H4', 'D1');
-CREATE TYPE public.trade_direction AS ENUM ('buy', 'sell');
-CREATE TYPE public.trade_status AS ENUM ('pending', 'running', 'tp_hit', 'sl_hit', 'cancelled', 'closed_manual');
-CREATE TYPE public.trade_visibility AS ENUM ('free', 'vip');
 CREATE TYPE public.usdt_listing_type AS ENUM ('buy', 'sell');
 
 
@@ -73,67 +72,40 @@ CREATE TABLE public.user_roles (
     UNIQUE(user_id, role)
 );
 
--- جدول الصفقات
-CREATE TABLE public.trades (
+-- جدول حظر المستخدمين
+CREATE TABLE public.user_blocks (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    created_by UUID,
-    symbol TEXT NOT NULL,
-    asset_type public.asset_type NOT NULL,
-    direction public.trade_direction NOT NULL,
-    entry_type public.entry_type NOT NULL DEFAULT 'market',
-    entry_price NUMERIC NOT NULL,
-    sl_price NUMERIC NOT NULL,
-    tp_prices NUMERIC[] NOT NULL DEFAULT '{}',
-    timeframe public.timeframe NOT NULL DEFAULT 'H1',
-    reason TEXT NOT NULL,
-    risk_note TEXT,
-    alternative_scenario TEXT,
-    attachments TEXT[],
-    status public.trade_status NOT NULL DEFAULT 'pending',
-    visibility public.trade_visibility NOT NULL DEFAULT 'free',
-    last_update_note TEXT,
-    followers_count INTEGER DEFAULT 0,
+    blocker_id UUID NOT NULL,
+    blocked_id UUID NOT NULL,
+    reason TEXT,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+    UNIQUE(blocker_id, blocked_id)
 );
 
--- جدول تعليقات الصفقات
-CREATE TABLE public.trade_comments (
+-- جدول الإشارات
+CREATE TABLE public.signals (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    trade_id UUID NOT NULL REFERENCES public.trades(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL,
-    parent_id UUID REFERENCES public.trade_comments(id) ON DELETE CASCADE,
+    created_by UUID,
+    title TEXT NOT NULL,
     content TEXT NOT NULL,
+    symbol TEXT,
+    asset_type public.asset_type,
+    timeframe public.timeframe DEFAULT 'H4',
+    visibility public.content_visibility NOT NULL DEFAULT 'free',
+    attachments TEXT[] DEFAULT '{}',
+    views_count INTEGER DEFAULT 0,
     likes_count INTEGER DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
--- جدول إعجابات تعليقات الصفقات
-CREATE TABLE public.trade_comment_likes (
+-- جدول إعجابات الإشارات
+CREATE TABLE public.signal_likes (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    comment_id UUID NOT NULL REFERENCES public.trade_comments(id) ON DELETE CASCADE,
+    signal_id UUID NOT NULL REFERENCES public.signals(id) ON DELETE CASCADE,
     user_id UUID NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-    UNIQUE(comment_id, user_id)
-);
-
--- جدول متابعي الصفقات
-CREATE TABLE public.trade_followers (
-    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    trade_id UUID NOT NULL REFERENCES public.trades(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-    UNIQUE(trade_id, user_id)
-);
-
--- جدول مشاركات الصفقات
-CREATE TABLE public.trade_shares (
-    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    trade_id UUID NOT NULL REFERENCES public.trades(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL,
-    share_type TEXT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+    UNIQUE(signal_id, user_id)
 );
 
 -- جدول التحليلات
@@ -145,7 +117,7 @@ CREATE TABLE public.analyses (
     symbol TEXT,
     asset_type public.asset_type,
     timeframe public.timeframe DEFAULT 'H4',
-    visibility public.trade_visibility NOT NULL DEFAULT 'free',
+    visibility public.content_visibility NOT NULL DEFAULT 'free',
     attachments TEXT[] DEFAULT '{}',
     views_count INTEGER DEFAULT 0,
     likes_count INTEGER DEFAULT 0,
@@ -211,9 +183,11 @@ CREATE TABLE public.community_rooms (
     name_ar TEXT NOT NULL,
     description TEXT,
     description_ar TEXT,
+    category TEXT DEFAULT 'general',
     icon TEXT DEFAULT 'MessageSquare',
     color TEXT DEFAULT 'blue',
     is_private BOOLEAN DEFAULT false,
+    is_broadcast BOOLEAN DEFAULT false,
     requires_approval BOOLEAN DEFAULT true,
     created_by UUID,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
@@ -227,6 +201,9 @@ CREATE TABLE public.room_members (
     user_id UUID NOT NULL,
     role public.room_role DEFAULT 'member',
     status public.room_membership_status DEFAULT 'pending',
+    is_muted BOOLEAN DEFAULT false,
+    muted_reason TEXT,
+    muted_until TIMESTAMP WITH TIME ZONE,
     ban_reason TEXT,
     banned_until TIMESTAMP WITH TIME ZONE,
     approved_by UUID,
@@ -317,6 +294,7 @@ CREATE TABLE public.learning_courses (
     description_ar TEXT NOT NULL DEFAULT '',
     description_en TEXT NOT NULL DEFAULT '',
     icon TEXT NOT NULL DEFAULT 'BookOpen',
+    channel_url TEXT,
     level public.course_level NOT NULL DEFAULT 'beginner',
     is_vip BOOLEAN NOT NULL DEFAULT false,
     is_published BOOLEAN NOT NULL DEFAULT false,
@@ -443,7 +421,7 @@ CREATE TABLE public.usdt_listings (
 -- جدول المحتوى المخالف
 CREATE TABLE public.flagged_content (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    content_id UUID NOT NULL,
+    content_id TEXT NOT NULL,
     content_type TEXT NOT NULL,
     user_id UUID NOT NULL,
     flag_reason TEXT NOT NULL,
@@ -530,6 +508,240 @@ CREATE TABLE public.support_agents (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
+-- جدول الوسطاء
+CREATE TABLE public.brokers (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    name TEXT NOT NULL,
+    name_ar TEXT NOT NULL DEFAULT '',
+    description_ar TEXT NOT NULL DEFAULT '',
+    description_en TEXT NOT NULL DEFAULT '',
+    features_ar TEXT[] DEFAULT '{}',
+    features_en TEXT[] DEFAULT '{}',
+    logo_url TEXT,
+    color TEXT NOT NULL DEFAULT '#3B82F6',
+    registration_url TEXT NOT NULL DEFAULT '',
+    stats JSONB DEFAULT '{}',
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    is_featured BOOLEAN NOT NULL DEFAULT false,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- جدول الخدمات
+CREATE TABLE public.services (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    name_ar TEXT NOT NULL,
+    name_en TEXT NOT NULL DEFAULT '',
+    description_ar TEXT NOT NULL DEFAULT '',
+    description_en TEXT NOT NULL DEFAULT '',
+    icon TEXT NOT NULL DEFAULT 'Settings',
+    color TEXT NOT NULL DEFAULT '#3B82F6',
+    card_type TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    is_external_link BOOLEAN NOT NULL DEFAULT false,
+    link_url TEXT,
+    link_label_ar TEXT,
+    link_label_en TEXT,
+    play_store_url TEXT,
+    app_store_url TEXT,
+    apk_url TEXT,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- جدول المقالات
+CREATE TABLE public.articles (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    title_ar TEXT NOT NULL,
+    title_en TEXT NOT NULL DEFAULT '',
+    content_ar TEXT NOT NULL,
+    content_en TEXT NOT NULL DEFAULT '',
+    summary_ar TEXT,
+    summary_en TEXT,
+    category TEXT NOT NULL DEFAULT 'general',
+    image_url TEXT,
+    is_published BOOLEAN NOT NULL DEFAULT false,
+    created_by UUID,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- جدول اشتراكات VIP
+CREATE TABLE public.vip_subscriptions (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID NOT NULL,
+    plan TEXT NOT NULL DEFAULT 'monthly',
+    status TEXT NOT NULL DEFAULT 'pending',
+    starts_at TIMESTAMP WITH TIME ZONE,
+    expires_at TIMESTAMP WITH TIME ZONE,
+    approved_by UUID,
+    approved_at TIMESTAMP WITH TIME ZONE,
+    admin_notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- جدول رسائل الاشتراكات
+CREATE TABLE public.subscription_messages (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    subscription_id UUID NOT NULL REFERENCES public.vip_subscriptions(id) ON DELETE CASCADE,
+    sender_id UUID NOT NULL,
+    content TEXT NOT NULL,
+    is_admin BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- جدول البطاقات الافتراضية
+CREATE TABLE public.virtual_cards (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID NOT NULL,
+    card_type TEXT NOT NULL DEFAULT 'virtual',
+    card_status TEXT NOT NULL DEFAULT 'pending',
+    card_last_four TEXT,
+    nickname TEXT,
+    spending_limit NUMERIC,
+    currency TEXT DEFAULT 'USD',
+    marqeta_user_token TEXT,
+    marqeta_card_token TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- جدول الجلسات المباشرة
+CREATE TABLE public.live_sessions (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    host_id UUID NOT NULL,
+    title_ar TEXT NOT NULL,
+    title_en TEXT NOT NULL DEFAULT '',
+    description_ar TEXT NOT NULL DEFAULT '',
+    description_en TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'scheduled',
+    stream_url TEXT,
+    thumbnail_url TEXT,
+    scheduled_at TIMESTAMP WITH TIME ZONE,
+    started_at TIMESTAMP WITH TIME ZONE,
+    ended_at TIMESTAMP WITH TIME ZONE,
+    current_viewers INTEGER DEFAULT 0,
+    max_viewers INTEGER DEFAULT 0,
+    is_vip BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- جدول رسائل الجلسات المباشرة
+CREATE TABLE public.live_session_messages (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    session_id UUID NOT NULL REFERENCES public.live_sessions(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL,
+    content TEXT NOT NULL,
+    is_pinned BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- جدول توكنات FCM
+CREATE TABLE public.fcm_tokens (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID NOT NULL,
+    token TEXT NOT NULL,
+    device_info TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- جدول النقاط
+CREATE TABLE public.user_points (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID NOT NULL UNIQUE,
+    total_points INTEGER NOT NULL DEFAULT 0,
+    level INTEGER NOT NULL DEFAULT 1,
+    level_name_ar TEXT NOT NULL DEFAULT 'مبتدئ',
+    level_name_en TEXT NOT NULL DEFAULT 'Beginner',
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- جدول معاملات النقاط
+CREATE TABLE public.point_transactions (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID NOT NULL,
+    points INTEGER NOT NULL,
+    action_type TEXT NOT NULL,
+    description_ar TEXT NOT NULL DEFAULT '',
+    description_en TEXT NOT NULL DEFAULT '',
+    reference_id TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- جدول الشارات
+CREATE TABLE public.badges (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    name_ar TEXT NOT NULL,
+    name_en TEXT NOT NULL DEFAULT '',
+    description_ar TEXT NOT NULL DEFAULT '',
+    description_en TEXT NOT NULL DEFAULT '',
+    icon TEXT NOT NULL DEFAULT 'Award',
+    color TEXT NOT NULL DEFAULT '#F59E0B',
+    badge_type TEXT NOT NULL DEFAULT 'achievement',
+    points_required INTEGER NOT NULL DEFAULT 0,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- جدول شارات المستخدمين
+CREATE TABLE public.user_badges (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID NOT NULL,
+    badge_id UUID NOT NULL REFERENCES public.badges(id) ON DELETE CASCADE,
+    earned_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    UNIQUE(user_id, badge_id)
+);
+
+-- جدول السلاسل (Streaks)
+CREATE TABLE public.user_streaks (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID NOT NULL UNIQUE,
+    current_streak INTEGER NOT NULL DEFAULT 0,
+    longest_streak INTEGER NOT NULL DEFAULT 0,
+    last_completed_date DATE,
+    total_quests_completed INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- جدول المهام اليومية
+CREATE TABLE public.daily_quests (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    quest_key TEXT NOT NULL UNIQUE,
+    title_ar TEXT NOT NULL,
+    title_en TEXT NOT NULL DEFAULT '',
+    description_ar TEXT NOT NULL DEFAULT '',
+    description_en TEXT NOT NULL DEFAULT '',
+    icon TEXT NOT NULL DEFAULT 'Target',
+    quest_type TEXT NOT NULL DEFAULT 'daily',
+    target_count INTEGER NOT NULL DEFAULT 1,
+    points_reward INTEGER NOT NULL DEFAULT 10,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- جدول تقدم المهام اليومية
+CREATE TABLE public.user_daily_progress (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID NOT NULL,
+    quest_id UUID NOT NULL REFERENCES public.daily_quests(id) ON DELETE CASCADE,
+    quest_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    current_count INTEGER NOT NULL DEFAULT 0,
+    completed BOOLEAN NOT NULL DEFAULT false,
+    completed_at TIMESTAMP WITH TIME ZONE,
+    points_claimed BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    UNIQUE(user_id, quest_id, quest_date)
+);
+
 
 -- ============================================================
 -- 3. VIEWS (العروض)
@@ -575,6 +787,16 @@ CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
 AS $$ SELECT public.has_role(auth.uid(), 'admin') $$;
 
+-- دالة التحقق من المشرف
+CREATE OR REPLACE FUNCTION public.is_moderator()
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
+AS $$ SELECT EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role IN ('admin', 'moderator')) $$;
+
+-- دالة التحقق من دور الدعم
+CREATE OR REPLACE FUNCTION public.is_support_role()
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
+AS $$ SELECT EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role IN ('admin', 'support')) $$;
+
 -- دالة التحقق من VIP
 CREATE OR REPLACE FUNCTION public.is_vip()
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
@@ -591,16 +813,27 @@ AS $$
     END
 $$;
 
--- دالة التحقق من الوصول للصفقة
-CREATE OR REPLACE FUNCTION public.can_access_trade(trade_visibility trade_visibility)
+-- دالة التحقق من الوصول للمحتوى
+CREATE OR REPLACE FUNCTION public.can_access_content(content_vis content_visibility)
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
 AS $$
     SELECT CASE 
         WHEN public.is_admin() THEN true
-        WHEN trade_visibility = 'free' AND auth.uid() IS NOT NULL THEN true
-        WHEN trade_visibility = 'vip' AND public.is_vip() THEN true
+        WHEN content_vis = 'free' AND auth.uid() IS NOT NULL THEN true
+        WHEN content_vis = 'vip' AND public.is_vip() THEN true
         ELSE false
     END
+$$;
+
+-- دالة التحقق من الحظر
+CREATE OR REPLACE FUNCTION public.is_blocked(checker_id uuid, target_id uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.user_blocks
+    WHERE (blocker_id = checker_id AND blocked_id = target_id)
+       OR (blocker_id = target_id AND blocked_id = checker_id)
+  )
 $$;
 
 -- دالة التحقق من الصداقة
@@ -692,6 +925,36 @@ CREATE OR REPLACE FUNCTION public.get_thread_room_id(p_thread_id uuid)
 RETURNS text LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
 AS $$ SELECT room_id FROM public.threads WHERE id = p_thread_id $$;
 
+-- دوال الدعم الفني
+CREATE OR REPLACE FUNCTION public.is_support_agent(p_user_id uuid DEFAULT auth.uid())
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
+AS $$ SELECT EXISTS (SELECT 1 FROM public.support_agents WHERE user_id = p_user_id AND is_active = true) OR public.is_admin() $$;
+
+CREATE OR REPLACE FUNCTION public.close_stale_support_tickets()
+RETURNS integer LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE closed_count integer;
+BEGIN
+    UPDATE public.support_tickets SET status = 'closed', updated_at = now() WHERE status = 'open' AND updated_at < now() - interval '4 hours';
+    GET DIAGNOSTICS closed_count = ROW_COUNT;
+    RETURN closed_count;
+END; $$;
+
+-- دوال جدول ديناميكي
+CREATE OR REPLACE FUNCTION public.list_public_tables()
+RETURNS TABLE(table_name text) LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
+AS $$
+  SELECT t.table_name::text FROM information_schema.tables t
+  WHERE t.table_schema = 'public' AND t.table_type = 'BASE TABLE' ORDER BY t.table_name;
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_table_columns(p_table_name text)
+RETURNS TABLE(column_name text, data_type text, is_nullable text, column_default text) LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
+AS $$
+  SELECT c.column_name::text, c.data_type::text, c.is_nullable::text, c.column_default::text
+  FROM information_schema.columns c
+  WHERE c.table_schema = 'public' AND c.table_name = p_table_name ORDER BY c.ordinal_position;
+$$;
+
 -- دالة إنشاء ملف شخصي للمستخدم الجديد
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
@@ -728,22 +991,6 @@ BEGIN
     END IF;
 END; $$;
 
-CREATE OR REPLACE FUNCTION public.update_trade_comment_likes_count()
-RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-BEGIN
-    IF TG_OP = 'INSERT' THEN UPDATE public.trade_comments SET likes_count = likes_count + 1 WHERE id = NEW.comment_id; RETURN NEW;
-    ELSIF TG_OP = 'DELETE' THEN UPDATE public.trade_comments SET likes_count = likes_count - 1 WHERE id = OLD.comment_id; RETURN OLD;
-    END IF;
-END; $$;
-
-CREATE OR REPLACE FUNCTION public.update_trade_followers_count()
-RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-BEGIN
-    IF TG_OP = 'INSERT' THEN UPDATE public.trades SET followers_count = followers_count + 1 WHERE id = NEW.trade_id; RETURN NEW;
-    ELSIF TG_OP = 'DELETE' THEN UPDATE public.trades SET followers_count = followers_count - 1 WHERE id = OLD.trade_id; RETURN OLD;
-    END IF;
-END; $$;
-
 CREATE OR REPLACE FUNCTION public.update_analysis_likes_count()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 BEGIN
@@ -768,48 +1015,156 @@ BEGIN
     END IF;
 END; $$;
 
+-- دوال النقاط والتلعيب
+CREATE OR REPLACE FUNCTION public.add_user_points(p_user_id uuid, p_points integer, p_action_type text, p_description_ar text DEFAULT '', p_description_en text DEFAULT '', p_reference_id text DEFAULT NULL)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_total integer; v_level integer; v_level_ar text; v_level_en text;
+BEGIN
+  INSERT INTO public.point_transactions (user_id, points, action_type, description_ar, description_en, reference_id)
+  VALUES (p_user_id, p_points, p_action_type, p_description_ar, p_description_en, p_reference_id);
+  INSERT INTO public.user_points (user_id, total_points) VALUES (p_user_id, p_points)
+  ON CONFLICT (user_id) DO UPDATE SET total_points = user_points.total_points + p_points, updated_at = now();
+  SELECT total_points INTO v_total FROM public.user_points WHERE user_id = p_user_id;
+  v_level := CASE
+    WHEN v_total >= 10000 THEN 10 WHEN v_total >= 7500 THEN 9 WHEN v_total >= 5000 THEN 8
+    WHEN v_total >= 3500 THEN 7 WHEN v_total >= 2500 THEN 6 WHEN v_total >= 1500 THEN 5
+    WHEN v_total >= 1000 THEN 4 WHEN v_total >= 500 THEN 3 WHEN v_total >= 200 THEN 2 ELSE 1
+  END;
+  v_level_ar := CASE v_level WHEN 1 THEN 'مبتدئ' WHEN 2 THEN 'نشيط' WHEN 3 THEN 'متقدم' WHEN 4 THEN 'خبير' WHEN 5 THEN 'محترف' WHEN 6 THEN 'أسطوري' WHEN 7 THEN 'نخبة' WHEN 8 THEN 'قائد' WHEN 9 THEN 'بطل' WHEN 10 THEN 'أسطورة' END;
+  v_level_en := CASE v_level WHEN 1 THEN 'Beginner' WHEN 2 THEN 'Active' WHEN 3 THEN 'Advanced' WHEN 4 THEN 'Expert' WHEN 5 THEN 'Pro' WHEN 6 THEN 'Legendary' WHEN 7 THEN 'Elite' WHEN 8 THEN 'Leader' WHEN 9 THEN 'Champion' WHEN 10 THEN 'Legend' END;
+  UPDATE public.user_points SET level = v_level, level_name_ar = v_level_ar, level_name_en = v_level_en WHERE user_id = p_user_id;
+END; $$;
+
+CREATE OR REPLACE FUNCTION public.increment_quest_progress(p_user_id uuid, p_quest_key text, p_increment integer DEFAULT 1)
+RETURNS json LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_quest RECORD; v_progress RECORD; v_today DATE := CURRENT_DATE;
+  v_new_count INT; v_completed BOOLEAN := false; v_all_done BOOLEAN; v_streak RECORD;
+BEGIN
+  SELECT * INTO v_quest FROM daily_quests WHERE quest_key = p_quest_key AND is_active = true;
+  IF NOT FOUND THEN RETURN json_build_object('success', false, 'message', 'Quest not found'); END IF;
+  INSERT INTO user_daily_progress (user_id, quest_id, quest_date, current_count) VALUES (p_user_id, v_quest.id, v_today, p_increment)
+  ON CONFLICT (user_id, quest_id, quest_date) DO UPDATE SET current_count = LEAST(user_daily_progress.current_count + p_increment, v_quest.target_count)
+  RETURNING * INTO v_progress;
+  IF v_progress.current_count >= v_quest.target_count AND NOT v_progress.completed THEN
+    UPDATE user_daily_progress SET completed = true, completed_at = now() WHERE id = v_progress.id;
+    v_completed := true;
+    PERFORM add_user_points(p_user_id, v_quest.points_reward, 'daily_quest', v_quest.title_ar, v_quest.title_en);
+  END IF;
+  SELECT NOT EXISTS (
+    SELECT 1 FROM daily_quests dq WHERE dq.is_active = true AND NOT EXISTS (
+      SELECT 1 FROM user_daily_progress udp WHERE udp.user_id = p_user_id AND udp.quest_id = dq.id AND udp.quest_date = v_today AND udp.completed = true
+    )
+  ) INTO v_all_done;
+  IF v_all_done THEN
+    INSERT INTO user_streaks (user_id, current_streak, longest_streak, last_completed_date, total_quests_completed)
+    VALUES (p_user_id, 1, 1, v_today, 1)
+    ON CONFLICT (user_id) DO UPDATE SET
+      current_streak = CASE WHEN user_streaks.last_completed_date = v_today - 1 THEN user_streaks.current_streak + 1 WHEN user_streaks.last_completed_date = v_today THEN user_streaks.current_streak ELSE 1 END,
+      longest_streak = GREATEST(user_streaks.longest_streak, CASE WHEN user_streaks.last_completed_date = v_today - 1 THEN user_streaks.current_streak + 1 WHEN user_streaks.last_completed_date = v_today THEN user_streaks.current_streak ELSE 1 END),
+      last_completed_date = v_today,
+      total_quests_completed = user_streaks.total_quests_completed + (CASE WHEN user_streaks.last_completed_date = v_today THEN 0 ELSE 1 END),
+      updated_at = now();
+  END IF;
+  RETURN json_build_object('success', true, 'completed', v_completed, 'all_done', v_all_done);
+END; $$;
+
+-- دوال نقاط التلعيب التلقائية
+CREATE OR REPLACE FUNCTION public.award_points_on_room_message()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  PERFORM public.add_user_points(NEW.user_id, 2, 'room_message', 'إرسال رسالة في الغرفة', 'Sent a room message', NEW.id::text);
+  RETURN NEW;
+END; $$;
+
+CREATE OR REPLACE FUNCTION public.award_points_on_post()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  PERFORM public.add_user_points(NEW.user_id, 10, 'post_created', 'نشر منشور جديد', 'Created a new post', NEW.id::text);
+  RETURN NEW;
+END; $$;
+
+CREATE OR REPLACE FUNCTION public.award_points_on_post_like()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE v_post_owner uuid;
+BEGIN
+  SELECT user_id INTO v_post_owner FROM public.user_posts WHERE id = NEW.post_id;
+  IF v_post_owner IS NOT NULL AND v_post_owner != NEW.user_id THEN
+    PERFORM public.add_user_points(v_post_owner, 3, 'post_liked', 'حصل منشورك على إعجاب', 'Your post got a like', NEW.post_id::text);
+  END IF;
+  RETURN NEW;
+END; $$;
+
+-- دوال VIP
+CREATE OR REPLACE FUNCTION public.request_vip_subscription(p_plan text)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE user_display_name TEXT; user_email TEXT; v_sub_id UUID;
+BEGIN
+  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'Not authenticated'; END IF;
+  SELECT COALESCE(display_name, username, 'مستخدم') INTO user_display_name FROM public.profiles WHERE user_id = auth.uid();
+  SELECT email INTO user_email FROM auth.users WHERE id = auth.uid();
+  INSERT INTO public.vip_subscriptions (user_id, plan, status) VALUES (auth.uid(), p_plan, 'pending') RETURNING id INTO v_sub_id;
+  INSERT INTO public.admin_notifications (type, title, message, data) VALUES (
+    'vip_request', 'طلب اشتراك VIP 👑',
+    user_display_name || ' يطلب اشتراك VIP - باقة ' || CASE WHEN p_plan = 'monthly' THEN 'شهرية' ELSE p_plan END,
+    jsonb_build_object('user_id', auth.uid(), 'plan', p_plan, 'email', user_email, 'subscription_id', v_sub_id));
+END; $$;
+
+CREATE OR REPLACE FUNCTION public.activate_vip_subscription(p_subscription_id uuid, p_duration_days integer DEFAULT 30)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE v_user_id UUID;
+BEGIN
+  IF NOT public.is_admin() THEN RAISE EXCEPTION 'Only admins can activate subscriptions'; END IF;
+  SELECT user_id INTO v_user_id FROM public.vip_subscriptions WHERE id = p_subscription_id;
+  IF v_user_id IS NULL THEN RAISE EXCEPTION 'Subscription not found'; END IF;
+  UPDATE public.vip_subscriptions SET status = 'active', starts_at = now(), expires_at = now() + (p_duration_days || ' days')::interval, approved_by = auth.uid(), approved_at = now() WHERE id = p_subscription_id;
+  INSERT INTO public.user_roles (user_id, role) VALUES (v_user_id, 'vip') ON CONFLICT (user_id, role) DO NOTHING;
+  INSERT INTO public.user_notifications (user_id, type, title, message, data) VALUES (v_user_id, 'vip_activated', 'تم تفعيل اشتراك VIP 👑', 'مبروك! تم تفعيل اشتراكك VIP لمدة ' || p_duration_days || ' يوم', jsonb_build_object('subscription_id', p_subscription_id, 'expires_at', now() + (p_duration_days || ' days')::interval));
+END; $$;
+
+CREATE OR REPLACE FUNCTION public.deactivate_vip_subscription(p_subscription_id uuid)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE v_user_id UUID; v_has_other_active BOOLEAN;
+BEGIN
+  IF NOT public.is_admin() THEN RAISE EXCEPTION 'Only admins can deactivate subscriptions'; END IF;
+  SELECT user_id INTO v_user_id FROM public.vip_subscriptions WHERE id = p_subscription_id;
+  IF v_user_id IS NULL THEN RAISE EXCEPTION 'Subscription not found'; END IF;
+  UPDATE public.vip_subscriptions SET status = 'expired' WHERE id = p_subscription_id;
+  SELECT EXISTS (SELECT 1 FROM public.vip_subscriptions WHERE user_id = v_user_id AND status = 'active' AND id != p_subscription_id) INTO v_has_other_active;
+  IF NOT v_has_other_active THEN DELETE FROM public.user_roles WHERE user_id = v_user_id AND role = 'vip'; END IF;
+  INSERT INTO public.user_notifications (user_id, type, title, message, data) VALUES (v_user_id, 'vip_expired', 'انتهى اشتراك VIP', 'انتهى اشتراكك VIP. يمكنك تجديده من صفحة الاشتراكات', jsonb_build_object('subscription_id', p_subscription_id));
+END; $$;
+
+CREATE OR REPLACE FUNCTION public.reject_vip_subscription(p_subscription_id uuid, p_reason text DEFAULT NULL)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE v_user_id UUID;
+BEGIN
+  IF NOT public.is_admin() THEN RAISE EXCEPTION 'Only admins can reject subscriptions'; END IF;
+  SELECT user_id INTO v_user_id FROM public.vip_subscriptions WHERE id = p_subscription_id;
+  UPDATE public.vip_subscriptions SET status = 'rejected', admin_notes = COALESCE(p_reason, admin_notes), approved_by = auth.uid(), approved_at = now() WHERE id = p_subscription_id;
+  INSERT INTO public.user_notifications (user_id, type, title, message, data) VALUES (v_user_id, 'vip_rejected', 'تم رفض طلب VIP', 'للأسف تم رفض طلب اشتراكك VIP' || CASE WHEN p_reason IS NOT NULL THEN '. السبب: ' || p_reason ELSE '' END, jsonb_build_object('subscription_id', p_subscription_id));
+END; $$;
+
 -- دوال الإشعارات
 CREATE OR REPLACE FUNCTION public.notify_admin_new_user()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE user_count INTEGER; milestone INTEGER;
 BEGIN
-    INSERT INTO public.admin_notifications (type, title, message, data)
-    VALUES ('new_user', 'مستخدم جديد', 'انضم ' || COALESCE(NEW.display_name, 'مستخدم جديد') || ' إلى المنصة',
+    INSERT INTO public.admin_notifications (type, title, message, data) VALUES (
+        'new_user', 'مستخدم جديد', 'انضم ' || COALESCE(NEW.display_name, 'مستخدم جديد') || ' إلى المنصة',
         jsonb_build_object('user_id', NEW.user_id, 'display_name', NEW.display_name, 'country', NEW.country));
-    RETURN NEW;
-END; $$;
-
-CREATE OR REPLACE FUNCTION public.notify_admin_new_trade()
-RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-BEGIN
-    INSERT INTO public.admin_notifications (type, title, message, data)
-    VALUES ('trade_created', 'صفقة جديدة', 'تم إنشاء صفقة ' || NEW.direction || ' على ' || NEW.symbol,
-        jsonb_build_object('trade_id', NEW.id, 'symbol', NEW.symbol, 'direction', NEW.direction, 'visibility', NEW.visibility));
-    RETURN NEW;
-END; $$;
-
-CREATE OR REPLACE FUNCTION public.notify_users_new_trade()
-RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-DECLARE
-    user_record RECORD;
-    trade_type TEXT;
-BEGIN
-    trade_type := CASE WHEN NEW.direction = 'buy' THEN 'شراء' ELSE 'بيع' END;
-    FOR user_record IN 
-        SELECT DISTINCT ur.user_id FROM public.user_roles ur
-        WHERE (NEW.visibility = 'free') OR (NEW.visibility = 'vip' AND ur.role IN ('vip', 'admin'))
-    LOOP
-        INSERT INTO public.user_notifications (user_id, type, title, message, data)
-        VALUES (user_record.user_id, 'new_trade', 'صفقة جديدة 🔔',
-            'صفقة ' || trade_type || ' على ' || NEW.symbol || ' - ' || NEW.timeframe,
-            jsonb_build_object('trade_id', NEW.id, 'symbol', NEW.symbol, 'direction', NEW.direction, 'visibility', NEW.visibility, 'entry_price', NEW.entry_price));
-    END LOOP;
+    SELECT COUNT(*) INTO user_count FROM public.profiles;
+    milestone := CASE WHEN user_count = 10 THEN 10 WHEN user_count = 25 THEN 25 WHEN user_count = 50 THEN 50 WHEN user_count = 100 THEN 100 WHEN user_count = 250 THEN 250 WHEN user_count = 500 THEN 500 WHEN user_count = 1000 THEN 1000 WHEN user_count = 5000 THEN 5000 WHEN user_count = 10000 THEN 10000 ELSE NULL END;
+    IF milestone IS NOT NULL THEN
+        INSERT INTO public.admin_notifications (type, title, message, data) VALUES ('milestone', '🎉 إنجاز جديد!', 'تهانينا! وصل عدد المستخدمين إلى ' || milestone || ' مستخدم', jsonb_build_object('milestone', milestone, 'total_users', user_count));
+    END IF;
     RETURN NEW;
 END; $$;
 
 CREATE OR REPLACE FUNCTION public.notify_admin_new_service_request()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-DECLARE
-    user_display_name TEXT; request_title TEXT; request_message TEXT;
+DECLARE user_display_name TEXT; request_title TEXT; request_message TEXT;
 BEGIN
     SELECT COALESCE(display_name, username, 'مستخدم') INTO user_display_name FROM public.profiles WHERE user_id = NEW.user_id;
     CASE NEW.type
@@ -818,9 +1173,10 @@ BEGIN
         WHEN 'broker_withdraw' THEN request_title := 'طلب سحب من الوسيط'; request_message := user_display_name || ' يطلب سحب بقيمة $' || COALESCE(NEW.amount::TEXT, '0');
         WHEN 'usdt_buy' THEN request_title := 'طلب شراء USDT'; request_message := user_display_name || ' يطلب شراء USDT بقيمة $' || COALESCE(NEW.amount::TEXT, '0');
         WHEN 'usdt_sell' THEN request_title := 'طلب بيع USDT'; request_message := user_display_name || ' يطلب بيع USDT بقيمة $' || COALESCE(NEW.amount::TEXT, '0');
+        WHEN 'card_fund' THEN request_title := 'طلب شحن بطاقة'; request_message := user_display_name || ' يطلب شحن بطاقة بقيمة $' || COALESCE(NEW.amount::TEXT, '0');
     END CASE;
-    INSERT INTO public.admin_notifications (type, title, message, data)
-    VALUES ('service_request', request_title, request_message,
+    INSERT INTO public.admin_notifications (type, title, message, data) VALUES (
+        'service_request', request_title, request_message,
         jsonb_build_object('request_id', NEW.id, 'user_id', NEW.user_id, 'type', NEW.type, 'amount', NEW.amount, 'network', NEW.network));
     RETURN NEW;
 END; $$;
@@ -832,9 +1188,7 @@ BEGIN
     SELECT user_id, title INTO thread_owner_id, thread_title FROM public.threads WHERE id = NEW.thread_id;
     IF thread_owner_id = NEW.user_id THEN RETURN NEW; END IF;
     SELECT COALESCE(display_name, username, 'مستخدم') INTO replier_name FROM public.profiles WHERE user_id = NEW.user_id;
-    INSERT INTO public.user_notifications (user_id, type, title, message, data)
-    VALUES (thread_owner_id, 'reply', 'رد جديد', replier_name || ' رد على موضوعك: ' || LEFT(thread_title, 50),
-        jsonb_build_object('thread_id', NEW.thread_id, 'reply_id', NEW.id, 'replier_id', NEW.user_id));
+    INSERT INTO public.user_notifications (user_id, type, title, message, data) VALUES (thread_owner_id, 'reply', 'رد جديد', replier_name || ' رد على موضوعك: ' || LEFT(thread_title, 50), jsonb_build_object('thread_id', NEW.thread_id, 'reply_id', NEW.id, 'replier_id', NEW.user_id));
     RETURN NEW;
 END; $$;
 
@@ -845,9 +1199,7 @@ BEGIN
     SELECT COALESCE(display_name, username, 'مستخدم') INTO sender_name FROM public.profiles WHERE user_id = NEW.sender_id;
     FOR recipient IN SELECT user_id FROM public.conversation_participants WHERE conversation_id = NEW.conversation_id AND user_id != NEW.sender_id
     LOOP
-        INSERT INTO public.user_notifications (user_id, type, title, message, data)
-        VALUES (recipient.user_id, 'message', 'رسالة جديدة', sender_name || ': ' || LEFT(NEW.content, 50),
-            jsonb_build_object('conversation_id', NEW.conversation_id, 'message_id', NEW.id, 'sender_id', NEW.sender_id));
+        INSERT INTO public.user_notifications (user_id, type, title, message, data) VALUES (recipient.user_id, 'message', 'رسالة جديدة', sender_name || ': ' || LEFT(NEW.content, 50), jsonb_build_object('conversation_id', NEW.conversation_id, 'message_id', NEW.id, 'sender_id', NEW.sender_id));
     END LOOP;
     RETURN NEW;
 END; $$;
@@ -858,14 +1210,10 @@ DECLARE sender_name TEXT;
 BEGIN
     IF TG_OP = 'INSERT' THEN
         SELECT COALESCE(display_name, username, 'مستخدم') INTO sender_name FROM public.profiles WHERE user_id = NEW.sender_id;
-        INSERT INTO public.user_notifications (user_id, type, title, message, data)
-        VALUES (NEW.receiver_id, 'friend_request', 'طلب صداقة جديد', sender_name || ' أرسل لك طلب صداقة',
-            jsonb_build_object('request_id', NEW.id, 'sender_id', NEW.sender_id));
+        INSERT INTO public.user_notifications (user_id, type, title, message, data) VALUES (NEW.receiver_id, 'friend_request', 'طلب صداقة جديد', sender_name || ' أرسل لك طلب صداقة', jsonb_build_object('request_id', NEW.id, 'sender_id', NEW.sender_id));
     ELSIF TG_OP = 'UPDATE' AND NEW.status = 'accepted' AND OLD.status = 'pending' THEN
         SELECT COALESCE(display_name, username, 'مستخدم') INTO sender_name FROM public.profiles WHERE user_id = NEW.receiver_id;
-        INSERT INTO public.user_notifications (user_id, type, title, message, data)
-        VALUES (NEW.sender_id, 'friend_accepted', 'تم قبول طلب الصداقة', sender_name || ' قبل طلب صداقتك',
-            jsonb_build_object('request_id', NEW.id, 'friend_id', NEW.receiver_id));
+        INSERT INTO public.user_notifications (user_id, type, title, message, data) VALUES (NEW.sender_id, 'friend_accepted', 'تم قبول طلب الصداقة', sender_name || ' قبل طلب صداقتك', jsonb_build_object('request_id', NEW.id, 'friend_id', NEW.receiver_id));
     END IF;
     RETURN NEW;
 END; $$;
@@ -877,22 +1225,46 @@ BEGIN
     SELECT user_id INTO post_owner_id FROM public.user_posts WHERE id = NEW.post_id;
     IF post_owner_id = NEW.user_id THEN RETURN NEW; END IF;
     SELECT COALESCE(display_name, username, 'مستخدم') INTO liker_name FROM public.profiles WHERE user_id = NEW.user_id;
-    INSERT INTO public.user_notifications (user_id, type, title, message, data)
-    VALUES (post_owner_id, 'post_like', 'إعجاب جديد ❤️', liker_name || ' أعجب بمنشورك',
-        jsonb_build_object('post_id', NEW.post_id, 'liker_id', NEW.user_id));
+    INSERT INTO public.user_notifications (user_id, type, title, message, data) VALUES (post_owner_id, 'post_like', 'إعجاب جديد ❤️', liker_name || ' أعجب بمنشورك', jsonb_build_object('post_id', NEW.post_id, 'liker_id', NEW.user_id));
     RETURN NEW;
 END; $$;
 
 CREATE OR REPLACE FUNCTION public.notify_post_comment()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-DECLARE post_owner_id UUID; commenter_name TEXT;
+DECLARE post_owner_id UUID; commenter_name TEXT; parent_commenter_id UUID;
 BEGIN
     SELECT user_id INTO post_owner_id FROM public.user_posts WHERE id = NEW.post_id;
     SELECT COALESCE(display_name, username, 'مستخدم') INTO commenter_name FROM public.profiles WHERE user_id = NEW.user_id;
+    IF NEW.parent_id IS NOT NULL THEN
+        SELECT user_id INTO parent_commenter_id FROM public.post_comments WHERE id = NEW.parent_id;
+        IF parent_commenter_id IS NOT NULL AND parent_commenter_id != NEW.user_id THEN
+            INSERT INTO public.user_notifications (user_id, type, title, message, data) VALUES (parent_commenter_id, 'comment_reply', 'رد على تعليقك 💬', commenter_name || ' رد على تعليقك', jsonb_build_object('post_id', NEW.post_id, 'comment_id', NEW.id, 'commenter_id', NEW.user_id));
+        END IF;
+    END IF;
     IF post_owner_id = NEW.user_id THEN RETURN NEW; END IF;
-    INSERT INTO public.user_notifications (user_id, type, title, message, data)
-    VALUES (post_owner_id, 'post_comment', 'تعليق جديد 💬', commenter_name || ' علق على منشورك: ' || LEFT(NEW.content, 30),
-        jsonb_build_object('post_id', NEW.post_id, 'comment_id', NEW.id, 'commenter_id', NEW.user_id));
+    INSERT INTO public.user_notifications (user_id, type, title, message, data) VALUES (post_owner_id, 'post_comment', 'تعليق جديد 💬', commenter_name || ' علق على منشورك: ' || LEFT(NEW.content, 30), jsonb_build_object('post_id', NEW.post_id, 'comment_id', NEW.id, 'commenter_id', NEW.user_id));
+    RETURN NEW;
+END; $$;
+
+CREATE OR REPLACE FUNCTION public.notify_analysis_like()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE analysis_owner_id UUID; liker_name TEXT; analysis_title TEXT;
+BEGIN
+    SELECT created_by, title INTO analysis_owner_id, analysis_title FROM public.analyses WHERE id = NEW.analysis_id;
+    IF analysis_owner_id IS NULL OR analysis_owner_id = NEW.user_id THEN RETURN NEW; END IF;
+    SELECT COALESCE(display_name, username, 'مستخدم') INTO liker_name FROM public.profiles WHERE user_id = NEW.user_id;
+    INSERT INTO public.user_notifications (user_id, type, title, message, data) VALUES (analysis_owner_id, 'analysis_like', 'إعجاب بتحليلك 📊', liker_name || ' أعجب بتحليلك: ' || LEFT(analysis_title, 30), jsonb_build_object('analysis_id', NEW.analysis_id, 'liker_id', NEW.user_id));
+    RETURN NEW;
+END; $$;
+
+CREATE OR REPLACE FUNCTION public.notify_reply_like()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE reply_owner_id UUID; liker_name TEXT; v_thread_id UUID;
+BEGIN
+    SELECT user_id, thread_id INTO reply_owner_id, v_thread_id FROM public.replies WHERE id = NEW.reply_id;
+    IF reply_owner_id = NEW.user_id THEN RETURN NEW; END IF;
+    SELECT COALESCE(display_name, username, 'مستخدم') INTO liker_name FROM public.profiles WHERE user_id = NEW.user_id;
+    INSERT INTO public.user_notifications (user_id, type, title, message, data) VALUES (reply_owner_id, 'reply_like', 'إعجاب بردك ❤️', liker_name || ' أعجب بردك', jsonb_build_object('thread_id', v_thread_id, 'reply_id', NEW.reply_id, 'liker_id', NEW.user_id));
     RETURN NEW;
 END; $$;
 
@@ -904,9 +1276,7 @@ BEGIN
     SELECT name_ar INTO room_name FROM public.community_rooms WHERE id = NEW.room_id;
     FOR moderator IN SELECT user_id FROM public.room_members WHERE room_id = NEW.room_id AND role IN ('moderator', 'owner') AND status = 'approved'
     LOOP
-        INSERT INTO public.user_notifications (user_id, type, title, message, data)
-        VALUES (moderator.user_id, 'room_join_request', 'طلب انضمام جديد', requester_name || ' يطلب الانضمام إلى غرفة ' || room_name,
-            jsonb_build_object('request_id', NEW.id, 'room_id', NEW.room_id, 'user_id', NEW.user_id));
+        INSERT INTO public.user_notifications (user_id, type, title, message, data) VALUES (moderator.user_id, 'room_join_request', 'طلب انضمام جديد', requester_name || ' يطلب الانضمام إلى غرفة ' || room_name, jsonb_build_object('request_id', NEW.id, 'room_id', NEW.room_id, 'user_id', NEW.user_id));
     END LOOP;
     RETURN NEW;
 END; $$;
@@ -919,15 +1289,12 @@ BEGIN
         SELECT name_ar INTO room_name FROM public.community_rooms WHERE id = NEW.room_id;
         IF NEW.status = 'approved' THEN
             status_text := 'تم قبول طلب انضمامك إلى غرفة ' || room_name; title_text := 'تم قبول طلبك ✅';
-            INSERT INTO public.room_members (room_id, user_id, role, status, approved_by, approved_at)
-            VALUES (NEW.room_id, NEW.user_id, 'member', 'approved', NEW.reviewed_by, now())
+            INSERT INTO public.room_members (room_id, user_id, role, status, approved_by, approved_at) VALUES (NEW.room_id, NEW.user_id, 'member', 'approved', NEW.reviewed_by, now())
             ON CONFLICT (room_id, user_id) DO UPDATE SET status = 'approved', approved_by = NEW.reviewed_by, approved_at = now();
         ELSE
             status_text := 'تم رفض طلب انضمامك إلى غرفة ' || room_name; title_text := 'تم رفض طلبك ❌';
         END IF;
-        INSERT INTO public.user_notifications (user_id, type, title, message, data)
-        VALUES (NEW.user_id, 'room_request_status', title_text, status_text,
-            jsonb_build_object('request_id', NEW.id, 'room_id', NEW.room_id, 'status', NEW.status));
+        INSERT INTO public.user_notifications (user_id, type, title, message, data) VALUES (NEW.user_id, 'room_request_status', title_text, status_text, jsonb_build_object('request_id', NEW.id, 'room_id', NEW.room_id, 'status', NEW.status));
     END IF;
     RETURN NEW;
 END; $$;
@@ -938,52 +1305,8 @@ DECLARE user_display_name TEXT; content_type_ar TEXT;
 BEGIN
     SELECT COALESCE(display_name, username, 'مستخدم') INTO user_display_name FROM public.profiles WHERE user_id = NEW.user_id;
     content_type_ar := CASE NEW.content_type WHEN 'post' THEN 'منشور' WHEN 'room_message' THEN 'رسالة' WHEN 'thread' THEN 'موضوع' WHEN 'reply' THEN 'رد' ELSE NEW.content_type END;
-    INSERT INTO public.admin_notifications (type, title, message, data)
-    VALUES ('flagged_content', '🚨 محتوى مخالف', 'تم اكتشاف ' || content_type_ar || ' يحتوي على محتوى غير لائق من ' || user_display_name,
-        jsonb_build_object('flagged_id', NEW.id, 'content_type', NEW.content_type, 'content_id', NEW.content_id, 'user_id', NEW.user_id, 'reason', NEW.flag_reason));
+    INSERT INTO public.admin_notifications (type, title, message, data) VALUES ('flagged_content', '🚨 محتوى مخالف', 'تم اكتشاف ' || content_type_ar || ' يحتوي على محتوى غير لائق من ' || user_display_name, jsonb_build_object('flagged_id', NEW.id, 'content_type', NEW.content_type, 'content_id', NEW.content_id, 'user_id', NEW.user_id, 'reason', NEW.flag_reason, 'confidence', NEW.confidence, 'flagged_url', NEW.flagged_url));
     RETURN NEW;
-END; $$;
-
-CREATE OR REPLACE FUNCTION public.notify_analysis_like()
-RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-DECLARE analysis_owner_id UUID; liker_name TEXT; analysis_title TEXT;
-BEGIN
-    SELECT created_by, title INTO analysis_owner_id, analysis_title FROM public.analyses WHERE id = NEW.analysis_id;
-    IF analysis_owner_id IS NULL OR analysis_owner_id = NEW.user_id THEN RETURN NEW; END IF;
-    SELECT COALESCE(display_name, username, 'مستخدم') INTO liker_name FROM public.profiles WHERE user_id = NEW.user_id;
-    INSERT INTO public.user_notifications (user_id, type, title, message, data)
-    VALUES (analysis_owner_id, 'analysis_like', 'إعجاب بتحليلك 📊', liker_name || ' أعجب بتحليلك: ' || LEFT(analysis_title, 30),
-        jsonb_build_object('analysis_id', NEW.analysis_id, 'liker_id', NEW.user_id));
-    RETURN NEW;
-END; $$;
-
-CREATE OR REPLACE FUNCTION public.notify_trade_comment()
-RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-DECLARE follower_record RECORD; commenter_name TEXT; trade_symbol TEXT;
-BEGIN
-    SELECT COALESCE(display_name, username, 'مستخدم') INTO commenter_name FROM public.profiles WHERE user_id = NEW.user_id;
-    SELECT symbol INTO trade_symbol FROM public.trades WHERE id = NEW.trade_id;
-    FOR follower_record IN SELECT user_id FROM public.trade_followers WHERE trade_id = NEW.trade_id AND user_id != NEW.user_id
-    LOOP
-        INSERT INTO public.user_notifications (user_id, type, title, message, data)
-        VALUES (follower_record.user_id, 'trade_comment', 'تعليق جديد على صفقة 💬', commenter_name || ' علق على صفقة ' || trade_symbol,
-            jsonb_build_object('trade_id', NEW.trade_id, 'comment_id', NEW.id, 'commenter_id', NEW.user_id));
-    END LOOP;
-    RETURN NEW;
-END; $$;
-
--- دوال الدعم الفني
-CREATE OR REPLACE FUNCTION public.is_support_agent(p_user_id uuid DEFAULT auth.uid())
-RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
-AS $$ SELECT EXISTS (SELECT 1 FROM public.support_agents WHERE user_id = p_user_id AND is_active = true) OR public.is_admin() $$;
-
-CREATE OR REPLACE FUNCTION public.close_stale_support_tickets()
-RETURNS integer LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-DECLARE closed_count integer;
-BEGIN
-    UPDATE public.support_tickets SET status = 'closed', updated_at = now() WHERE status = 'open' AND updated_at < now() - interval '4 hours';
-    GET DIAGNOSTICS closed_count = ROW_COUNT;
-    RETURN closed_count;
 END; $$;
 
 CREATE OR REPLACE FUNCTION public.notify_admin_new_support_ticket()
@@ -993,13 +1316,9 @@ BEGIN
     SELECT COALESCE(display_name, username, 'مستخدم') INTO user_display_name FROM public.profiles WHERE user_id = NEW.user_id;
     FOR agent IN SELECT user_id FROM public.support_agents WHERE is_active = true
     LOOP
-        INSERT INTO public.user_notifications (user_id, type, title, message, data)
-        VALUES (agent.user_id, 'support_ticket', 'تذكرة دعم جديدة 🎫', user_display_name || ': ' || LEFT(NEW.subject, 50),
-            jsonb_build_object('ticket_id', NEW.id, 'user_id', NEW.user_id));
+        INSERT INTO public.user_notifications (user_id, type, title, message, data) VALUES (agent.user_id, 'support_ticket', 'تذكرة دعم جديدة 🎫', user_display_name || ': ' || LEFT(NEW.subject, 50), jsonb_build_object('ticket_id', NEW.id, 'user_id', NEW.user_id));
     END LOOP;
-    INSERT INTO public.admin_notifications (type, title, message, data)
-    VALUES ('support_ticket', 'تذكرة دعم جديدة 🎫', user_display_name || ' أرسل تذكرة دعم: ' || LEFT(NEW.subject, 50),
-        jsonb_build_object('ticket_id', NEW.id, 'user_id', NEW.user_id, 'subject', NEW.subject));
+    INSERT INTO public.admin_notifications (type, title, message, data) VALUES ('support_ticket', 'تذكرة دعم جديدة 🎫', user_display_name || ' أرسل تذكرة دعم: ' || LEFT(NEW.subject, 50), jsonb_build_object('ticket_id', NEW.id, 'user_id', NEW.user_id, 'subject', NEW.subject));
     RETURN NEW;
 END; $$;
 
@@ -1015,11 +1334,26 @@ BEGIN
         ELSE
             target_user_id := NEW.assigned_to; action_text := 'تم تحويل تذكرة إليك';
         END IF;
-        INSERT INTO public.user_notifications (user_id, type, title, message, data)
-        VALUES (target_user_id, 'support_ticket', action_text || ' 🎫', sender_name || ': ' || LEFT(NEW.subject, 50),
-            jsonb_build_object('ticket_id', NEW.id, 'transferred_by', COALESCE(NEW.escalated_by, auth.uid()), 'reason', NEW.escalation_reason));
+        INSERT INTO public.user_notifications (user_id, type, title, message, data) VALUES (target_user_id, 'support_ticket', action_text || ' 🎫', sender_name || ': ' || LEFT(NEW.subject, 50), jsonb_build_object('ticket_id', NEW.id, 'transferred_by', COALESCE(NEW.escalated_by, auth.uid()), 'reason', NEW.escalation_reason));
     END IF;
     RETURN NEW;
+END; $$;
+
+-- دالة Push Notification عند إشعار جديد
+CREATE OR REPLACE FUNCTION public.notify_push_on_user_notification()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE edge_url TEXT; service_key TEXT;
+BEGIN
+  SELECT decrypted_secret INTO edge_url FROM vault.decrypted_secrets WHERE name = 'SUPABASE_URL';
+  SELECT decrypted_secret INTO service_key FROM vault.decrypted_secrets WHERE name = 'SUPABASE_SERVICE_ROLE_KEY';
+  IF edge_url IS NOT NULL AND service_key IS NOT NULL THEN
+    PERFORM net.http_post(
+      url := edge_url || '/functions/v1/send-push-notification',
+      headers := jsonb_build_object('Content-Type', 'application/json', 'Authorization', 'Bearer ' || service_key),
+      body := jsonb_build_object('user_id', NEW.user_id, 'title', NEW.title, 'body', NEW.message, 'data', COALESCE(NEW.data, '{}'::jsonb), 'type', NEW.type)
+    );
+  END IF;
+  RETURN NEW;
 END; $$;
 
 
@@ -1031,7 +1365,6 @@ CREATE OR REPLACE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EA
 
 -- Triggers تحديث updated_at
 CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-CREATE TRIGGER update_trades_updated_at BEFORE UPDATE ON public.trades FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 CREATE TRIGGER update_conversations_updated_at BEFORE UPDATE ON public.conversations FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 CREATE TRIGGER update_direct_messages_updated_at BEFORE UPDATE ON public.direct_messages FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 CREATE TRIGGER update_friend_requests_updated_at BEFORE UPDATE ON public.friend_requests FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
@@ -1040,18 +1373,25 @@ CREATE TRIGGER update_service_requests_updated_at BEFORE UPDATE ON public.servic
 CREATE TRIGGER update_usdt_listings_updated_at BEFORE UPDATE ON public.usdt_listings FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 CREATE TRIGGER update_threads_updated_at BEFORE UPDATE ON public.threads FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 CREATE TRIGGER update_replies_updated_at BEFORE UPDATE ON public.replies FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-CREATE TRIGGER update_trade_comments_updated_at BEFORE UPDATE ON public.trade_comments FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 CREATE TRIGGER update_analyses_updated_at BEFORE UPDATE ON public.analyses FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 CREATE TRIGGER update_user_posts_updated_at BEFORE UPDATE ON public.user_posts FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 CREATE TRIGGER update_post_comments_updated_at BEFORE UPDATE ON public.post_comments FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 CREATE TRIGGER update_learning_categories_updated_at BEFORE UPDATE ON public.learning_categories FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 CREATE TRIGGER update_learning_courses_updated_at BEFORE UPDATE ON public.learning_courses FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 CREATE TRIGGER update_learning_lessons_updated_at BEFORE UPDATE ON public.learning_lessons FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_support_tickets_updated_at BEFORE UPDATE ON public.support_tickets FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_app_settings_updated_at BEFORE UPDATE ON public.app_settings FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_signals_updated_at BEFORE UPDATE ON public.signals FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_vip_subscriptions_updated_at BEFORE UPDATE ON public.vip_subscriptions FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_virtual_cards_updated_at BEFORE UPDATE ON public.virtual_cards FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_live_sessions_updated_at BEFORE UPDATE ON public.live_sessions FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_brokers_updated_at BEFORE UPDATE ON public.brokers FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_services_updated_at BEFORE UPDATE ON public.services FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_articles_updated_at BEFORE UPDATE ON public.articles FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_fcm_tokens_updated_at BEFORE UPDATE ON public.fcm_tokens FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 -- Triggers الإشعارات
 CREATE TRIGGER on_new_profile AFTER INSERT ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.notify_admin_new_user();
-CREATE TRIGGER on_new_trade AFTER INSERT ON public.trades FOR EACH ROW EXECUTE FUNCTION public.notify_admin_new_trade();
-CREATE TRIGGER on_new_trade_notify_users AFTER INSERT ON public.trades FOR EACH ROW EXECUTE FUNCTION public.notify_users_new_trade();
 CREATE TRIGGER on_new_service_request AFTER INSERT ON public.service_requests FOR EACH ROW EXECUTE FUNCTION public.notify_admin_new_service_request();
 CREATE TRIGGER on_new_reply AFTER INSERT ON public.replies FOR EACH ROW EXECUTE FUNCTION public.notify_thread_owner_on_reply();
 CREATE TRIGGER on_new_direct_message AFTER INSERT ON public.direct_messages FOR EACH ROW EXECUTE FUNCTION public.notify_new_message();
@@ -1062,9 +1402,26 @@ CREATE TRIGGER on_support_ticket_transfer AFTER UPDATE ON public.support_tickets
 CREATE TRIGGER on_room_join_request AFTER INSERT ON public.room_join_requests FOR EACH ROW EXECUTE FUNCTION public.notify_room_join_request();
 CREATE TRIGGER on_room_request_status_change AFTER UPDATE ON public.room_join_requests FOR EACH ROW EXECUTE FUNCTION public.notify_room_request_status();
 
--- Triggers تحديث updated_at للجداول الجديدة
-CREATE TRIGGER update_support_tickets_updated_at BEFORE UPDATE ON public.support_tickets FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-CREATE TRIGGER update_app_settings_updated_at BEFORE UPDATE ON public.app_settings FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+-- Triggers العدادات
+CREATE TRIGGER on_reply_count AFTER INSERT OR DELETE ON public.replies FOR EACH ROW EXECUTE FUNCTION public.update_thread_replies_count();
+CREATE TRIGGER on_reply_like_count AFTER INSERT OR DELETE ON public.reply_likes FOR EACH ROW EXECUTE FUNCTION public.update_reply_likes_count();
+CREATE TRIGGER on_analysis_like_count AFTER INSERT OR DELETE ON public.analysis_likes FOR EACH ROW EXECUTE FUNCTION public.update_analysis_likes_count();
+CREATE TRIGGER on_post_like_count AFTER INSERT OR DELETE ON public.post_likes FOR EACH ROW EXECUTE FUNCTION public.update_post_likes_count();
+CREATE TRIGGER on_post_comment_count AFTER INSERT OR DELETE ON public.post_comments FOR EACH ROW EXECUTE FUNCTION public.update_post_comments_count();
+
+-- Triggers الإشعارات المتقدمة
+CREATE TRIGGER on_post_like_notify AFTER INSERT ON public.post_likes FOR EACH ROW EXECUTE FUNCTION public.notify_post_like();
+CREATE TRIGGER on_post_comment_notify AFTER INSERT ON public.post_comments FOR EACH ROW EXECUTE FUNCTION public.notify_post_comment();
+CREATE TRIGGER on_analysis_like_notify AFTER INSERT ON public.analysis_likes FOR EACH ROW EXECUTE FUNCTION public.notify_analysis_like();
+CREATE TRIGGER on_reply_like_notify AFTER INSERT ON public.reply_likes FOR EACH ROW EXECUTE FUNCTION public.notify_reply_like();
+
+-- Triggers التلعيب
+CREATE TRIGGER on_room_message_points AFTER INSERT ON public.room_messages FOR EACH ROW EXECUTE FUNCTION public.award_points_on_room_message();
+CREATE TRIGGER on_post_created_points AFTER INSERT ON public.user_posts FOR EACH ROW EXECUTE FUNCTION public.award_points_on_post();
+CREATE TRIGGER on_post_liked_points AFTER INSERT ON public.post_likes FOR EACH ROW EXECUTE FUNCTION public.award_points_on_post_like();
+
+-- Trigger Push Notification
+CREATE TRIGGER on_user_notification_push AFTER INSERT ON public.user_notifications FOR EACH ROW EXECUTE FUNCTION public.notify_push_on_user_notification();
 
 
 -- ============================================================
@@ -1074,11 +1431,9 @@ CREATE TRIGGER update_app_settings_updated_at BEFORE UPDATE ON public.app_settin
 -- تفعيل RLS على جميع الجداول
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.trades ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.trade_comments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.trade_comment_likes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.trade_followers ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.trade_shares ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_blocks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.signals ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.signal_likes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.analyses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.analysis_likes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_posts ENABLE ROW LEVEL SECURITY;
@@ -1109,6 +1464,24 @@ ALTER TABLE public.app_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.support_tickets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.support_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.support_agents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.brokers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.services ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.articles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.vip_subscriptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.subscription_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.virtual_cards ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.live_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.live_session_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.fcm_tokens ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_points ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.point_transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.badges ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_badges ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_streaks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.daily_quests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_daily_progress ENABLE ROW LEVEL SECURITY;
+
+-- === profiles ===
 CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Authenticated users can view all profiles" ON public.profiles FOR SELECT USING (auth.uid() IS NOT NULL);
 CREATE POLICY "Admins can view all profiles via view" ON public.profiles FOR SELECT USING (is_admin());
@@ -1122,34 +1495,24 @@ CREATE POLICY "Only admins can insert roles" ON public.user_roles FOR INSERT WIT
 CREATE POLICY "Only admins can update roles" ON public.user_roles FOR UPDATE USING (is_admin());
 CREATE POLICY "Only admins can delete roles" ON public.user_roles FOR DELETE USING (is_admin() AND user_id <> auth.uid());
 
--- === trades ===
-CREATE POLICY "Users can view trades based on visibility" ON public.trades FOR SELECT USING (can_access_trade(visibility));
-CREATE POLICY "Only admins can insert trades" ON public.trades FOR INSERT WITH CHECK (is_admin());
-CREATE POLICY "Only admins can update trades" ON public.trades FOR UPDATE USING (is_admin());
-CREATE POLICY "Only admins can delete trades" ON public.trades FOR DELETE USING (is_admin());
+-- === user_blocks ===
+CREATE POLICY "Users can view own blocks" ON public.user_blocks FOR SELECT USING (auth.uid() = blocker_id OR auth.uid() = blocked_id);
+CREATE POLICY "Users can block others" ON public.user_blocks FOR INSERT WITH CHECK (auth.uid() = blocker_id);
+CREATE POLICY "Users can unblock" ON public.user_blocks FOR DELETE USING (auth.uid() = blocker_id);
 
--- === trade_comments ===
-CREATE POLICY "Users can view comments on accessible trades" ON public.trade_comments FOR SELECT USING (EXISTS (SELECT 1 FROM trades t WHERE t.id = trade_comments.trade_id AND can_access_trade(t.visibility)));
-CREATE POLICY "Users can comment on accessible trades" ON public.trade_comments FOR INSERT WITH CHECK (auth.uid() = user_id AND EXISTS (SELECT 1 FROM trades t WHERE t.id = trade_comments.trade_id AND can_access_trade(t.visibility)));
-CREATE POLICY "Users can update own comments" ON public.trade_comments FOR UPDATE USING (auth.uid() = user_id OR is_admin());
-CREATE POLICY "Users can delete own comments" ON public.trade_comments FOR DELETE USING (auth.uid() = user_id OR is_admin());
+-- === signals ===
+CREATE POLICY "Users can view signals based on visibility" ON public.signals FOR SELECT USING (can_access_content(visibility));
+CREATE POLICY "Only admins can insert signals" ON public.signals FOR INSERT WITH CHECK (is_admin());
+CREATE POLICY "Only admins can update signals" ON public.signals FOR UPDATE USING (is_admin());
+CREATE POLICY "Only admins can delete signals" ON public.signals FOR DELETE USING (is_admin());
 
--- === trade_comment_likes ===
-CREATE POLICY "Users can view comment likes" ON public.trade_comment_likes FOR SELECT USING (auth.uid() IS NOT NULL);
-CREATE POLICY "Users can like comments" ON public.trade_comment_likes FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can remove own likes" ON public.trade_comment_likes FOR DELETE USING (auth.uid() = user_id);
-
--- === trade_followers ===
-CREATE POLICY "Users can view trade followers" ON public.trade_followers FOR SELECT USING (auth.uid() IS NOT NULL);
-CREATE POLICY "Users can follow trades they can access" ON public.trade_followers FOR INSERT WITH CHECK (auth.uid() = user_id AND EXISTS (SELECT 1 FROM trades t WHERE t.id = trade_followers.trade_id AND can_access_trade(t.visibility)));
-CREATE POLICY "Users can unfollow" ON public.trade_followers FOR DELETE USING (auth.uid() = user_id);
-
--- === trade_shares ===
-CREATE POLICY "Users can view own shares" ON public.trade_shares FOR SELECT USING (auth.uid() = user_id OR is_admin());
-CREATE POLICY "Users can share accessible trades" ON public.trade_shares FOR INSERT WITH CHECK (auth.uid() = user_id AND EXISTS (SELECT 1 FROM trades t WHERE t.id = trade_shares.trade_id AND can_access_trade(t.visibility)));
+-- === signal_likes ===
+CREATE POLICY "Users can view signal likes" ON public.signal_likes FOR SELECT USING (auth.uid() IS NOT NULL);
+CREATE POLICY "Users can like signals" ON public.signal_likes FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can remove own likes" ON public.signal_likes FOR DELETE USING (auth.uid() = user_id);
 
 -- === analyses ===
-CREATE POLICY "Users can view analyses based on visibility" ON public.analyses FOR SELECT USING (can_access_trade(visibility));
+CREATE POLICY "Users can view analyses based on visibility" ON public.analyses FOR SELECT USING (can_access_content(visibility));
 CREATE POLICY "Only admins can insert analyses" ON public.analyses FOR INSERT WITH CHECK (is_admin());
 CREATE POLICY "Only admins can update analyses" ON public.analyses FOR UPDATE USING (is_admin());
 CREATE POLICY "Only admins can delete analyses" ON public.analyses FOR DELETE USING (is_admin());
@@ -1276,7 +1639,7 @@ CREATE POLICY "Only admins can delete USDT listings" ON public.usdt_listings FOR
 
 -- === flagged_content ===
 CREATE POLICY "Admins can view flagged content" ON public.flagged_content FOR SELECT USING (is_admin());
-CREATE POLICY "Users can insert flagged content for their own posts" ON public.flagged_content FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can insert flagged content" ON public.flagged_content FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Admins can update flagged content" ON public.flagged_content FOR UPDATE USING (is_admin());
 CREATE POLICY "Admins can delete flagged content" ON public.flagged_content FOR DELETE USING (is_admin());
 
@@ -1291,6 +1654,7 @@ CREATE POLICY "Only admins can view notifications" ON public.admin_notifications
 CREATE POLICY "Only admins can insert notifications" ON public.admin_notifications FOR INSERT WITH CHECK (is_admin());
 CREATE POLICY "Only admins can update notifications" ON public.admin_notifications FOR UPDATE USING (is_admin());
 CREATE POLICY "Only admins can delete notifications" ON public.admin_notifications FOR DELETE USING (is_admin());
+
 -- === app_settings ===
 CREATE POLICY "Anyone can view non-secret settings" ON public.app_settings FOR SELECT USING (setting_key !~~ '%api_key%' AND setting_key !~~ '%secret%');
 CREATE POLICY "Admins can view secret settings" ON public.app_settings FOR SELECT USING ((setting_key ~~ '%api_key%' OR setting_key ~~ '%secret%') AND is_admin());
@@ -1313,6 +1677,73 @@ CREATE POLICY "Agents can delete messages" ON public.support_messages FOR DELETE
 CREATE POLICY "Admins can manage support agents" ON public.support_agents FOR ALL USING (is_admin());
 CREATE POLICY "Agents can view themselves" ON public.support_agents FOR SELECT USING (auth.uid() = user_id);
 
+-- === brokers ===
+CREATE POLICY "Everyone can view active brokers" ON public.brokers FOR SELECT USING (is_active = true OR is_admin());
+CREATE POLICY "Only admins can manage brokers" ON public.brokers FOR ALL USING (is_admin());
+
+-- === services ===
+CREATE POLICY "Everyone can view active services" ON public.services FOR SELECT USING (is_active = true OR is_admin());
+CREATE POLICY "Only admins can manage services" ON public.services FOR ALL USING (is_admin());
+
+-- === articles ===
+CREATE POLICY "Everyone can view published articles" ON public.articles FOR SELECT USING (is_published = true OR is_admin());
+CREATE POLICY "Only admins can manage articles" ON public.articles FOR ALL USING (is_admin());
+
+-- === vip_subscriptions ===
+CREATE POLICY "Users can view own subscriptions" ON public.vip_subscriptions FOR SELECT USING (auth.uid() = user_id OR is_admin());
+CREATE POLICY "Users can create subscriptions" ON public.vip_subscriptions FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Admins can update subscriptions" ON public.vip_subscriptions FOR UPDATE USING (is_admin());
+
+-- === subscription_messages ===
+CREATE POLICY "Users and admins can view subscription messages" ON public.subscription_messages FOR SELECT USING (EXISTS (SELECT 1 FROM vip_subscriptions s WHERE s.id = subscription_messages.subscription_id AND (s.user_id = auth.uid() OR is_admin())));
+CREATE POLICY "Users and admins can send subscription messages" ON public.subscription_messages FOR INSERT WITH CHECK (auth.uid() = sender_id AND EXISTS (SELECT 1 FROM vip_subscriptions s WHERE s.id = subscription_messages.subscription_id AND (s.user_id = auth.uid() OR is_admin())));
+
+-- === virtual_cards ===
+CREATE POLICY "Users can view own cards" ON public.virtual_cards FOR SELECT USING (auth.uid() = user_id OR is_admin());
+CREATE POLICY "Users can create cards" ON public.virtual_cards FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Admins can update cards" ON public.virtual_cards FOR UPDATE USING (is_admin());
+
+-- === live_sessions ===
+CREATE POLICY "Everyone can view live sessions" ON public.live_sessions FOR SELECT USING (auth.uid() IS NOT NULL);
+CREATE POLICY "Only admins can manage live sessions" ON public.live_sessions FOR ALL USING (is_admin());
+
+-- === live_session_messages ===
+CREATE POLICY "Users can view session messages" ON public.live_session_messages FOR SELECT USING (auth.uid() IS NOT NULL);
+CREATE POLICY "Users can send session messages" ON public.live_session_messages FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- === fcm_tokens ===
+CREATE POLICY "Users can view own tokens" ON public.fcm_tokens FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own tokens" ON public.fcm_tokens FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own tokens" ON public.fcm_tokens FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete own tokens" ON public.fcm_tokens FOR DELETE USING (auth.uid() = user_id);
+
+-- === user_points ===
+CREATE POLICY "Users can view own points" ON public.user_points FOR SELECT USING (auth.uid() = user_id OR is_admin());
+CREATE POLICY "Users can view all points" ON public.user_points FOR SELECT USING (auth.uid() IS NOT NULL);
+
+-- === point_transactions ===
+CREATE POLICY "Users can view own transactions" ON public.point_transactions FOR SELECT USING (auth.uid() = user_id OR is_admin());
+
+-- === badges ===
+CREATE POLICY "Everyone can view badges" ON public.badges FOR SELECT USING (auth.uid() IS NOT NULL);
+CREATE POLICY "Only admins can manage badges" ON public.badges FOR ALL USING (is_admin());
+
+-- === user_badges ===
+CREATE POLICY "Users can view badges" ON public.user_badges FOR SELECT USING (auth.uid() IS NOT NULL);
+
+-- === user_streaks ===
+CREATE POLICY "Users can view own streaks" ON public.user_streaks FOR SELECT USING (auth.uid() = user_id OR is_admin());
+CREATE POLICY "Users can view all streaks" ON public.user_streaks FOR SELECT USING (auth.uid() IS NOT NULL);
+
+-- === daily_quests ===
+CREATE POLICY "Everyone can view active quests" ON public.daily_quests FOR SELECT USING (is_active = true);
+CREATE POLICY "Only admins can manage quests" ON public.daily_quests FOR ALL USING (is_admin());
+
+-- === user_daily_progress ===
+CREATE POLICY "Users can view own progress" ON public.user_daily_progress FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own progress" ON public.user_daily_progress FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own progress" ON public.user_daily_progress FOR UPDATE USING (auth.uid() = user_id);
+
 
 -- ============================================================
 -- 7. INDEXES (الفهارس)
@@ -1320,11 +1751,11 @@ CREATE POLICY "Agents can view themselves" ON public.support_agents FOR SELECT U
 
 CREATE INDEX IF NOT EXISTS idx_profiles_user_id ON public.profiles(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_roles_user_id ON public.user_roles(user_id);
-CREATE INDEX IF NOT EXISTS idx_trades_status ON public.trades(status);
-CREATE INDEX IF NOT EXISTS idx_trades_visibility ON public.trades(visibility);
-CREATE INDEX IF NOT EXISTS idx_trades_created_at ON public.trades(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_trade_comments_trade_id ON public.trade_comments(trade_id);
-CREATE INDEX IF NOT EXISTS idx_trade_followers_trade_id ON public.trade_followers(trade_id);
+CREATE INDEX IF NOT EXISTS idx_user_blocks_blocker ON public.user_blocks(blocker_id);
+CREATE INDEX IF NOT EXISTS idx_user_blocks_blocked ON public.user_blocks(blocked_id);
+CREATE INDEX IF NOT EXISTS idx_signals_created_at ON public.signals(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_signals_visibility ON public.signals(visibility);
+CREATE INDEX IF NOT EXISTS idx_signal_likes_signal_id ON public.signal_likes(signal_id);
 CREATE INDEX IF NOT EXISTS idx_analyses_created_at ON public.analyses(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_user_posts_user_id ON public.user_posts(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_posts_created_at ON public.user_posts(created_at DESC);
@@ -1361,6 +1792,13 @@ CREATE INDEX IF NOT EXISTS idx_support_tickets_status ON public.support_tickets(
 CREATE INDEX IF NOT EXISTS idx_support_tickets_assigned_to ON public.support_tickets(assigned_to);
 CREATE INDEX IF NOT EXISTS idx_support_messages_ticket_id ON public.support_messages(ticket_id);
 CREATE INDEX IF NOT EXISTS idx_support_agents_user_id ON public.support_agents(user_id);
+CREATE INDEX IF NOT EXISTS idx_fcm_tokens_user_id ON public.fcm_tokens(user_id);
+CREATE INDEX IF NOT EXISTS idx_vip_subscriptions_user_id ON public.vip_subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_vip_subscriptions_status ON public.vip_subscriptions(status);
+CREATE INDEX IF NOT EXISTS idx_user_points_user_id ON public.user_points(user_id);
+CREATE INDEX IF NOT EXISTS idx_point_transactions_user_id ON public.point_transactions(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_daily_progress_user_date ON public.user_daily_progress(user_id, quest_date);
+CREATE INDEX IF NOT EXISTS idx_articles_is_published ON public.articles(is_published);
 
 
 -- ============================================================
@@ -1370,10 +1808,11 @@ CREATE INDEX IF NOT EXISTS idx_support_agents_user_id ON public.support_agents(u
 ALTER PUBLICATION supabase_realtime ADD TABLE public.direct_messages;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.room_messages;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.user_notifications;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.trades;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.usdt_listings;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.app_settings;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.support_messages;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.subscription_messages;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.live_session_messages;
 
 
 -- ============================================================
@@ -1382,11 +1821,12 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.support_messages;
 
 -- إنشاء buckets للتخزين
 INSERT INTO storage.buckets (id, name, public) VALUES ('avatars', 'avatars', true);
-INSERT INTO storage.buckets (id, name, public) VALUES ('analysis-attachments', 'analysis-attachments', false);
-INSERT INTO storage.buckets (id, name, public) VALUES ('post-attachments', 'post-attachments', false);
+INSERT INTO storage.buckets (id, name, public) VALUES ('analysis-attachments', 'analysis-attachments', true);
+INSERT INTO storage.buckets (id, name, public) VALUES ('post-attachments', 'post-attachments', true);
 INSERT INTO storage.buckets (id, name, public) VALUES ('lesson-videos', 'lesson-videos', true);
-INSERT INTO storage.buckets (id, name, public) VALUES ('support-attachments', 'support-attachments', false);
+INSERT INTO storage.buckets (id, name, public) VALUES ('support-attachments', 'support-attachments', true);
 INSERT INTO storage.buckets (id, name, public) VALUES ('cms-assets', 'cms-assets', true);
+INSERT INTO storage.buckets (id, name, public) VALUES ('article-images', 'article-images', true);
 
 -- سياسات التخزين للصور الشخصية
 CREATE POLICY "Avatar images are publicly accessible" ON storage.objects FOR SELECT USING (bucket_id = 'avatars');
@@ -1409,23 +1849,35 @@ CREATE POLICY "Only admins can upload CMS assets" ON storage.objects FOR INSERT 
 CREATE POLICY "Only admins can update CMS assets" ON storage.objects FOR UPDATE USING (bucket_id = 'cms-assets' AND public.is_admin());
 CREATE POLICY "Only admins can delete CMS assets" ON storage.objects FOR DELETE USING (bucket_id = 'cms-assets' AND public.is_admin());
 
+-- سياسات تخزين صور المقالات
+CREATE POLICY "Article images are publicly accessible" ON storage.objects FOR SELECT USING (bucket_id = 'article-images');
+CREATE POLICY "Only admins can upload article images" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'article-images' AND public.is_admin());
+CREATE POLICY "Only admins can update article images" ON storage.objects FOR UPDATE USING (bucket_id = 'article-images' AND public.is_admin());
+CREATE POLICY "Only admins can delete article images" ON storage.objects FOR DELETE USING (bucket_id = 'article-images' AND public.is_admin());
+
+-- سياسات تخزين مرفقات التحليلات والمنشورات
+CREATE POLICY "Analysis attachments accessible" ON storage.objects FOR SELECT USING (bucket_id = 'analysis-attachments');
+CREATE POLICY "Admins can upload analysis attachments" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'analysis-attachments' AND public.is_admin());
+CREATE POLICY "Post attachments accessible" ON storage.objects FOR SELECT USING (bucket_id = 'post-attachments');
+CREATE POLICY "Users can upload post attachments" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'post-attachments' AND auth.uid() IS NOT NULL);
+
 
 -- ============================================================
 -- 10. SEED DATA (بيانات أولية)
 -- ============================================================
 
 -- إنشاء الغرف الافتراضية
-INSERT INTO public.community_rooms (id, name, name_ar, description, description_ar, icon, color, requires_approval) VALUES
-    ('general', 'General Discussion', 'المناقشات العامة', 'General discussions about trading and markets', 'مناقشات عامة حول التداول والأسواق', 'MessageSquare', 'blue', true),
-    ('learning', 'Learning & Development', 'التعلم والتطوير', 'Lessons and tips for beginners and pros', 'دروس ونصائح للمبتدئين والمحترفين', 'GraduationCap', 'green', false),
-    ('vip', 'VIP Room', 'غرفة VIP', 'Exclusive discussions for VIP members', 'مناقشات حصرية لأعضاء VIP', 'Crown', 'gold', true),
-    ('news', 'News Discussion', 'مناقشة الأخبار', 'Discuss latest market news', 'مناقشة آخر أخبار السوق', 'Newspaper', 'purple', true);
+INSERT INTO public.community_rooms (id, name, name_ar, description, description_ar, icon, color, category, requires_approval) VALUES
+    ('general', 'General Discussion', 'المناقشات العامة', 'General discussions about trading and markets', 'مناقشات عامة حول التداول والأسواق', 'MessageSquare', 'blue', 'general', true),
+    ('learning', 'Learning & Development', 'التعلم والتطوير', 'Lessons and tips for beginners and pros', 'دروس ونصائح للمبتدئين والمحترفين', 'GraduationCap', 'green', 'learning', false),
+    ('vip', 'VIP Room', 'غرفة VIP', 'Exclusive discussions for VIP members', 'مناقشات حصرية لأعضاء VIP', 'Crown', 'gold', 'vip', true),
+    ('news', 'News Discussion', 'مناقشة الأخبار', 'Discuss latest market news', 'مناقشة آخر أخبار السوق', 'Newspaper', 'purple', 'general', true);
 
 
 -- ============================================================
 -- انتهى التنفيذ بنجاح! ✅
--- عدد الجداول: 37
--- عدد الدوال: 35+
--- عدد سياسات RLS: 95+
--- عدد حاويات التخزين: 6
+-- عدد الجداول: 48
+-- عدد الدوال: 50+
+-- عدد سياسات RLS: 130+
+-- عدد حاويات التخزين: 7
 -- ============================================================
