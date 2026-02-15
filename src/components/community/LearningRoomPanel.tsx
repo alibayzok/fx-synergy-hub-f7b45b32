@@ -6,6 +6,7 @@ import {
   Clock, Star, ChevronLeft, ChevronRight,
   Play, Lock, Video
 } from 'lucide-react';
+import { TradingGlossary } from './TradingGlossary';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -437,6 +438,11 @@ export const LearningRoomPanel = ({ onBack }: LearningRoomPanelProps) => {
               </div>
             </div>
           </motion.div>
+
+          {/* Trading Glossary */}
+          <div className="mt-6">
+            <TradingGlossary />
+          </div>
         </div>
       </ScrollArea>
     </div>
