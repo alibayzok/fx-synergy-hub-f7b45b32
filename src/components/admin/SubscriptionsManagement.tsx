@@ -269,7 +269,7 @@ export const SubscriptionsManagement = () => {
 
   const formatDate = (d: string | null) => {
     if (!d) return '-';
-    return new Date(d).toLocaleDateString('ar-SA', { year: 'numeric', month: 'short', day: 'numeric' });
+    return new Date(d).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
   const getRemainingDays = (expires: string | null) => {
@@ -625,7 +625,7 @@ export const SubscriptionsManagement = () => {
                           </div>
                           <p className="whitespace-pre-wrap break-words">{msg.content}</p>
                           <span className="text-[9px] text-muted-foreground mt-1 block">
-                            {new Date(msg.created_at).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                            {new Date(msg.created_at).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         </div>
                       </div>

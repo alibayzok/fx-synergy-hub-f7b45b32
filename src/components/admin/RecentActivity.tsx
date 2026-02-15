@@ -4,8 +4,7 @@ import { motion } from 'framer-motion';
 import { FileText, UserPlus, Clock, ChevronLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { formatDistanceToNow } from 'date-fns';
-import { ar, enUS } from 'date-fns/locale';
+import { formatTimeAgo } from '@/lib/date-utils';
 
 interface ActivityItem {
   id: string;
@@ -63,7 +62,7 @@ export const RecentActivity = () => {
     setLoading(false);
   };
 
-  const formatTime = (timestamp: string) => formatDistanceToNow(new Date(timestamp), { addSuffix: true, locale: i18n.language === 'ar' ? ar : enUS }).replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
+  const formatTime = (timestamp: string) => formatTimeAgo(timestamp, i18n.language);
 
   if (loading) return (
     <div className="space-y-2">

@@ -356,7 +356,7 @@ const VipPage = () => {
                               </div>
                               <p className="whitespace-pre-wrap break-words">{msg.content}</p>
                               <span className="text-[9px] text-muted-foreground mt-1 block">
-                                {new Date(msg.created_at).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                                {new Date(msg.created_at).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
                               </span>
                             </div>
                           </div>

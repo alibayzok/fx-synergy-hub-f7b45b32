@@ -270,7 +270,7 @@ export const ServiceRequestsManagement = () => {
                       </span>
                     </div>
                     <span className="text-[11px] text-muted-foreground/60">
-                      {new Date(request.created_at).toLocaleDateString(isArabic ? 'ar-SA' : 'en-US')}
+                      {new Date(request.created_at).toLocaleDateString(isArabic ? 'ar-EG' : 'en-US')}
                     </span>
                   </div>
                 </div>
@@ -323,7 +323,7 @@ export const ServiceRequestsManagement = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">{t('admin.createdAt')}</span>
                   <span className="text-sm">
-                    {new Date(selectedRequest.created_at).toLocaleString(isArabic ? 'ar-SA' : 'en-US')}
+                    {new Date(selectedRequest.created_at).toLocaleString(isArabic ? 'ar-EG' : 'en-US')}
                   </span>
                 </div>
                 {selectedRequest.notes && (

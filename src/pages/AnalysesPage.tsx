@@ -13,8 +13,7 @@ import { useAnalyses } from '@/hooks/useAnalyses';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { useNavigate } from 'react-router-dom';
-import { formatDistanceToNow } from 'date-fns';
-import { ar, enUS } from 'date-fns/locale';
+import { formatTimeAgo } from '@/lib/date-utils';
 
 const AnalysesPage = () => {
   const { t, i18n } = useTranslation();
@@ -34,7 +33,7 @@ const AnalysesPage = () => {
 
   if (!enabled) return null;
 
-  const locale = i18n.language === 'ar' ? ar : enUS;
+  
 
   const filteredAnalyses = analyses.filter(analysis => {
     if (activeFilter === 'all') return true;
@@ -216,10 +215,7 @@ const AnalysesPage = () => {
                           <div className="flex items-center gap-1">
                             <Clock className="w-3.5 h-3.5" />
                             <span>
-                              {formatDistanceToNow(new Date(analysis.created_at), {
-                                addSuffix: true,
-                                locale
-                              })}
+                              {formatTimeAgo(analysis.created_at, i18n.language)}
                             </span>
                           </div>
                           <div className="flex items-center gap-1">

@@ -11,8 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { formatDistanceToNow } from 'date-fns';
-import { ar, enUS } from 'date-fns/locale';
+import { formatTimeAgo } from '@/lib/date-utils';
 
 interface ThreadDetailPanelProps {
   thread: Thread;
@@ -40,12 +39,7 @@ export const ThreadDetailPanel = ({ thread, onBack, onDelete }: ThreadDetailPane
     navigate(`/user/${userId}`);
   };
 
-  const formatTime = (dateStr: string) => {
-    return formatDistanceToNow(new Date(dateStr), {
-      addSuffix: true,
-      locale: isArabic ? ar : enUS
-    });
-  };
+  const formatTime = (dateStr: string) => formatTimeAgo(dateStr, i18n.language);
 
   const handleSubmitReply = async () => {
     if (!newReply.trim() || sending) return;

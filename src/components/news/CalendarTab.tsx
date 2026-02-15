@@ -72,7 +72,7 @@ export const CalendarTab = () => {
     if (!dateStr) return '';
     try {
       const date = new Date(dateStr);
-      return date.toLocaleDateString(isArabic ? 'ar-SA' : 'en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      return date.toLocaleDateString(isArabic ? 'ar-EG' : 'en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     } catch { return dateStr; }
   };
 

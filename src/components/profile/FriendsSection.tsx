@@ -26,8 +26,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { useFriendship, type Friend, type FriendRequest, type PrivacySettings } from '@/hooks/useFriendship';
-import { formatDistanceToNow } from 'date-fns';
-import { ar, enUS } from 'date-fns/locale';
+import { formatTimeAgo } from '@/lib/date-utils';
 
 export const FriendsSection = () => {
   const { t, i18n } = useTranslation();
@@ -52,12 +51,7 @@ export const FriendsSection = () => {
 
   const isArabic = i18n.language === 'ar';
 
-  const formatDate = (dateStr: string) => {
-    return formatDistanceToNow(new Date(dateStr), {
-      addSuffix: true,
-      locale: isArabic ? ar : enUS
-    });
-  };
+  const formatDate = (dateStr: string) => formatTimeAgo(dateStr, i18n.language);
 
   const handleAccept = async (requestId: string) => {
     setActionLoading(requestId);

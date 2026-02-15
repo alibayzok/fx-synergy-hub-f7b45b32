@@ -34,8 +34,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSocial } from '@/hooks/useSocial';
 import { useConversations } from '@/hooks/useMessaging';
 import { countries } from '@/data/countries';
-import { formatDistanceToNow } from 'date-fns';
-import { ar, enUS } from 'date-fns/locale';
+import { formatTimeAgo } from '@/lib/date-utils';
 import { cn } from '@/lib/utils';
 import { useBlockUser } from '@/hooks/useBlockUser';
 
@@ -196,12 +195,7 @@ const UserProfilePage = () => {
   const isVip = userRole?.role === 'vip';
   const isOwnProfile = user?.id === userId;
 
-  const formatDate = (dateStr: string) => {
-    return formatDistanceToNow(new Date(dateStr), {
-      addSuffix: true,
-      locale: isArabic ? ar : enUS
-    });
-  };
+  const formatDate = (dateStr: string) => formatTimeAgo(dateStr, i18n.language);
 
   const countryName = profile?.country
     ? countries.find(c => c.code === profile.country)?.name[isArabic ? 'ar' : 'en'] || profile.country

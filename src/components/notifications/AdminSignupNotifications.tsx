@@ -15,8 +15,7 @@ import {
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { formatDistanceToNow } from 'date-fns';
-import { ar, enUS } from 'date-fns/locale';
+import { formatTimeAgo } from '@/lib/date-utils';
 import { playNotificationSound } from '@/lib/notification-sound';
 
 interface SignupNotification {
@@ -107,12 +106,7 @@ export const AdminSignupNotifications = () => {
     setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
-  const formatTime = (dateStr: string) => {
-    return formatDistanceToNow(new Date(dateStr), {
-      addSuffix: true,
-      locale: isArabic ? ar : enUS
-    });
-  };
+  const formatTime = (dateStr: string) => formatTimeAgo(dateStr, i18n.language);
 
   if (!isAdmin) return null;
 

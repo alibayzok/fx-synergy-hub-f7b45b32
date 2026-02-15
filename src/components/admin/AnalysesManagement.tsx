@@ -156,7 +156,7 @@ export const AnalysesManagement = () => {
                       </span>
                       <span className="flex items-center gap-1">
                         <Clock className="w-3.5 h-3.5" />
-                        {new Date(analysis.created_at).toLocaleDateString('ar')}
+                        {new Date(analysis.created_at).toLocaleDateString('ar-EG')}
                       </span>
                     </div>
                   </div>

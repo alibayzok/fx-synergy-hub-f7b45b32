@@ -16,8 +16,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { supabase } from '@/integrations/supabase/client';
 import appLogo from '@/assets/logo-dark.png';
-import { formatDistanceToNow } from 'date-fns';
-import { ar, enUS } from 'date-fns/locale';
+import { formatTimeAgo } from '@/lib/date-utils';
 
 interface Article {
   id: string;
@@ -34,7 +33,7 @@ const HomePage = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const isRTL = i18n.language === 'ar';
-  const locale = isRTL ? ar : enUS;
+  
   
   const { user, isAdmin, loading: authLoading } = useAuth();
   const { signals, loading: signalsLoading } = useSignals();
@@ -236,7 +235,7 @@ const HomePage = () => {
                       <div className="flex-1" />
                       <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
                         <Clock className="w-3 h-3" />
-                        {formatDistanceToNow(new Date(signal.created_at), { addSuffix: true, locale })}
+                        {formatTimeAgo(signal.created_at, i18n.language)}
                       </span>
                     </div>
                     <h3 className="font-semibold text-sm leading-snug">{signal.title}</h3>
@@ -302,7 +301,7 @@ const HomePage = () => {
                             <Badge variant="secondary" className="text-[10px]">{article.category}</Badge>
                             <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
                               <Clock className="w-3 h-3" />
-                              {formatDistanceToNow(new Date(article.created_at), { addSuffix: true, locale })}
+                              {formatTimeAgo(article.created_at, i18n.language)}
                             </span>
                           </div>
                           <h4 className="font-semibold text-sm line-clamp-2 leading-snug">{title}</h4>
@@ -360,7 +359,7 @@ const HomePage = () => {
                       <div className="flex-1" />
                       <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
                         <Clock className="w-3 h-3" />
-                        {formatDistanceToNow(new Date(analysis.created_at), { addSuffix: true, locale })}
+                        {formatTimeAgo(analysis.created_at, i18n.language)}
                       </span>
                     </div>
                     <h3 className="font-semibold text-sm leading-snug">{analysis.title}</h3>

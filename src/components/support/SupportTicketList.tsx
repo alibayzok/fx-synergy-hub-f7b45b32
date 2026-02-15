@@ -4,8 +4,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Filter, MessageCircle, Loader2, UserCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
-import { ar } from 'date-fns/locale';
+import { formatDate } from '@/lib/date-utils';
 
 interface Profile {
   user_id: string;
@@ -128,7 +127,7 @@ const SupportTicketList = ({
                   <span className="font-medium text-xs">{getUserName(ticket.user_id)}</span>
                 </div>
                 <span className="text-[10px] text-muted-foreground">
-                  {format(new Date(ticket.updated_at), 'dd/MM HH:mm', { locale: ar })}
+                  {formatDate(ticket.updated_at, 'dd/MM HH:mm', 'ar')}
                 </span>
               </div>
               <p className="text-sm font-medium truncate mb-1.5">{ticket.subject}</p>
