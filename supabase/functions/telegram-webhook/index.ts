@@ -143,10 +143,23 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Split into title (first line) and content (rest)
-    const lines = cleanText.split("\n").filter(l => l.trim());
-    const title = lines[0].substring(0, 200);
-    const content = lines.length > 1 ? lines.slice(1).join("\n").trim() : cleanText;
+    // Split into title (first line) and content (rest), preserving formatting
+    const lines = cleanText.split("\n");
+    const firstNonEmptyIndex = lines.findIndex(l => l.trim());
+    const title = (firstNonEmptyIndex >= 0 ? lines[firstNonEmptyIndex] : lines[0]).substring(0, 200);
+    const contentLines = firstNonEmptyIndex >= 0 ? lines.slice(firstNonEmptyIndex + 1) : lines;
+    
+    // For articles: convert newlines to HTML <br> and paragraphs for proper display
+    let content: string;
+    if (channelType === "news") {
+      // Convert double newlines to paragraphs, single newlines to <br>
+      content = contentLines.join("\n").trim()
+        .split(/\n\s*\n/)
+        .map(p => `<p>${p.replace(/\n/g, "<br>")}</p>`)
+        .join("\n");
+    } else {
+      content = contentLines.join("\n").trim() || cleanText;
+    }
 
     let result;
 
