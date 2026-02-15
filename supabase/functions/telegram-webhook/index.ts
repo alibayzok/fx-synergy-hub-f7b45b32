@@ -62,8 +62,27 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: true, message: "No publish tag" }), { headers: corsHeaders });
     }
 
-    // Remove the hashtag from the text
-    const cleanText = rawText.replace(/#نشر|#publish/gi, "").trim();
+    // Extract category from hashtags (for news/articles channel)
+    // Supported: #تعليم/#education, #عام/#general, #تحليل/#analysis, #اخبار/#news
+    const categoryMap: Record<string, string> = {
+      "#تعليم": "education", "#education": "education",
+      "#عام": "general", "#general": "general",
+      "#تحليل": "analysis", "#analysis": "analysis",
+      "#اخبار": "news", "#news": "news",
+    };
+    let detectedCategory = "general";
+    for (const [tag, cat] of Object.entries(categoryMap)) {
+      if (rawText.toLowerCase().includes(tag.toLowerCase())) {
+        detectedCategory = cat;
+        break;
+      }
+    }
+
+    // Remove all known hashtags from the text
+    const cleanText = rawText
+      .replace(/#نشر|#publish/gi, "")
+      .replace(/#تعليم|#education|#عام|#general|#تحليل|#analysis|#اخبار|#news/gi, "")
+      .trim();
     if (!cleanText) {
       console.log("Empty after removing hashtag, ignoring");
       return new Response(JSON.stringify({ ok: true }), { headers: corsHeaders });
@@ -142,7 +161,7 @@ Deno.serve(async (req) => {
         summary_en: "",
         image_url: attachments.length > 0 ? attachments[0] : null,
         is_published: true,
-        category: "general",
+        category: detectedCategory,
         created_by: "telegram-bot",
       });
       result = { data, error };
