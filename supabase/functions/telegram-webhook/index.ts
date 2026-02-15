@@ -26,19 +26,25 @@ Deno.serve(async (req) => {
     const update = await req.json();
     console.log("Received Telegram update:", JSON.stringify(update));
 
-    // We only care about channel posts
     const post = update.channel_post;
     if (!post) {
       console.log("Not a channel_post, ignoring");
       return new Response(JSON.stringify({ ok: true }), { headers: corsHeaders });
     }
 
-    // Verify this is from VIP channel
-    const vipChatId = Deno.env.get("TELEGRAM_VIP_CHAT_ID");
     const chatId = String(post.chat?.id);
+    const vipChatId = Deno.env.get("TELEGRAM_VIP_CHAT_ID");
+    const publicChatId = Deno.env.get("TELEGRAM_PUBLIC_CHAT_ID");
+    const newsChatId = Deno.env.get("TELEGRAM_NEWS_CHAT_ID");
 
-    if (chatId !== vipChatId) {
-      console.log(`Message from unknown chat ${chatId}, expected ${vipChatId}`);
+    // Determine channel type
+    let channelType: "vip" | "public" | "news" | null = null;
+    if (chatId === vipChatId) channelType = "vip";
+    else if (chatId === publicChatId) channelType = "public";
+    else if (chatId === newsChatId) channelType = "news";
+
+    if (!channelType) {
+      console.log(`Message from unknown chat ${chatId}`);
       return new Response(JSON.stringify({ ok: true }), { headers: corsHeaders });
     }
 
@@ -49,10 +55,19 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: true }), { headers: corsHeaders });
     }
 
-    // Split into title (first line) and content (rest)
-    const lines = rawText.trim().split("\n");
-    const title = lines[0].substring(0, 200); // limit title length
-    const content = lines.length > 1 ? lines.slice(1).join("\n").trim() : rawText.trim();
+    // Check for publish hashtag (#نشر or #publish)
+    const hasPublishTag = /#نشر|#publish/i.test(rawText);
+    if (!hasPublishTag) {
+      console.log("No publish hashtag found, ignoring");
+      return new Response(JSON.stringify({ ok: true, message: "No publish tag" }), { headers: corsHeaders });
+    }
+
+    // Remove the hashtag from the text
+    const cleanText = rawText.replace(/#نشر|#publish/gi, "").trim();
+    if (!cleanText) {
+      console.log("Empty after removing hashtag, ignoring");
+      return new Response(JSON.stringify({ ok: true }), { headers: corsHeaders });
+    }
 
     // Initialize Supabase with service role
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -65,29 +80,27 @@ Deno.serve(async (req) => {
     // Handle photos
     if (post.photo && post.photo.length > 0) {
       try {
-        // Get the largest photo (last in array)
         const photo = post.photo[post.photo.length - 1];
         const fileId = photo.file_id;
 
-        // Get file path from Telegram
         const fileRes = await fetch(
           `https://api.telegram.org/bot${botToken}/getFile?file_id=${fileId}`
         );
         const fileData = await fileRes.json();
 
         if (fileData.ok && fileData.result?.file_path) {
-          // Download the file
           const downloadUrl = `https://api.telegram.org/file/bot${botToken}/${fileData.result.file_path}`;
           const imageRes = await fetch(downloadUrl);
           const imageBlob = await imageRes.blob();
 
-          // Generate unique filename
           const ext = fileData.result.file_path.split(".").pop() || "jpg";
           const fileName = `telegram_${Date.now()}_${crypto.randomUUID().substring(0, 8)}.${ext}`;
 
-          // Upload to storage
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from("signal-attachments")
+          // Choose bucket based on channel type
+          const bucket = channelType === "news" ? "article-images" : "signal-attachments";
+
+          const { error: uploadError } = await supabase.storage
+            .from(bucket)
             .upload(fileName, imageBlob, {
               contentType: imageBlob.type || "image/jpeg",
               upsert: false,
@@ -96,11 +109,10 @@ Deno.serve(async (req) => {
           if (uploadError) {
             console.error("Upload error:", uploadError);
           } else {
-            // Get public URL
             const { data: urlData } = supabase.storage
-              .from("signal-attachments")
+              .from(bucket)
               .getPublicUrl(fileName);
-            
+
             if (urlData?.publicUrl) {
               attachments.push(urlData.publicUrl);
               console.log("Image uploaded:", urlData.publicUrl);
@@ -112,25 +124,52 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Insert into signals table
-    const { data, error } = await supabase.from("signals").insert({
-      title,
-      content,
-      visibility: "vip",
-      attachments: attachments.length > 0 ? attachments : null,
-      created_by: null, // From bot, not a registered user
-    });
+    // Split into title (first line) and content (rest)
+    const lines = cleanText.split("\n").filter(l => l.trim());
+    const title = lines[0].substring(0, 200);
+    const content = lines.length > 1 ? lines.slice(1).join("\n").trim() : cleanText;
 
-    if (error) {
-      console.error("Insert error:", error);
-      return new Response(JSON.stringify({ error: error.message }), {
+    let result;
+
+    if (channelType === "news") {
+      // Insert into articles table
+      const { data, error } = await supabase.from("articles").insert({
+        title_ar: title,
+        title_en: "",
+        content_ar: content,
+        content_en: "",
+        summary_ar: content.substring(0, 200),
+        summary_en: "",
+        image_url: attachments.length > 0 ? attachments[0] : null,
+        is_published: true,
+        category: "general",
+        created_by: "telegram-bot",
+      });
+      result = { data, error };
+      if (!error) console.log("Article created from Telegram news channel");
+    } else {
+      // Insert into signals table (vip or public/free)
+      const visibility = channelType === "vip" ? "vip" : "free";
+      const { data, error } = await supabase.from("signals").insert({
+        title,
+        content,
+        visibility,
+        attachments: attachments.length > 0 ? attachments : null,
+        created_by: null,
+      });
+      result = { data, error };
+      if (!error) console.log(`Signal created (${visibility}) from Telegram`);
+    }
+
+    if (result.error) {
+      console.error("Insert error:", result.error);
+      return new Response(JSON.stringify({ error: result.error.message }), {
         status: 500,
         headers: corsHeaders,
       });
     }
 
-    console.log("Signal created successfully from Telegram");
-    return new Response(JSON.stringify({ ok: true, message: "Signal created" }), {
+    return new Response(JSON.stringify({ ok: true, channel: channelType }), {
       headers: corsHeaders,
     });
   } catch (err) {
