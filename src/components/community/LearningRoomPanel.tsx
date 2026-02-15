@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import {
   ArrowRight, ArrowLeft, BookOpen, GraduationCap,
   Clock, Star, ChevronLeft, ChevronRight,
-  Play, Lock, Video
+  Play, Lock, Video, BookText
 } from 'lucide-react';
 import { TradingGlossary } from './TradingGlossary';
 import { Button } from '@/components/ui/button';
@@ -59,13 +59,10 @@ interface Lesson {
 
 const getEmbedUrl = (url: string): string | null => {
   if (!url) return null;
-  // YouTube
   const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
   if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
-  // Vimeo
   const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
   if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
-  // Direct video URL
   if (url.match(/\.(mp4|webm|ogg)(\?|$)/i)) return url;
   return url;
 };
@@ -87,6 +84,8 @@ const levelConfig = {
   advanced: { label_ar: 'متقدم', label_en: 'Advanced', color: 'bg-red-500/15 text-red-500 border-red-500/30' },
 };
 
+type LearningTab = 'courses' | 'glossary';
+
 export const LearningRoomPanel = ({ onBack }: LearningRoomPanelProps) => {
   const { t, i18n } = useTranslation();
   const { isVip, isAdmin } = useAuth();
@@ -94,6 +93,7 @@ export const LearningRoomPanel = ({ onBack }: LearningRoomPanelProps) => {
   const isVipUser = isVip || isAdmin;
   const BackArrow = isArabic ? ArrowRight : ArrowLeft;
 
+  const [activeTab, setActiveTab] = useState<LearningTab>('courses');
   const [categories, setCategories] = useState<Category[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
@@ -130,6 +130,11 @@ export const LearningRoomPanel = ({ onBack }: LearningRoomPanelProps) => {
   const currentCategory = categories.find(c => c.id === selectedCategory);
   const filteredCourses = selectedCategory ? courses.filter(c => c.category_id === selectedCategory) : [];
 
+  const tabs: { key: LearningTab; label_ar: string; label_en: string; icon: React.ReactNode }[] = [
+    { key: 'courses', label_ar: 'الكورسات', label_en: 'Courses', icon: <GraduationCap className="w-4 h-4" /> },
+    { key: 'glossary', label_ar: 'المصطلحات', label_en: 'Glossary', icon: <BookText className="w-4 h-4" /> },
+  ];
+
   // Lesson view
   if (selectedLesson && selectedCourse) {
     const lessonIndex = lessons.findIndex(l => l.id === selectedLesson.id);
@@ -162,7 +167,6 @@ export const LearningRoomPanel = ({ onBack }: LearningRoomPanelProps) => {
 
         <ScrollArea className="flex-1">
           <div className="p-5">
-            {/* Video Player */}
             {selectedLesson.video_url && (selectedLesson.content_type === 'video' || selectedLesson.content_type === 'both') && (() => {
               const embedUrl = getEmbedUrl(selectedLesson.video_url);
               const isDirectVideo = selectedLesson.video_url.match(/\.(mp4|webm|ogg)(\?|$)/i);
@@ -182,7 +186,6 @@ export const LearningRoomPanel = ({ onBack }: LearningRoomPanelProps) => {
               );
             })()}
 
-            {/* Text Content */}
             {(selectedLesson.content_type !== 'video' || !selectedLesson.video_url) && (
               (isArabic ? selectedLesson.content_ar : selectedLesson.content_en).split('\n').map((line, i) => (
                 <p key={i} className={cn(
@@ -346,7 +349,7 @@ export const LearningRoomPanel = ({ onBack }: LearningRoomPanelProps) => {
     );
   }
 
-  // Main categories view
+  // Main view with tabs
   if (loading) {
     return (
       <div className="flex flex-col h-[calc(100vh-80px)] pt-14 items-center justify-center">
@@ -357,7 +360,8 @@ export const LearningRoomPanel = ({ onBack }: LearningRoomPanelProps) => {
 
   return (
     <div className="flex flex-col h-[calc(100vh-80px)] pt-14">
-      <div className="p-4 border-b border-border/30 bg-background/80 backdrop-blur-sm">
+      {/* Header */}
+      <div className="p-4 pb-3 border-b border-border/30 bg-background/80 backdrop-blur-sm">
         <div className="flex items-center gap-3 mb-3">
           <Button variant="ghost" size="icon" onClick={onBack}>
             <BackArrow className="w-5 h-5" />
@@ -371,80 +375,112 @@ export const LearningRoomPanel = ({ onBack }: LearningRoomPanelProps) => {
           </div>
         </div>
 
-        <div className="flex items-center gap-4 p-3 rounded-xl bg-muted/40 border border-border/20">
-          <div className="flex-1 text-center">
-            <p className="text-lg font-bold text-foreground">{courses.length}</p>
-            <p className="text-[10px] text-muted-foreground">{isArabic ? 'كورس' : 'Courses'}</p>
-          </div>
-          <div className="w-px h-8 bg-border/30" />
-          <div className="flex-1 text-center">
-            <p className="text-lg font-bold text-foreground">{categories.length}</p>
-            <p className="text-[10px] text-muted-foreground">{isArabic ? 'قسم' : 'Categories'}</p>
-          </div>
+        {/* Tab Switcher */}
+        <div className="relative flex bg-muted/40 rounded-xl p-1 border border-border/20">
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={cn(
+                  "relative flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-sm font-semibold transition-all z-10",
+                  isActive
+                    ? "text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="learning-tab-indicator"
+                    className="absolute inset-0 bg-gradient-to-br from-primary to-primary/80 rounded-lg shadow-lg shadow-primary/25"
+                    transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                  />
+                )}
+                <span className="relative flex items-center gap-1.5">
+                  {tab.icon}
+                  {isArabic ? tab.label_ar : tab.label_en}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      <ScrollArea className="flex-1">
-        <div className="p-4">
-          {categories.length > 0 ? (
-            <div className="grid grid-cols-2 gap-3">
-              {categories.map((category, index) => {
-                const catCourses = courses.filter(c => c.category_id === category.id);
-                return (
-                  <motion.button
-                    key={category.id}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: index * 0.07 }}
-                    onClick={() => setSelectedCategory(category.id)}
-                    className={cn(
-                      "relative p-4 rounded-2xl border bg-gradient-to-br text-start transition-all hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]",
-                      colorMap[category.color] || colorMap.blue
-                    )}
-                  >
-                    <div className="mb-3">
-                      <BookOpen className="w-7 h-7 text-foreground" />
-                    </div>
-                    <h3 className="font-bold text-sm text-foreground mb-1">{isArabic ? category.title_ar : category.title_en}</h3>
-                    <div className="text-[10px] text-muted-foreground">
-                      {catCourses.length} {isArabic ? 'كورس' : 'courses'}
-                    </div>
-                  </motion.button>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <GraduationCap className="w-12 h-12 text-muted-foreground/30 mb-3" />
-              <p className="text-muted-foreground">{isArabic ? 'لا توجد أقسام بعد' : 'No categories yet'}</p>
-            </div>
-          )}
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="mt-5 p-4 rounded-2xl bg-gradient-to-br from-primary/15 via-primary/5 to-transparent border border-primary/20"
-          >
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-primary/20">
-                <Star className="w-6 h-6 text-primary" />
+      {/* Tab Content */}
+      {activeTab === 'courses' ? (
+        <ScrollArea className="flex-1">
+          <div className="p-4">
+            {/* Stats */}
+            <div className="flex items-center gap-4 p-3 rounded-xl bg-muted/40 border border-border/20 mb-4">
+              <div className="flex-1 text-center">
+                <p className="text-lg font-bold text-foreground">{courses.length}</p>
+                <p className="text-[10px] text-muted-foreground">{isArabic ? 'كورس' : 'Courses'}</p>
               </div>
-              <div className="flex-1">
-                <h4 className="font-bold text-foreground">{isArabic ? 'كورسات VIP حصرية' : 'Exclusive VIP Courses'}</h4>
-                <p className="text-xs text-muted-foreground">
-                  {isArabic ? 'اشترك في VIP للوصول إلى الاستراتيجيات المتقدمة' : 'Subscribe to VIP for advanced strategies'}
-                </p>
+              <div className="w-px h-8 bg-border/30" />
+              <div className="flex-1 text-center">
+                <p className="text-lg font-bold text-foreground">{categories.length}</p>
+                <p className="text-[10px] text-muted-foreground">{isArabic ? 'قسم' : 'Categories'}</p>
               </div>
             </div>
-          </motion.div>
 
-          {/* Trading Glossary */}
-          <div className="mt-6">
-            <TradingGlossary />
+            {categories.length > 0 ? (
+              <div className="grid grid-cols-2 gap-3">
+                {categories.map((category, index) => {
+                  const catCourses = courses.filter(c => c.category_id === category.id);
+                  return (
+                    <motion.button
+                      key={category.id}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: index * 0.07 }}
+                      onClick={() => setSelectedCategory(category.id)}
+                      className={cn(
+                        "relative p-4 rounded-2xl border bg-gradient-to-br text-start transition-all hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]",
+                        colorMap[category.color] || colorMap.blue
+                      )}
+                    >
+                      <div className="mb-3">
+                        <BookOpen className="w-7 h-7 text-foreground" />
+                      </div>
+                      <h3 className="font-bold text-sm text-foreground mb-1">{isArabic ? category.title_ar : category.title_en}</h3>
+                      <div className="text-[10px] text-muted-foreground">
+                        {catCourses.length} {isArabic ? 'كورس' : 'courses'}
+                      </div>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <GraduationCap className="w-12 h-12 text-muted-foreground/30 mb-3" />
+                <p className="text-muted-foreground">{isArabic ? 'لا توجد أقسام بعد' : 'No categories yet'}</p>
+              </div>
+            )}
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="mt-5 p-4 rounded-2xl bg-gradient-to-br from-primary/15 via-primary/5 to-transparent border border-primary/20"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-primary/20">
+                  <Star className="w-6 h-6 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-foreground">{isArabic ? 'كورسات VIP حصرية' : 'Exclusive VIP Courses'}</h4>
+                  <p className="text-xs text-muted-foreground">
+                    {isArabic ? 'اشترك في VIP للوصول إلى الاستراتيجيات المتقدمة' : 'Subscribe to VIP for advanced strategies'}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
           </div>
-        </div>
-      </ScrollArea>
+        </ScrollArea>
+      ) : (
+        <TradingGlossary />
+      )}
     </div>
   );
 };

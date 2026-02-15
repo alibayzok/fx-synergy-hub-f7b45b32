@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookText, X, Search } from 'lucide-react';
+import { BookText, X, Search, Sparkles, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -136,7 +136,6 @@ const arabicLetters = ['الكل', 'أ', 'ا', 'ب', 'ت', 'ج', 'ح', 'خ', 'د
 
 const getFirstArabicLetter = (term: string): string => {
   const ch = term.charAt(0);
-  // normalize alef variants
   if (['إ', 'آ', 'أ'].includes(ch)) return 'أ';
   if (ch === 'ا') return 'ا';
   return ch;
@@ -151,23 +150,17 @@ export const TradingGlossary = () => {
 
   const filteredTerms = useMemo(() => {
     let terms = glossaryData;
-    
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
       terms = terms.filter(t =>
         t.term_ar.includes(q) || t.term_en.toLowerCase().includes(q)
       );
     } else if (selectedLetter !== 'الكل') {
-      terms = terms.filter(t => {
-        const first = getFirstArabicLetter(t.term_ar);
-        return first === selectedLetter;
-      });
+      terms = terms.filter(t => getFirstArabicLetter(t.term_ar) === selectedLetter);
     }
-
     return terms;
   }, [selectedLetter, searchQuery]);
 
-  // Group by first letter
   const grouped = useMemo(() => {
     const groups: Record<string, GlossaryTerm[]> = {};
     filteredTerms.forEach(term => {
@@ -179,111 +172,183 @@ export const TradingGlossary = () => {
   }, [filteredTerms]);
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center gap-2 px-1">
-        <BookText className="w-5 h-5 text-primary" />
-        <h3 className="font-bold text-foreground">
-          {isArabic ? 'مصطلحات التداول' : 'Trading Glossary'}
-        </h3>
-        <span className="text-xs text-muted-foreground">({glossaryData.length})</span>
-      </div>
+    <div className="flex flex-col h-full">
+      {/* Luxury Header */}
+      <div className="relative overflow-hidden px-5 pt-5 pb-4">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5" />
+        <div className="absolute top-0 end-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl" />
+        <div className="relative flex items-center gap-3 mb-4">
+          <div className="relative">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center border border-primary/20 shadow-lg shadow-primary/10">
+              <BookText className="w-6 h-6 text-primary" />
+            </div>
+            <Sparkles className="absolute -top-1 -end-1 w-4 h-4 text-primary animate-pulse" />
+          </div>
+          <div>
+            <h2 className="font-bold text-xl text-foreground">
+              {isArabic ? 'مصطلحات التداول' : 'Trading Glossary'}
+            </h2>
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <TrendingUp className="w-3 h-3 text-primary" />
+              {glossaryData.length} {isArabic ? 'مصطلح' : 'terms'}
+            </p>
+          </div>
+        </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input
-          placeholder={isArabic ? 'ابحث عن مصطلح...' : 'Search term...'}
-          value={searchQuery}
-          onChange={(e) => { setSearchQuery(e.target.value); setSelectedLetter('الكل'); }}
-          className="ps-9 bg-background/50"
-        />
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/60" />
+          <Input
+            placeholder={isArabic ? 'ابحث عن مصطلح...' : 'Search term...'}
+            value={searchQuery}
+            onChange={(e) => { setSearchQuery(e.target.value); setSelectedLetter('الكل'); }}
+            className="ps-9 bg-background/60 backdrop-blur-sm border-primary/20 focus:border-primary/40 rounded-xl"
+          />
+        </div>
       </div>
 
       {/* Letter Filter */}
       {!searchQuery && (
-        <div className="flex flex-wrap gap-1.5">
-          {arabicLetters.map(letter => (
-            <button
-              key={letter}
-              onClick={() => setSelectedLetter(letter)}
-              className={cn(
-                "min-w-[32px] h-8 px-2 rounded-lg text-sm font-semibold transition-all",
-                selectedLetter === letter
-                  ? "bg-primary text-primary-foreground shadow-md"
-                  : "bg-muted/40 text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-              )}
-            >
-              {letter}
-            </button>
-          ))}
+        <div className="px-4 pb-3">
+          <ScrollArea className="w-full">
+            <div className="flex gap-1.5 pb-1">
+              {arabicLetters.map(letter => {
+                const isActive = selectedLetter === letter;
+                return (
+                  <motion.button
+                    key={letter}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setSelectedLetter(letter)}
+                    className={cn(
+                      "min-w-[36px] h-9 px-2.5 rounded-xl text-sm font-bold transition-all flex-shrink-0",
+                      isActive
+                        ? "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/25"
+                        : "bg-card/80 text-muted-foreground border border-border/30 hover:border-primary/30 hover:text-foreground"
+                    )}
+                  >
+                    {letter}
+                  </motion.button>
+                );
+              })}
+            </div>
+          </ScrollArea>
         </div>
       )}
 
-      {/* Terms Grid */}
-      {Object.keys(grouped).length > 0 ? (
-        Object.entries(grouped).map(([letter, terms]) => (
-          <div key={letter}>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-lg font-bold text-primary">{letter}</span>
-              <div className="flex-1 h-px bg-border/30" />
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {terms.map((term, idx) => (
-                <motion.button
-                  key={idx}
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.02 }}
-                  onClick={() => setSelectedTerm(term)}
-                  className="text-start p-3 rounded-xl border border-border/30 bg-card/60 hover:bg-card hover:border-primary/30 hover:shadow-sm transition-all"
-                >
-                  <p className="font-medium text-sm text-foreground leading-snug">{isArabic ? term.term_ar : term.term_en}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">{isArabic ? term.term_en : term.term_ar}</p>
-                </motion.button>
-              ))}
-            </div>
-          </div>
-        ))
-      ) : (
-        <div className="text-center py-8 text-muted-foreground text-sm">
-          {isArabic ? 'لا توجد مصطلحات مطابقة' : 'No matching terms'}
-        </div>
-      )}
+      {/* Terms List */}
+      <ScrollArea className="flex-1">
+        <div className="px-4 pb-6 space-y-5">
+          {Object.keys(grouped).length > 0 ? (
+            Object.entries(grouped).map(([letter, terms]) => (
+              <div key={letter}>
+                {/* Letter divider */}
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/25 to-primary/10 flex items-center justify-center border border-primary/20">
+                    <span className="text-base font-bold text-primary">{letter}</span>
+                  </div>
+                  <div className="flex-1 h-px bg-gradient-to-l from-transparent via-primary/15 to-transparent" />
+                  <span className="text-[10px] text-muted-foreground font-medium">{terms.length}</span>
+                </div>
 
-      {/* Term Detail Card */}
+                <div className="space-y-2">
+                  {terms.map((term, idx) => (
+                    <motion.button
+                      key={idx}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setSelectedTerm(term)}
+                      className="w-full text-start group"
+                    >
+                      <div className="relative p-3.5 rounded-2xl border border-border/30 bg-card/60 backdrop-blur-sm transition-all hover:bg-card hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-r from-primary/0 to-primary/0 group-hover:from-primary/5 group-hover:to-transparent transition-all duration-300" />
+                        <div className="relative flex items-center justify-between">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors truncate">
+                              {isArabic ? term.term_ar : term.term_en}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                              {isArabic ? term.term_en : term.term_ar}
+                            </p>
+                          </div>
+                          <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 ms-3 group-hover:bg-primary/20 transition-colors">
+                            <BookText className="w-3.5 h-3.5 text-primary/60 group-hover:text-primary transition-colors" />
+                          </div>
+                        </div>
+                      </div>
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-muted/30 flex items-center justify-center mb-3">
+                <Search className="w-7 h-7 text-muted-foreground/40" />
+              </div>
+              <p className="text-muted-foreground text-sm">{isArabic ? 'لا توجد مصطلحات مطابقة' : 'No matching terms'}</p>
+            </div>
+          )}
+        </div>
+      </ScrollArea>
+
+      {/* Term Detail Modal */}
       <AnimatePresence>
         {selectedTerm && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center p-5 bg-black/60 backdrop-blur-md"
             onClick={() => setSelectedTerm(null)}
           >
             <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              initial={{ opacity: 0, scale: 0.85, y: 30 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              exit={{ opacity: 0, scale: 0.85, y: 30 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md rounded-2xl bg-card border border-border/40 shadow-2xl overflow-hidden"
+              className="w-full max-w-md rounded-3xl overflow-hidden border border-primary/20 shadow-2xl shadow-primary/10"
             >
-              <div className="flex items-center justify-between p-4 border-b border-border/30 bg-primary/5">
-                <div>
-                  <h4 className="font-bold text-lg text-foreground">{isArabic ? selectedTerm.term_ar : selectedTerm.term_en}</h4>
-                  <p className="text-sm text-primary font-medium">{isArabic ? selectedTerm.term_en : selectedTerm.term_ar}</p>
+              {/* Card Header with gradient */}
+              <div className="relative bg-gradient-to-br from-primary/15 via-card to-card p-5 pb-4">
+                <div className="absolute top-0 start-0 w-24 h-24 bg-primary/10 rounded-full blur-2xl" />
+                <div className="absolute top-2 end-2">
+                  <button
+                    onClick={() => setSelectedTerm(null)}
+                    className="w-8 h-8 rounded-xl bg-background/50 backdrop-blur-sm flex items-center justify-center hover:bg-background/80 transition-colors border border-border/30"
+                  >
+                    <X className="w-4 h-4 text-muted-foreground" />
+                  </button>
                 </div>
-                <button
-                  onClick={() => setSelectedTerm(null)}
-                  className="p-2 rounded-lg hover:bg-muted/50 transition-colors"
-                >
-                  <X className="w-5 h-5 text-muted-foreground" />
-                </button>
+                <div className="relative">
+                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center mb-3 border border-primary/20">
+                    <BookText className="w-5 h-5 text-primary" />
+                  </div>
+                  <h3 className="font-bold text-xl text-foreground leading-tight">
+                    {isArabic ? selectedTerm.term_ar : selectedTerm.term_en}
+                  </h3>
+                  <p className="text-sm text-primary font-semibold mt-1">
+                    {isArabic ? selectedTerm.term_en : selectedTerm.term_ar}
+                  </p>
+                </div>
               </div>
-              <div className="p-5">
-                <p className="text-foreground leading-relaxed">
-                  {isArabic ? selectedTerm.definition_ar : selectedTerm.definition_en}
-                </p>
+
+              {/* Card Body */}
+              <div className="bg-card p-5 pt-4">
+                <div className="p-4 rounded-2xl bg-muted/30 border border-border/20">
+                  <p className="text-foreground leading-relaxed text-[15px]">
+                    {isArabic ? selectedTerm.definition_ar : selectedTerm.definition_en}
+                  </p>
+                </div>
+
+                {/* Secondary language */}
+                <div className="mt-3 p-3 rounded-xl bg-primary/5 border border-primary/10">
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {isArabic ? selectedTerm.definition_en : selectedTerm.definition_ar}
+                  </p>
+                </div>
               </div>
             </motion.div>
           </motion.div>
