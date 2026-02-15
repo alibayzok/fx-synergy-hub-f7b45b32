@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, LogIn, Radio, Clock, Eye, Heart, Megaphone, BookOpen, TrendingUp, Sparkles, BarChart3 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { QuickActions } from '@/components/home/QuickActions';
-import { DailyQuestsWidget } from '@/components/home/DailyQuestsWidget';
+
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
