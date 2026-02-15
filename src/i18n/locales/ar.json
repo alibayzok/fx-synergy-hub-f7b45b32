@@ -373,6 +373,11 @@
     "passwordUpdated": "تم تحديث كلمة المرور بنجاح",
     "passwordUpdatedDesc": "يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة",
     "redirecting": "جاري التحويل...",
+    "verifyingLink": "جاري التحقق من الرابط...",
+    "linkExpired": "الرابط منتهي أو غير صالح",
+    "linkExpiredDesc": "يبدو أن رابط إعادة تعيين كلمة المرور منتهي الصلاحية أو تم استخدامه مسبقاً. يرجى طلب رابط جديد.",
+    "requestNewLink": "طلب رابط جديد",
+    "backToHome": "العودة للرئيسية",
     "signInWithGoogle": "تسجيل الدخول بـ Google",
     "googleSignInError": "حدث خطأ أثناء تسجيل الدخول بـ Google"
   },

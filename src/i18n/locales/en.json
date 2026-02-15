@@ -372,6 +372,11 @@
     "passwordUpdated": "Password updated successfully",
     "passwordUpdatedDesc": "You can now login with your new password",
     "redirecting": "Redirecting...",
+    "verifyingLink": "Verifying link...",
+    "linkExpired": "Link expired or invalid",
+    "linkExpiredDesc": "The password reset link has expired or has already been used. Please request a new one.",
+    "requestNewLink": "Request new link",
+    "backToHome": "Back to home",
     "signInWithGoogle": "Sign in with Google",
     "googleSignInError": "An error occurred while signing in with Google"
   },
