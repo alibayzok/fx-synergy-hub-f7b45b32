@@ -1,7 +1,7 @@
 import { ReactNode, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageSquare, User, X, Megaphone } from 'lucide-react';
-import { BottomNav } from './BottomNav';
+import { WebSidebar } from './WebSidebar';
 import { FloatingAIButton } from './FloatingAIButton';
 import { ThemeToggle } from './ThemeToggle';
 import { NotificationsPanel } from '@/components/notifications/NotificationsPanel';
@@ -16,33 +16,22 @@ import { useAuth } from '@/hooks/useAuth';
 import { useConversations } from '@/hooks/useMessaging';
 import { useProfile } from '@/hooks/useProfile';
 import { useAppSettings } from '@/hooks/useAppSettings';
-import { useDeviceType } from '@/hooks/useDeviceType';
-import { WebLayout } from './WebLayout';
+import { useTranslation } from 'react-i18next';
+import { cn } from '@/lib/utils';
 
-interface AppLayoutProps {
+interface WebLayoutProps {
   children: ReactNode;
   showNotifications?: boolean;
 }
 
-export const AppLayout = ({ children, showNotifications = true }: AppLayoutProps) => {
-  const deviceType = useDeviceType();
-
-  // Desktop → use WebLayout
-  if (deviceType === 'desktop') {
-    return <WebLayout showNotifications={showNotifications}>{children}</WebLayout>;
-  }
-
-  // Mobile → original mobile layout
-  return <MobileLayout showNotifications={showNotifications}>{children}</MobileLayout>;
-};
-
-// Original mobile layout extracted into its own component
-const MobileLayout = ({ children, showNotifications = true }: AppLayoutProps) => {
+export const WebLayout = ({ children, showNotifications = true }: WebLayoutProps) => {
   const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
   const { unreadTotal } = useConversations();
   const { profile } = useProfile();
   const { getSetting, getBoolean } = useAppSettings();
+  const { i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
 
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [popupShown, setPopupShown] = useState(false);
@@ -68,12 +57,8 @@ const MobileLayout = ({ children, showNotifications = true }: AppLayoutProps) =>
   }, [popupActive, popupMessage, popupShown]);
 
   const getInitials = () => {
-    if (profile?.display_name) {
-      return profile.display_name.slice(0, 2).toUpperCase();
-    }
-    if (profile?.first_name) {
-      return profile.first_name.slice(0, 1).toUpperCase();
-    }
+    if (profile?.display_name) return profile.display_name.slice(0, 2).toUpperCase();
+    if (profile?.first_name) return profile.first_name.slice(0, 1).toUpperCase();
     return <User className="w-4 h-4" />;
   };
 
@@ -95,7 +80,7 @@ const MobileLayout = ({ children, showNotifications = true }: AppLayoutProps) =>
     <div className="min-h-screen bg-background transition-colors duration-300">
       {/* CMS Announcement Banner */}
       {bannerActive && bannerText && !bannerDismissed && (
-        <div 
+        <div
           className="fixed top-0 start-0 end-0 z-[60] flex items-center justify-between px-4 py-2 text-sm font-medium text-white"
           style={{ backgroundColor: bannerColor }}
         >
@@ -122,65 +107,85 @@ const MobileLayout = ({ children, showNotifications = true }: AppLayoutProps) =>
         </DialogContent>
       </Dialog>
 
-      {/* Header Bar - Facebook style */}
-      {showNotifications && user && (
-        <div className="fixed top-0 start-0 end-0 z-50 bg-card/95 backdrop-blur-md border-b border-border/30 shadow-sm">
-          <div className="flex items-center justify-center gap-2 px-3 py-2">
-            {/* Profile */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="relative h-9 w-9 rounded-full hover:bg-accent/50 transition-colors p-0 overflow-hidden"
-              onClick={() => navigate('/profile')}
-            >
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={profile?.avatar_url || undefined} alt="Profile" />
-                <AvatarFallback className="bg-primary/20 text-primary text-xs font-medium">
-                  {getInitials()}
-                </AvatarFallback>
-              </Avatar>
-            </Button>
+      {/* Sidebar */}
+      <WebSidebar />
 
-            <AdminSignupNotifications />
-            <SupportNotificationsIcon />
-            <FriendRequestsPanel />
-            <NotificationsPanel />
+      {/* Main Content Area - offset by sidebar width */}
+      <div className="ms-[240px]">
+        {/* Top Header Bar */}
+        {showNotifications && user && (
+          <header
+            className={cn(
+              "sticky top-0 z-30 bg-card/95 backdrop-blur-md border-b border-border/30 shadow-sm",
+              bannerActive && bannerText && !bannerDismissed && "mt-[36px]"
+            )}
+          >
+            <div className="flex items-center justify-end gap-2 px-6 py-2.5">
+              <AdminSignupNotifications />
+              <SupportNotificationsIcon />
+              <FriendRequestsPanel />
+              <NotificationsPanel />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative h-9 w-9 rounded-full hover:bg-accent/50 transition-colors"
+                onClick={() => navigate('/messages')}
+              >
+                <MessageSquare className="h-5 w-5 text-muted-foreground" />
+                {unreadTotal > 0 && (
+                  <Badge
+                    variant="destructive"
+                    className="absolute -top-0.5 -end-0.5 h-4 min-w-4 px-1 flex items-center justify-center text-[9px] font-bold rounded-full"
+                  >
+                    {unreadTotal > 9 ? '9+' : unreadTotal}
+                  </Badge>
+                )}
+              </Button>
+              <ThemeToggle />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative h-9 w-9 rounded-full hover:bg-accent/50 transition-colors p-0 overflow-hidden"
+                onClick={() => navigate('/profile')}
+              >
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={profile?.avatar_url || undefined} alt="Profile" />
+                  <AvatarFallback className="bg-primary/20 text-primary text-xs font-medium">
+                    {getInitials()}
+                  </AvatarFallback>
+                </Avatar>
+              </Button>
+            </div>
+          </header>
+        )}
 
-            <Button
-              variant="ghost"
-              size="icon"
-              className="relative h-9 w-9 rounded-full hover:bg-accent/50 transition-colors"
-              onClick={() => navigate('/messages')}
-            >
-              <MessageSquare className="h-5 w-5 text-muted-foreground" />
-              {unreadTotal > 0 && (
-                <Badge 
-                  variant="destructive" 
-                  className="absolute -top-0.5 -end-0.5 h-4 min-w-4 px-1 flex items-center justify-center text-[9px] font-bold rounded-full"
-                >
-                  {unreadTotal > 9 ? '9+' : unreadTotal}
-                </Badge>
-              )}
-            </Button>
-
-            <ThemeToggle />
+        {/* Page Content */}
+        <main className="min-h-[calc(100vh-120px)]">
+          <div className="max-w-6xl mx-auto px-6 py-6">
+            {children}
           </div>
-        </div>
-      )}
-      
-      <main className={`pb-20 ${showNotifications && user ? (bannerActive && bannerText && !bannerDismissed ? 'pt-[88px]' : 'pt-[52px]') : (bannerActive && bannerText && !bannerDismissed ? 'pt-[36px]' : '')}`}>
-        {children}
-      </main>
+        </main>
 
-      {/* Copyright Footer */}
-      <div className="pb-20 text-center py-3 border-t border-border/20">
-        <p className="text-[10px] text-muted-foreground/40">
-          © {new Date().getFullYear()} Forex Assassin. جميع الحقوق محفوظة
-        </p>
+        {/* Footer */}
+        <footer className="border-t border-border/30 bg-card/50">
+          <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+            <p className="text-xs text-muted-foreground/60">
+              © {new Date().getFullYear()} Forex Assassin. {isRTL ? 'جميع الحقوق محفوظة' : 'All rights reserved'}
+            </p>
+            <div className="flex items-center gap-4 text-xs text-muted-foreground/40">
+              <button onClick={() => navigate('/support')} className="hover:text-foreground transition-colors">
+                {isRTL ? 'الدعم' : 'Support'}
+              </button>
+              <button onClick={() => navigate('/docs')} className="hover:text-foreground transition-colors">
+                {isRTL ? 'المستندات' : 'Docs'}
+              </button>
+            </div>
+          </div>
+        </footer>
       </div>
 
       <FloatingAIButton />
-      <BottomNav />
     </div>
   );
 };
+
