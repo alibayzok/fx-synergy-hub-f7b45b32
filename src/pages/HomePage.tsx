@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, LogIn, Radio, Clock, Eye, Heart, Megaphone, BookOpen, TrendingUp, Sparkles, BarChart3, Calculator } from 'lucide-react';
+import { ChevronLeft, ChevronRight, LogIn, Radio, Clock, Eye, Heart, Megaphone, BookOpen, TrendingUp, Sparkles, BarChart3 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { QuickActions } from '@/components/home/QuickActions';
-import { PipCalculator } from '@/components/home/PipCalculator';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -380,10 +379,7 @@ const HomePage = () => {
           </div>
         </motion.section>
 
-        {/* Pip Calculator */}
-        <PipCalculator />
-
-        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.65 }} className="text-center text-xs text-muted-foreground px-4 py-3 rounded-xl glass-card">
+        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="text-center text-xs text-muted-foreground px-4 py-3 rounded-xl glass-card">
           {t('disclaimer.text')}
         </motion.p>
       </div>
