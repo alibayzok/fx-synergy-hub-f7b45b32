@@ -16,16 +16,19 @@ import { useNavigate } from 'react-router-dom';
 import { formatFullDateTime } from '@/lib/date-utils';
 import { useBatchUpdates } from '@/hooks/useSignalUpdates';
 import { UpdatesSection } from '@/components/updates/UpdatesSection';
+import { AnalysisFormDialog } from '@/components/admin/AnalysisFormDialog';
+import { Plus } from 'lucide-react';
 
 const AnalysesPage = () => {
   const { t, i18n } = useTranslation();
-  const { analyses, loading, likeAnalysis, unlikeAnalysis } = useAnalyses();
-  const { isVip } = useAuth();
+  const { analyses, loading, likeAnalysis, unlikeAnalysis, fetchAnalyses } = useAnalyses();
+  const { isVip, isAdmin } = useAuth();
   const { getBoolean } = useAppSettings();
   const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState<string>('all');
   const [likedAnalyses, setLikedAnalyses] = useState<Set<string>>(new Set());
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
 
   const enabled = getBoolean('enable_analyses', true);
 
@@ -94,8 +97,18 @@ const AnalysesPage = () => {
               <h1 className="text-2xl font-bold">التحليلات</h1>
               <p className="text-sm text-muted-foreground">تحليلات فنية احترافية</p>
             </div>
-          </div>
-        </motion.div>
+           </div>
+           {isAdmin && (
+             <Button
+               size="sm"
+               onClick={() => setShowForm(true)}
+               className="gap-1.5 rounded-xl text-xs shadow-lg shadow-primary/20"
+             >
+               <Plus className="w-3.5 h-3.5" />
+               تحليل جديد
+             </Button>
+           )}
+         </motion.div>
 
         {/* Filter Tabs */}
         <Tabs value={activeFilter} onValueChange={setActiveFilter} dir="rtl">
@@ -262,6 +275,16 @@ const AnalysesPage = () => {
           open={!!selectedImage}
           onClose={() => setSelectedImage(null)}
         />
+
+        {/* Admin Quick Create */}
+        {isAdmin && (
+          <AnalysisFormDialog
+            open={showForm}
+            onOpenChange={setShowForm}
+            analysis={null}
+            onSuccess={() => fetchAnalyses()}
+          />
+        )}
       </div>
     </AppLayout>
   );
