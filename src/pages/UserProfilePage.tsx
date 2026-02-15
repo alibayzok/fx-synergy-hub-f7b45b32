@@ -4,7 +4,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   ArrowRight, ArrowLeft, Crown, Shield, Calendar, MessageSquare,
-  UserPlus, UserMinus, Users, Check, X, Loader2, Mail, Ban, MoreVertical
+  UserPlus, UserMinus, Users, Check, X, Loader2, Mail, Ban, MoreVertical,
+  Eye, Headphones
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
@@ -49,7 +50,7 @@ interface UserProfile {
 }
 
 interface UserRole {
-  role: 'admin' | 'vip' | 'free';
+  role: 'admin' | 'moderator' | 'support' | 'vip' | 'free';
 }
 
 const UserProfilePage = () => {
@@ -110,7 +111,7 @@ const UserProfilePage = () => {
           .eq('user_id', userId)
           .single();
         
-        setUserRole(roleData);
+        setUserRole(roleData as UserRole | null);
 
         // Fetch community stats
         const [{ count: threadsCount }, { count: repliesCount }] = await Promise.all([
@@ -190,6 +191,8 @@ const UserProfilePage = () => {
 
   const displayName = profile?.display_name || profile?.username || t('community.anonymous');
   const isAdmin = userRole?.role === 'admin';
+  const isMod = userRole?.role === 'moderator';
+  const isSup = userRole?.role === 'support';
   const isVip = userRole?.role === 'vip';
   const isOwnProfile = user?.id === userId;
 
@@ -321,7 +324,19 @@ const UserProfilePage = () => {
                     Admin
                   </Badge>
                 )}
-                {isVip && !isAdmin && (
+                {isMod && !isAdmin && (
+                  <Badge className="bg-emerald-500/15 text-emerald-500 border border-emerald-500/20 gap-1">
+                    <Eye className="w-3 h-3" />
+                    {isArabic ? 'مشرف' : 'Moderator'}
+                  </Badge>
+                )}
+                {isSup && !isAdmin && (
+                  <Badge className="bg-cyan-500/15 text-cyan-500 border border-cyan-500/20 gap-1">
+                    <Headphones className="w-3 h-3" />
+                    {isArabic ? 'دعم فني' : 'Support'}
+                  </Badge>
+                )}
+                {isVip && !isAdmin && !isMod && !isSup && (
                   <Badge className="bg-vip text-vip-foreground gap-1">
                     <Crown className="w-3 h-3" />
                     VIP

@@ -451,6 +451,8 @@
     "roleUpdated": "تم تحديث صلاحية المستخدم",
     "roles": {
       "admin": "مدير",
+      "moderator": "مشرف",
+      "support": "دعم فني",
       "vip": "VIP",
       "free": "مجاني"
     },

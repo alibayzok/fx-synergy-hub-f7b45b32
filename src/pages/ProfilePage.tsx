@@ -65,7 +65,7 @@ const ProfilePage = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, isAdmin, isVip, signOut, loading } = useAuth();
+  const { user, isAdmin, isModerator, isSupport, isVip, signOut, loading } = useAuth();
   const { profile, updateProfile, uploadAvatar, uploadingAvatar, deleteAvatar } = useProfile();
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const { watchlist } = useMarketData();
@@ -309,7 +309,19 @@ const ProfilePage = () => {
                       Admin
                     </Badge>
                   )}
-                  {isVip && !isAdmin && (
+                  {isModerator && !isAdmin && (
+                    <Badge className="bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 gap-1 px-3 py-1">
+                      <Shield className="w-3 h-3" />
+                      {isRTL ? 'مشرف' : 'Moderator'}
+                    </Badge>
+                  )}
+                  {isSupport && !isAdmin && !isModerator && (
+                    <Badge className="bg-cyan-500/15 text-cyan-500 border border-cyan-500/30 gap-1 px-3 py-1">
+                      <Headset className="w-3 h-3" />
+                      {isRTL ? 'دعم فني' : 'Support'}
+                    </Badge>
+                  )}
+                  {isVip && !isAdmin && !isModerator && !isSupport && (
                     <Badge className="bg-vip/15 text-vip border border-vip/30 gap-1 px-3 py-1 vip-glow">
                       <Crown className="w-3 h-3" />
                       VIP
@@ -345,16 +357,16 @@ const ProfilePage = () => {
         </motion.div>
 
         {/* ═══════════════════════════════════════════ */}
-        {/* ★ QUICK ACTIONS (Admin/Support) ★ */}
+        {/* ★ QUICK ACTIONS (Admin/Moderator/Support) ★ */}
         {/* ═══════════════════════════════════════════ */}
-        {(isAdmin || isSupportAgent) && (
+        {(isAdmin || isModerator || isSupport || isSupportAgent) && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.08 }}
             className="grid grid-cols-2 gap-3"
           >
-            {isAdmin && (
+            {(isAdmin || isModerator) && (
               <button
                 onClick={() => navigate('/admin')}
                 className="flex flex-col items-center gap-2 p-4 rounded-xl glass-card hover-glow transition-all"
@@ -362,10 +374,12 @@ const ProfilePage = () => {
                 <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center">
                   <Shield className="w-5 h-5 text-primary" />
                 </div>
-                <span className="text-sm font-medium text-foreground">{t('admin.title')}</span>
+                <span className="text-sm font-medium text-foreground">
+                  {isModerator && !isAdmin ? (isRTL ? 'لوحة المشرف' : 'Moderator Panel') : t('admin.title')}
+                </span>
               </button>
             )}
-            {(isAdmin || isSupportAgent) && (
+            {(isAdmin || isSupport || isSupportAgent) && (
               <button
                 onClick={() => navigate('/support-dashboard')}
                 className="flex flex-col items-center gap-2 p-4 rounded-xl glass-card hover-glow transition-all"
@@ -373,7 +387,7 @@ const ProfilePage = () => {
                 <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center">
                   <Headset className="w-5 h-5 text-primary" />
                 </div>
-                <span className="text-sm font-medium text-foreground">لوحة الدعم</span>
+                <span className="text-sm font-medium text-foreground">{isRTL ? 'لوحة الدعم' : 'Support Panel'}</span>
               </button>
             )}
           </motion.div>

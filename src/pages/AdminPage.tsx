@@ -67,15 +67,26 @@ const componentMap: Record<string, React.FC> = {
 const AdminPage = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { user, isAdmin, loading: authLoading } = useAuth();
+  const { user, isAdmin, isModerator, loading: authLoading } = useAuth();
   const isRTL = i18n.language === 'ar';
   const [activeSection, setActiveSection] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!authLoading && !isAdmin) navigate('/');
-  }, [isAdmin, authLoading, navigate]);
+  // Moderators can access content sections, admins can access everything
+  const hasAccess = isAdmin || isModerator;
+  const moderatorOnlyItems = ['analyses', 'signals', 'articles', 'courses', 'moderation'];
 
-  if (authLoading || !isAdmin) {
+  useEffect(() => {
+    if (!authLoading && !hasAccess) navigate('/');
+  }, [hasAccess, authLoading, navigate]);
+
+  // Block moderators from accessing system sections
+  useEffect(() => {
+    if (!isAdmin && activeSection && !moderatorOnlyItems.includes(activeSection)) {
+      setActiveSection(null);
+    }
+  }, [isAdmin, activeSection]);
+
+  if (authLoading || !hasAccess) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
@@ -85,6 +96,14 @@ const AdminPage = () => {
       </div>
     );
   }
+
+  // Moderators only see content sections, admins see everything
+  const visibleSections = isAdmin 
+    ? contentSections 
+    : contentSections.map(s => ({
+        ...s,
+        items: s.items.filter(i => moderatorOnlyItems.includes(i.value))
+      })).filter(s => s.items.length > 0);
 
   // Find active item info for breadcrumb
   const activeItem = contentSections.flatMap(s => s.items).find(i => i.value === activeSection);
@@ -155,34 +174,36 @@ const AdminPage = () => {
               </div>
             </motion.div>
 
-            {/* Stats */}
-            <DashboardStats />
+            {/* Stats - admin only */}
+            {isAdmin && <DashboardStats />}
 
-            {/* Quick Actions */}
-            <div className="grid grid-cols-2 gap-3">
-              <Button
-                onClick={() => navigate('/admin/subscriptions')}
-                className={cn(
-                  "h-auto py-4 rounded-2xl gap-2 text-sm font-semibold",
-                  "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600",
-                  "text-white border-0 shadow-lg shadow-amber-500/20"
-                )}
-              >
-                <Crown className="w-5 h-5" />
-                إدارة VIP
-              </Button>
-              <Button
-                onClick={() => navigate('/support-dashboard')}
-                variant="outline"
-                className="h-auto py-4 rounded-2xl gap-2 text-sm font-semibold border-border/30 hover:bg-card/50"
-              >
-                <Shield className="w-5 h-5 text-primary" />
-                لوحة الدعم
-              </Button>
-            </div>
+            {/* Quick Actions - admin only */}
+            {isAdmin && (
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  onClick={() => navigate('/admin/subscriptions')}
+                  className={cn(
+                    "h-auto py-4 rounded-2xl gap-2 text-sm font-semibold",
+                    "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600",
+                    "text-white border-0 shadow-lg shadow-amber-500/20"
+                  )}
+                >
+                  <Crown className="w-5 h-5" />
+                  إدارة VIP
+                </Button>
+                <Button
+                  onClick={() => navigate('/support-dashboard')}
+                  variant="outline"
+                  className="h-auto py-4 rounded-2xl gap-2 text-sm font-semibold border-border/30 hover:bg-card/50"
+                >
+                  <Shield className="w-5 h-5 text-primary" />
+                  لوحة الدعم
+                </Button>
+              </div>
+            )}
 
             {/* Card Sections */}
-            {contentSections.map((section, sIdx) => (
+            {visibleSections.map((section, sIdx) => (
               <motion.section
                 key={section.title}
                 initial={{ opacity: 0, y: 15 }}
@@ -229,19 +250,21 @@ const AdminPage = () => {
               </motion.section>
             ))}
 
-            {/* Recent Activity */}
-            <motion.section
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="space-y-3"
-            >
-              <div className="flex items-center gap-2 px-1">
-                <div className="h-5 w-1 rounded-full bg-primary" />
-                <h3 className="text-base font-bold text-foreground">{t('admin.activity.title')}</h3>
-              </div>
-              <RecentActivity />
-            </motion.section>
+            {/* Recent Activity - admin only */}
+            {isAdmin && (
+              <motion.section
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="space-y-3"
+              >
+                <div className="flex items-center gap-2 px-1">
+                  <div className="h-5 w-1 rounded-full bg-primary" />
+                  <h3 className="text-base font-bold text-foreground">{t('admin.activity.title')}</h3>
+                </div>
+                <RecentActivity />
+              </motion.section>
+            )}
           </div>
         )}
       </div>

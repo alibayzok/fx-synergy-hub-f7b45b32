@@ -57,7 +57,7 @@ export interface Reply {
 }
 
 // User Types
-export type UserRole = 'admin' | 'vip' | 'free';
+export type UserRole = 'admin' | 'moderator' | 'support' | 'vip' | 'free';
 
 export interface User {
   id: string;
