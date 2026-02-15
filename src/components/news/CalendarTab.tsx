@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { Calendar, RefreshCw, Loader2, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar as CalendarIcon, RefreshCw, Loader2, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toLatinNumerals } from '@/lib/date-utils';
@@ -117,7 +119,7 @@ export const CalendarTab = () => {
       {/* Header with date navigation */}
       <div className="px-4 flex items-center justify-between">
         <h2 className="text-base font-bold text-foreground flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-primary" />
+          <CalendarIcon className="w-5 h-5 text-primary" />
           {isArabic ? 'التقويم الاقتصادي' : 'Economic Calendar'}
         </h2>
         <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg" onClick={() => fetchCalendar(selectedDate)} disabled={loading}>
@@ -132,10 +134,27 @@ export const CalendarTab = () => {
             <ChevronRight className="w-4 h-4" />
           </Button>
           
-          <div className="flex flex-col items-center gap-0.5">
-            <span className="text-sm font-bold text-foreground">{selectedDateInfo.dayName}</span>
-            <span className="text-xs text-muted-foreground">{selectedDateInfo.fullDate}</span>
-          </div>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="flex flex-col items-center gap-0.5 hover:opacity-70 transition-opacity cursor-pointer px-3 py-1 rounded-lg">
+                <span className="text-sm font-bold text-foreground">{selectedDateInfo.dayName}</span>
+                <span className="text-xs text-muted-foreground">{selectedDateInfo.fullDate}</span>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="center">
+              <Calendar
+                mode="single"
+                selected={new Date(selectedDate + 'T00:00:00')}
+                onSelect={(date) => {
+                  if (date) {
+                    setSelectedDate(date.toISOString().split('T')[0]);
+                  }
+                }}
+                initialFocus
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
 
           <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => changeDate(1)}>
             <ChevronLeft className="w-4 h-4" />
