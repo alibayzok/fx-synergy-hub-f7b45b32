@@ -25,8 +25,8 @@ const forexPairs: PairConfig[] = [
   { value: 'GBP/JPY', label: 'GBP/JPY', pipSize: 0.01, pipDecimals: 1 },
   { value: 'AUD/JPY', label: 'AUD/JPY', pipSize: 0.01, pipDecimals: 1 },
   { value: 'CAD/JPY', label: 'CAD/JPY', pipSize: 0.01, pipDecimals: 1 },
-  { value: 'XAU/USD', label: 'XAU/USD (Gold)', pipSize: 0.01, pipDecimals: 0 },
-  { value: 'XAG/USD', label: 'XAG/USD (Silver)', pipSize: 0.001, pipDecimals: 1 },
+  { value: 'XAU/USD', label: 'XAU/USD (Gold)', pipSize: 0.10, pipDecimals: 0 },
+  { value: 'XAG/USD', label: 'XAG/USD (Silver)', pipSize: 0.01, pipDecimals: 0 },
 ];
 
 interface PipCalculatorDialogProps {
