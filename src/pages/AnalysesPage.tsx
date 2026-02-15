@@ -13,7 +13,7 @@ import { useAnalyses } from '@/hooks/useAnalyses';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { useNavigate } from 'react-router-dom';
-import { formatTimeAgo } from '@/lib/date-utils';
+import { formatFullDateTime } from '@/lib/date-utils';
 
 const AnalysesPage = () => {
   const { t, i18n } = useTranslation();
@@ -215,7 +215,7 @@ const AnalysesPage = () => {
                           <div className="flex items-center gap-1">
                             <Clock className="w-3.5 h-3.5" />
                             <span>
-                              {formatTimeAgo(analysis.created_at, i18n.language)}
+                              {formatFullDateTime(analysis.created_at, i18n.language)}
                             </span>
                           </div>
                           <div className="flex items-center gap-1">

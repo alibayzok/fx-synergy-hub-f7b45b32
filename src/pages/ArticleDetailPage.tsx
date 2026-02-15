@@ -60,14 +60,13 @@ const ArticleDetailPage = () => {
   const getContent = (a: Article) => isArabic ? a.content_ar : (a.content_en || a.content_ar);
   const getSummary = (a: Article) => isArabic ? (a.summary_ar || '') : (a.summary_en || a.summary_ar || '');
 
-  const timeAgo = (dateStr: string) => {
-    const diff = Date.now() - new Date(dateStr).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 60) return isArabic ? `منذ ${mins} د` : `${mins}m ago`;
-    const hours = Math.floor(mins / 60);
-    if (hours < 24) return isArabic ? `منذ ${hours} س` : `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    return isArabic ? `منذ ${days} ي` : `${days}d ago`;
+  const formatFullDateTime = (dateStr: string) => {
+    const locale = isArabic ? 'ar-EG' : 'en-US';
+    const date = new Date(dateStr);
+    const dateFormatted = date.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' });
+    const timeFormatted = date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', hour12: true });
+    const raw = `${dateFormatted} - ${timeFormatted}`;
+    return raw.replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
   };
 
   if (loading) {
@@ -127,7 +126,7 @@ const ArticleDetailPage = () => {
             </Badge>
             <span className="text-xs text-muted-foreground/60 flex items-center gap-1">
               <Clock className="w-3 h-3" />
-              {timeAgo(article.created_at)}
+              {formatFullDateTime(article.created_at)}
             </span>
           </div>
           <h1 className="text-2xl font-bold text-foreground leading-tight mb-4">{getTitle(article)}</h1>

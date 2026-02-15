@@ -17,6 +17,7 @@ interface Profile {
   phone?: string;
   onboarding_completed?: boolean;
   trading_preferences?: any;
+  referral_code?: string;
   created_at: string;
   updated_at: string;
 }

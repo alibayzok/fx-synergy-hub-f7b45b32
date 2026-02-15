@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { Trophy, Star, Award, History, Crown, ChevronRight, ArrowLeft } from 'lucide-react';
+import { Trophy, Star, Award, History, Crown, ChevronRight, ArrowLeft, Link2, Copy, Check } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useGamification, getLevelProgress, getNextLevelPoints } from '@/hooks/useGamification';
 import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from '@/hooks/useProfile';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
@@ -19,7 +21,22 @@ const GamificationPage = () => {
   const navigate = useNavigate();
   const isArabic = i18n.language === 'ar';
   const [activeTab, setActiveTab] = useState<Tab>('overview');
+  const [refCopied, setRefCopied] = useState(false);
   const { myPoints, badges, myBadges, pointHistory, leaderboard, isLoading } = useGamification();
+  const { profile } = useProfile();
+  const { toast } = useToast();
+
+  const referralCode = profile?.referral_code || '';
+  const referralLink = referralCode ? `https://fx-synergy-hub.lovable.app/?ref=${referralCode}` : '';
+
+  const copyReferralLink = () => {
+    if (referralLink) {
+      navigator.clipboard.writeText(referralLink);
+      setRefCopied(true);
+      toast({ title: isArabic ? 'تم نسخ رابط الإحالة' : 'Referral link copied' });
+      setTimeout(() => setRefCopied(false), 2000);
+    }
+  };
 
   const currentPoints = myPoints?.total_points || 0;
   const currentLevel = myPoints?.level || 1;
@@ -149,6 +166,30 @@ const GamificationPage = () => {
                 ))}
               </div>
             </div>
+
+            {/* Referral Link */}
+            {referralCode && (
+              <div className="p-4 rounded-xl bg-card border border-primary/20 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Link2 className="w-4 h-4 text-primary" />
+                  <h3 className="font-semibold text-foreground text-sm">
+                    {isArabic ? 'رابط الإحالة الخاص بك' : 'Your Referral Link'}
+                  </h3>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {isArabic ? 'شارك الرابط واكسب 50 نقطة لكل صديق يسجل' : 'Share and earn 50 pts for each friend who signs up'}
+                </p>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 bg-muted/50 rounded-lg px-3 py-2 text-xs text-muted-foreground font-mono truncate" dir="ltr">
+                    {referralLink}
+                  </div>
+                  <Button variant="outline" size="sm" onClick={copyReferralLink} className="gap-1.5 h-9 shrink-0">
+                    {refCopied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                    {refCopied ? (isArabic ? 'تم' : 'Copied') : (isArabic ? 'نسخ' : 'Copy')}
+                  </Button>
+                </div>
+              </div>
+            )}
           </>
         )}
 
