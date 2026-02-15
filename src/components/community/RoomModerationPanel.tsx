@@ -16,7 +16,8 @@ import {
   Settings,
   Info,
   VolumeX,
-  Volume2
+  Volume2,
+  Search
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -84,6 +85,7 @@ export const RoomModerationPanel = ({ roomId, roomName, onBack }: RoomModeration
   const [banDuration, setBanDuration] = useState<string>('permanent');
   const [muteReason, setMuteReason] = useState('');
   const [muteDuration, setMuteDuration] = useState<string>('1');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const roleColors = {
     owner: 'bg-amber-500/20 text-amber-500 border-amber-500/30',
@@ -155,7 +157,14 @@ export const RoomModerationPanel = ({ roomId, roomName, onBack }: RoomModeration
   const bannedMembers = members.filter(m => m.status === 'banned');
   const mutedMembers = approvedMembers.filter(m => m.is_muted);
 
-  const sortedMembers = [...approvedMembers].sort((a, b) => {
+  const filterBySearch = (member: RoomMember) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    const name = (member.profile?.display_name || member.profile?.username || '').toLowerCase();
+    return name.includes(q);
+  };
+
+  const sortedMembers = [...approvedMembers].filter(filterBySearch).sort((a, b) => {
     const roleOrder = { owner: 0, moderator: 1, member: 2 };
     return roleOrder[a.role] - roleOrder[b.role];
   });
@@ -357,7 +366,16 @@ export const RoomModerationPanel = ({ roomId, roomName, onBack }: RoomModeration
 
           {/* Members Tab */}
           <TabsContent value="members" className="flex-1 overflow-hidden px-4 pb-4 mt-4">
-            <ScrollArea className="h-full">
+            <div className="relative mb-3">
+              <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder={isArabic ? 'ابحث عن عضو...' : 'Search member...'}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="ps-9 h-9 bg-muted/50 border-border/30"
+              />
+            </div>
+            <ScrollArea className="h-[calc(100%-48px)]">
               <div className="space-y-2">
                 {loading ? (
                   <div className="flex justify-center py-8">
