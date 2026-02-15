@@ -63,7 +63,7 @@ export const RecentActivity = () => {
     setLoading(false);
   };
 
-  const formatTime = (timestamp: string) => formatDistanceToNow(new Date(timestamp), { addSuffix: true, locale: i18n.language === 'ar' ? ar : enUS });
+  const formatTime = (timestamp: string) => formatDistanceToNow(new Date(timestamp), { addSuffix: true, locale: i18n.language === 'ar' ? ar : enUS }).replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
 
   if (loading) return (
     <div className="space-y-2">
