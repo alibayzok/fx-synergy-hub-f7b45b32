@@ -448,6 +448,36 @@ export const useRoomChat = (roomId: string) => {
   const sendMessage = async (content: string, isModerator: boolean = false) => {
     if (!user || !content.trim()) return null;
 
+    // Check if user is muted in this room
+    try {
+      const { data: membership } = await supabase
+        .from('room_members')
+        .select('is_muted, muted_until')
+        .eq('room_id', roomId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (membership?.is_muted) {
+        // Check if mute has expired
+        if (membership.muted_until && new Date(membership.muted_until) < new Date()) {
+          // Mute expired, auto-unmute
+          await supabase
+            .from('room_members')
+            .update({ is_muted: false, muted_reason: null, muted_until: null })
+            .eq('room_id', roomId)
+            .eq('user_id', user.id);
+        } else {
+          const muteMsg = membership.muted_until
+            ? `🔇 أنت مكتوم حتى ${new Date(membership.muted_until).toLocaleString()}`
+            : '🔇 أنت مكتوم في هذه الغرفة';
+          toast({ title: muteMsg, variant: 'destructive' });
+          return { blocked: true, reason: 'muted' };
+        }
+      }
+    } catch (error) {
+      console.error('Error checking mute status:', error);
+    }
+
     // Import and use content moderation
     const { moderateContent, sanitizeContent, getModerationErrorMessage } = await import('@/lib/content-moderation');
     

@@ -1179,7 +1179,10 @@ export type Database = {
           ban_reason: string | null
           banned_until: string | null
           id: string
+          is_muted: boolean
           joined_at: string | null
+          muted_reason: string | null
+          muted_until: string | null
           role: Database["public"]["Enums"]["room_role"] | null
           room_id: string
           status: Database["public"]["Enums"]["room_membership_status"] | null
@@ -1191,7 +1194,10 @@ export type Database = {
           ban_reason?: string | null
           banned_until?: string | null
           id?: string
+          is_muted?: boolean
           joined_at?: string | null
+          muted_reason?: string | null
+          muted_until?: string | null
           role?: Database["public"]["Enums"]["room_role"] | null
           room_id: string
           status?: Database["public"]["Enums"]["room_membership_status"] | null
@@ -1203,7 +1209,10 @@ export type Database = {
           ban_reason?: string | null
           banned_until?: string | null
           id?: string
+          is_muted?: boolean
           joined_at?: string | null
+          muted_reason?: string | null
+          muted_until?: string | null
           role?: Database["public"]["Enums"]["room_role"] | null
           room_id?: string
           status?: Database["public"]["Enums"]["room_membership_status"] | null
