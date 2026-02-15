@@ -86,9 +86,15 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Get requested date from query params
-    const url = new URL(req.url);
-    const requestedDate = url.searchParams.get('date') || new Date().toISOString().split('T')[0];
+    // Get requested date from body or query params
+    let requestedDate = new Date().toISOString().split('T')[0];
+    try {
+      const body = await req.json();
+      if (body?.date) requestedDate = body.date;
+    } catch {
+      const url = new URL(req.url);
+      if (url.searchParams.get('date')) requestedDate = url.searchParams.get('date')!;
+    }
 
     // Fetch real data from Forex Factory JSON feed
     const controller = new AbortController();
