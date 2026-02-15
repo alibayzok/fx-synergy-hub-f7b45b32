@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { MessageSquare } from 'lucide-react';
 import { 
   Settings, 
   Globe, 
@@ -119,6 +120,7 @@ const ProfilePage = () => {
   };
 
   const menuItems = [
+    { icon: MessageSquare, label: 'messages.title', onClick: () => navigate('/messages') },
     { icon: Globe, label: 'profile.language', onClick: () => setShowLanguageDialog(true), value: i18n.language === 'ar' ? 'العربية' : 'English' },
     { icon: Bell, label: 'profile.notifications', onClick: () => setShowNotificationSettings(true) },
     { icon: Star, label: 'profile.watchlist', onClick: () => setShowWatchlistDialog(true), count: watchlist.length },
