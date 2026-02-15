@@ -4,8 +4,8 @@ import { ar, enUS } from 'date-fns/locale';
 /**
  * Replaces Arabic-Indic numerals (٠-٩) with Latin numerals (0-9)
  */
-export const toLatinNumerals = (str: string): string => {
-  return str.replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
+export const toLatinNumerals = (str: string | number | null | undefined): string => {
+  return String(str ?? '').replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
 };
 
 /**
