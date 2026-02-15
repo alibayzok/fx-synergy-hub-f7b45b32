@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Send, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useServiceRequests, ServiceType } from '@/hooks/useServiceRequests';
+import { useAppSettings } from '@/hooks/useAppSettings';
 import { cn } from '@/lib/utils';
 
 interface UsdtRequestFormProps {
@@ -26,18 +27,37 @@ const NETWORKS = [
   { value: 'BEP20', label: 'BEP20 (BSC)', recommended: false },
 ];
 
-const PAYMENT_METHODS = [
-  { value: 'bank_transfer', label: 'services.usdtSection.paymentMethods.bankTransfer' },
-  { value: 'omt', label: 'services.usdtSection.paymentMethods.omt' },
-  { value: 'whish', label: 'services.usdtSection.paymentMethods.whish' },
-  { value: 'cash', label: 'services.usdtSection.paymentMethods.cash' },
-];
+// Payment methods are managed from CMS app settings:
+// usdt_payment_methods: comma-separated list of "key:label" e.g. "omt:OMT,whish:Whish Money,cash:نقدي"
 
 export const UsdtRequestForm = ({ selectedType, onSuccess }: UsdtRequestFormProps) => {
   const { t } = useTranslation();
+  const { getSetting } = useAppSettings();
   const { createRequest } = useServiceRequests();
   const [submitting, setSubmitting] = useState(false);
-  
+
+  const paymentMethods = useMemo(() => {
+    const raw = (getSetting('usdt_payment_methods', '') || '').trim();
+    // format: key:label,key2:label2
+    if (!raw) {
+      return [
+        { value: 'bank_transfer', label: t('services.usdtSection.paymentMethods.bank_transfer') },
+        { value: 'omt', label: t('services.usdtSection.paymentMethods.omt') },
+        { value: 'whish', label: t('services.usdtSection.paymentMethods.whish') },
+        { value: 'cash', label: t('services.usdtSection.paymentMethods.cash') },
+      ];
+    }
+    return raw
+      .split(',')
+      .map((p) => p.trim())
+      .filter(Boolean)
+      .map((pair) => {
+        const [key, ...rest] = pair.split(':');
+        const label = rest.join(':') || key;
+        return { value: key.trim(), label: label.trim() };
+      });
+  }, [getSetting, t]);
+
   const [formData, setFormData] = useState({
     amount: '',
     network: 'TRC20',
@@ -140,9 +160,9 @@ export const UsdtRequestForm = ({ selectedType, onSuccess }: UsdtRequestFormProp
               <SelectValue placeholder={t('services.usdtSection.selectPayment')} />
             </SelectTrigger>
             <SelectContent>
-              {PAYMENT_METHODS.map((method) => (
+              {paymentMethods.map((method) => (
                 <SelectItem key={method.value} value={method.value}>
-                  {t(method.label)}
+                  {method.label}
                 </SelectItem>
               ))}
             </SelectContent>
