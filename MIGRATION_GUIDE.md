@@ -12,18 +12,13 @@
 4. [تنفيذ Schema](#-الخطوة-3-تنفيذ-schema)
 5. [تحديث الإعدادات](#-الخطوة-4-تحديث-الإعدادات)
 6. [نشر Edge Functions](#-الخطوة-5-نشر-edge-functions)
-7. [التشغيل المحلي](#-الخطوة-6-التشغيل-المحلي)
-8. [بناء APK](#-الخطوة-7-بناء-apk-للأندرويد)
-9. [النشر على الويب](#-الخطوة-8-النشر-على-الويب)
-10. [ترحيل البيانات](#-الخطوة-9-ترحيل-البيانات-اختياري)
-11. [إعداد Google OAuth](#-الخطوة-10-إعداد-google-oauth)
-12. [قائمة التحقق](#-قائمة-التحقق-النهائية)
-5. [تحديث الإعدادات](#-الخطوة-4-تحديث-الإعدادات)
-6. [التشغيل المحلي](#-الخطوة-5-التشغيل-المحلي)
-7. [بناء APK](#-الخطوة-6-بناء-apk-للأندرويد)
-8. [النشر على الويب](#-الخطوة-7-النشر-على-الويب)
-9. [ترحيل البيانات](#-الخطوة-8-ترحيل-البيانات-اختياري)
-10. [قائمة التحقق](#-قائمة-التحقق-النهائية)
+7. [إعداد Firebase FCM](#-الخطوة-6-إعداد-firebase-fcm)
+8. [التشغيل المحلي](#-الخطوة-7-التشغيل-المحلي)
+9. [بناء APK](#-الخطوة-8-بناء-apk-للأندرويد)
+10. [النشر على الويب](#-الخطوة-9-النشر-على-الويب)
+11. [ترحيل البيانات](#-الخطوة-10-ترحيل-البيانات-اختياري)
+12. [إعداد Google OAuth](#-الخطوة-11-إعداد-google-oauth)
+13. [قائمة التحقق](#-قائمة-التحقق-النهائية)
 
 ---
 
@@ -91,20 +86,49 @@ npm install
 5. اضغط **Run**
 
 ### 3.2 التحقق من النجاح
-اذهب إلى **Table Editor** وتأكد من وجود جميع الجداول (37 جدول):
-- `profiles`, `user_roles`, `user_privacy_settings`
-- `trades`, `trade_comments`, `trade_comment_likes`, `trade_followers`, `trade_shares`
-- `analyses`, `analysis_likes`
+اذهب إلى **Table Editor** وتأكد من وجود جميع الجداول (48 جدول):
+
+**المستخدمون والأدوار:**
+- `profiles`, `user_roles`, `user_blocks`, `user_privacy_settings`
+
+**الإشارات والتحليلات:**
+- `signals`, `signal_likes`, `analyses`, `analysis_likes`
+
+**المنشورات:**
 - `user_posts`, `post_likes`, `post_comments`
+
+**المجتمع:**
 - `community_rooms`, `room_members`, `room_join_requests`, `room_messages`
 - `threads`, `replies`, `reply_likes`
+
+**التعلم:**
 - `learning_categories`, `learning_courses`, `learning_lessons`
+
+**الرسائل:**
 - `conversations`, `conversation_participants`, `direct_messages`
+
+**العلاقات:**
 - `follows`, `friend_requests`
-- `service_requests`, `usdt_listings`
-- `flagged_content`, `user_notifications`, `admin_notifications`
-- `app_settings`
+
+**الخدمات:**
+- `service_requests`, `usdt_listings`, `brokers`, `services`
+
+**VIP والاشتراكات:**
+- `vip_subscriptions`, `subscription_messages`
+
+**البطاقات والجلسات:**
+- `virtual_cards`, `live_sessions`, `live_session_messages`
+
+**التلعيب (Gamification):**
+- `user_points`, `point_transactions`, `badges`, `user_badges`
+- `user_streaks`, `daily_quests`, `user_daily_progress`
+
+**الإشعارات والدعم:**
+- `user_notifications`, `admin_notifications`, `fcm_tokens`
 - `support_tickets`, `support_messages`, `support_agents`
+
+**الإعدادات:**
+- `app_settings`, `flagged_content`, `articles`
 
 ---
 
@@ -147,7 +171,7 @@ const config: CapacitorConfig = {
 
 ## ⚡ الخطوة 5: نشر Edge Functions
 
-المشروع يحتوي على 4 وظائف خلفية (Edge Functions) يجب نشرها:
+المشروع يحتوي على **8 وظائف خلفية** (Edge Functions) يجب نشرها:
 
 ### 5.1 تثبيت Supabase CLI
 ```bash
@@ -165,14 +189,21 @@ supabase link --project-ref YOUR_PROJECT_ID
 supabase secrets set GOOGLE_AI_API_KEY=your_google_ai_key
 supabase secrets set FINNHUB_API_KEY=your_finnhub_key
 supabase secrets set LOVABLE_API_KEY=your_lovable_api_key
+supabase secrets set MARQETA_APP_TOKEN=your_marqeta_app_token
+supabase secrets set MARQETA_ADMIN_TOKEN=your_marqeta_admin_token
+supabase secrets set MARQETA_BASE_URL=your_marqeta_base_url
 ```
 
 ### 5.4 نشر الوظائف
 ```bash
 supabase functions deploy chat
 supabase functions deploy market-data
-supabase functions deploy check-trade-targets
 supabase functions deploy moderate-image
+supabase functions deploy send-push-notification
+supabase functions deploy fetch-news
+supabase functions deploy fetch-article
+supabase functions deploy fetch-calendar
+supabase functions deploy marqeta-cards
 ```
 
 ### 5.5 وصف الوظائف
@@ -180,51 +211,77 @@ supabase functions deploy moderate-image
 |---------|-------|-----------------|
 | `chat` | المساعد الذكي (AI Chat) | `GOOGLE_AI_API_KEY` |
 | `market-data` | بيانات الأسواق اللحظية | `FINNHUB_API_KEY` |
-| `check-trade-targets` | فحص أهداف الصفقات | `FINNHUB_API_KEY` |
 | `moderate-image` | فحص الصور المرفوعة | `LOVABLE_API_KEY` |
+| `send-push-notification` | إرسال إشعارات FCM | `SUPABASE_SERVICE_ROLE_KEY` |
+| `fetch-news` | جلب أخبار الأسواق | - |
+| `fetch-article` | جلب تفاصيل المقالات | - |
+| `fetch-calendar` | جلب التقويم الاقتصادي | - |
+| `marqeta-cards` | إدارة البطاقات الافتراضية | `MARQETA_APP_TOKEN`, `MARQETA_ADMIN_TOKEN`, `MARQETA_BASE_URL` |
 
 ---
 
-## 🖥️ الخطوة 6: التشغيل المحلي
+## 🔔 الخطوة 6: إعداد Firebase FCM
 
-### 6.1 تشغيل خادم التطوير
+إشعارات الدفع (Push Notifications) مُعدّة بالفعل في الكود باستخدام Firebase Cloud Messaging.
+
+### 6.1 إعداد مشروع Firebase
+1. اذهب إلى [Firebase Console](https://console.firebase.google.com)
+2. أنشئ مشروعاً أو استخدم مشروع `assassin-fx` الموجود
+3. فعّل **Cloud Messaging**
+
+### 6.2 تحديث الإعدادات (إذا لزم الأمر)
+الإعدادات الحالية موجودة في:
+- `src/lib/firebase-config.ts` - إعدادات Firebase + VAPID Key
+- `public/sw.js` - Service Worker لاستقبال الإشعارات في الخلفية
+
+### 6.3 ملاحظة
+إذا كنت تستخدم مشروع Firebase مختلف، عدّل:
+- `firebaseConfig` في `src/lib/firebase-config.ts`
+- `firebase.initializeApp()` في `public/sw.js`
+- أنشئ VAPID Key جديد من **Cloud Messaging → Web Push certificates**
+
+---
+
+## 🖥️ الخطوة 7: التشغيل المحلي
+
+### 7.1 تشغيل خادم التطوير
 ```bash
 npm run dev
 ```
 
-### 6.2 فتح التطبيق
+### 7.2 فتح التطبيق
 افتح المتصفح على: `http://localhost:8080`
 
-### 6.3 اختبار التسجيل والدخول
+### 7.3 اختبار التسجيل والدخول
 1. أنشئ حساب جديد
 2. تحقق من البريد الإلكتروني (أو فعّل auto-confirm في Supabase)
 3. سجّل الدخول
 
 ---
 
-## 📱 الخطوة 7: بناء APK للأندرويد
+## 📱 الخطوة 8: بناء APK للأندرويد
 
-### 7.1 بناء ملفات الويب
+### 8.1 بناء ملفات الويب
 ```bash
 npm run build
 ```
 
-### 7.2 إضافة Android Platform
+### 8.2 إضافة Android Platform
 ```bash
 npx cap add android
 ```
 
-### 7.3 مزامنة المشروع
+### 8.3 مزامنة المشروع
 ```bash
 npx cap sync android
 ```
 
-### 7.4 فتح Android Studio
+### 8.4 فتح Android Studio
 ```bash
 npx cap open android
 ```
 
-### 7.5 بناء APK موقّع
+### 8.5 بناء APK موقّع
 في Android Studio:
 1. **Build → Generate Signed Bundle / APK**
 2. اختر **APK**
@@ -239,7 +296,7 @@ android/app/release/app-release.apk
 
 ---
 
-## 🌐 الخطوة 8: النشر على الويب
+## 🌐 الخطوة 9: النشر على الويب
 
 ### Vercel (موصى به)
 ```bash
@@ -258,14 +315,14 @@ netlify deploy --prod
 
 ---
 
-## 📊 الخطوة 9: ترحيل البيانات (اختياري)
+## 📊 الخطوة 10: ترحيل البيانات (اختياري)
 
-### 9.1 تصدير البيانات من Lovable
+### 10.1 تصدير البيانات من Lovable
 1. اذهب إلى `/admin` في التطبيق
 2. اختر تبويب **تصدير**
-3. حمّل **نسخة احتياطية كاملة** (تشمل 37 جدول + هيكل + إعدادات)
+3. حمّل **نسخة احتياطية كاملة** (تشمل 48 جدول + هيكل + إعدادات)
 
-### 9.2 استيراد البيانات
+### 10.2 استيراد البيانات
 استخدم Supabase Dashboard:
 1. **Table Editor → Import**
 2. اختر ملف CSV أو أدخل البيانات يدوياً
@@ -277,20 +334,54 @@ netlify deploy --prod
 
 ---
 
+## 🔐 الخطوة 11: إعداد Google OAuth
+
+### 11.1 إنشاء OAuth في Google Cloud
+1. اذهب إلى [Google Cloud Console](https://console.cloud.google.com)
+2. أنشئ مشروع جديد أو اختر مشروعاً موجوداً
+3. فعّل **Google+ API**
+4. اذهب إلى **APIs & Services → Credentials**
+5. اضغط **Create Credentials → OAuth Client ID**
+6. اختر **Web application**
+
+### 11.2 إعداد Redirect URIs
+أضف هذه الروابط في **Authorized redirect URIs**:
+```
+https://YOUR_PROJECT_ID.supabase.co/auth/v1/callback
+```
+
+### 11.3 إعداد Supabase
+1. في Supabase Dashboard: **Authentication → Providers → Google**
+2. فعّل Google Provider
+3. الصق **Client ID** و **Client Secret**
+
+### 11.4 تحديث الكود
+عدّل ملف `src/lib/auth-helpers.ts`:
+```typescript
+const USE_LOVABLE_AUTH = false;  // غيّر من true إلى false
+```
+
+---
+
 ## ✅ قائمة التحقق النهائية
 
 ### إعداد Supabase
 - [ ] إنشاء مشروع جديد
-- [ ] تنفيذ `scripts/export-schema.sql` (37 جدول)
+- [ ] تنفيذ `scripts/export-schema.sql` (48 جدول)
 - [ ] التحقق من إنشاء جميع الجداول
 - [ ] تفعيل RLS على جميع الجداول
-- [ ] التحقق من حاويات التخزين الـ 6
+- [ ] التحقق من حاويات التخزين الـ 7
 
 ### Edge Functions
 - [ ] تثبيت Supabase CLI
 - [ ] إعداد الأسرار (API Keys)
-- [ ] نشر وظائف: `chat`, `market-data`, `check-trade-targets`, `moderate-image`
+- [ ] نشر 8 وظائف: `chat`, `market-data`, `moderate-image`, `send-push-notification`, `fetch-news`, `fetch-article`, `fetch-calendar`, `marqeta-cards`
 - [ ] اختبار المساعد الذكي وبيانات الأسواق
+
+### Firebase FCM
+- [ ] التحقق من إعدادات Firebase في `firebase-config.ts`
+- [ ] التحقق من Service Worker في `public/sw.js`
+- [ ] اختبار إشعارات الدفع
 
 ### إعداد المشروع
 - [ ] استنساخ الكود من GitHub
@@ -316,35 +407,8 @@ netlify deploy --prod
 - [ ] اختبار التسجيل الجديد
 - [ ] اختبار نظام الدعم الفني
 - [ ] اختبار إعدادات CMS
-
----
-
-## 🔐 الخطوة 10: إعداد Google OAuth
-
-### 9.1 إنشاء OAuth في Google Cloud
-1. اذهب إلى [Google Cloud Console](https://console.cloud.google.com)
-2. أنشئ مشروع جديد أو اختر مشروعاً موجوداً
-3. فعّل **Google+ API**
-4. اذهب إلى **APIs & Services → Credentials**
-5. اضغط **Create Credentials → OAuth Client ID**
-6. اختر **Web application**
-
-### 9.2 إعداد Redirect URIs
-أضف هذه الروابط في **Authorized redirect URIs**:
-```
-https://YOUR_PROJECT_ID.supabase.co/auth/v1/callback
-```
-
-### 9.3 إعداد Supabase
-1. في Supabase Dashboard: **Authentication → Providers → Google**
-2. فعّل Google Provider
-3. الصق **Client ID** و **Client Secret**
-
-### 9.4 تحديث الكود
-عدّل ملف `src/lib/auth-helpers.ts`:
-```typescript
-const USE_LOVABLE_AUTH = false;  // غيّر من true إلى false
-```
+- [ ] اختبار نظام التلعيب (النقاط/الشارات)
+- [ ] اختبار إشعارات الدفع (FCM)
 
 ---
 
@@ -367,6 +431,11 @@ const USE_LOVABLE_AUTH = false;  // غيّر من true إلى false
 - تأكد من إعداد Google OAuth في Supabase Dashboard
 - تحقق من صحة Redirect URI
 
+### "Push Notifications لا تعمل"
+- تأكد من إعدادات Firebase في `firebase-config.ts`
+- تأكد من تشغيل Service Worker بشكل صحيح
+- تحقق من أن `send-push-notification` Edge Function منشورة
+
 ---
 
 ## 📞 الدعم
@@ -376,3 +445,4 @@ const USE_LOVABLE_AUTH = false;  // غيّر من true إلى false
 2. تحقق من Logs في Supabase Dashboard
 3. راجع [وثائق Supabase](https://supabase.com/docs)
 4. راجع [وثائق Capacitor](https://capacitorjs.com/docs)
+5. راجع [وثائق Firebase](https://firebase.google.com/docs)
