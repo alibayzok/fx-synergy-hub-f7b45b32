@@ -75,10 +75,11 @@ const MessagesPage = () => {
   });
 
   const formatTime = (dateStr: string) => {
-    return formatDistanceToNow(new Date(dateStr), {
+    const result = formatDistanceToNow(new Date(dateStr), {
       addSuffix: true,
       locale: isArabic ? ar : enUS
     });
+    return result.replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
   };
 
   const getConversationName = (conv: Conversation) => {
@@ -342,10 +343,11 @@ const ChatView = ({ conversationId, onBack, isOnline }: ChatViewProps) => {
   };
 
   const formatTime = (dateStr: string) => {
-    return formatDistanceToNow(new Date(dateStr), {
+    const result = formatDistanceToNow(new Date(dateStr), {
       addSuffix: true,
       locale: isArabic ? ar : enUS
     });
+    return result.replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
   };
 
   const conversationName = conversation?.type === 'group' 
