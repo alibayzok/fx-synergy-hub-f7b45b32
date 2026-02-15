@@ -12,8 +12,7 @@ import { useSupport, SupportTicket, SupportMessage } from '@/hooks/useSupport';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, Send, Plus, MessageCircle, LogIn, CheckCircle2, ImagePlus, X, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
-import { ar } from 'date-fns/locale';
+import { formatDate as formatDateUtil } from '@/lib/date-utils';
 
 type View = 'list' | 'chat' | 'new';
 
@@ -196,7 +195,7 @@ const SupportPage = () => {
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground">
-                {format(new Date(ticket.updated_at), 'dd MMM yyyy - HH:mm', { locale: ar })}
+                {formatDateUtil(ticket.updated_at, 'dd MMM yyyy - HH:mm', i18n.language)}
               </p>
             </button>
           ))}
@@ -252,7 +251,7 @@ const SupportPage = () => {
               )}>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-xs font-semibold">{msg.is_admin ? '🛡️ الدعم' : 'أنت'}</span>
-                  <span className="text-[10px] text-muted-foreground">{format(new Date(msg.created_at), 'HH:mm', { locale: ar })}</span>
+                  <span className="text-[10px] text-muted-foreground">{formatDateUtil(msg.created_at, 'HH:mm', i18n.language)}</span>
                 </div>
                 {msg.content && <p className="text-sm whitespace-pre-wrap">{msg.content}</p>}
                 {msg.attachments && msg.attachments.length > 0 && (

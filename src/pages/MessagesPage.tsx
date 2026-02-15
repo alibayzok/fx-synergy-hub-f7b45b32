@@ -34,8 +34,7 @@ import { useConversations, useConversationMessages, Conversation } from '@/hooks
 import { useBlockUser } from '@/hooks/useBlockUser';
 import { usePresence } from '@/hooks/usePresence';
 import { cn } from '@/lib/utils';
-import { formatDistanceToNow } from 'date-fns';
-import { ar, enUS } from 'date-fns/locale';
+import { formatTimeAgo } from '@/lib/date-utils';
 
 const MessagesPage = () => {
   const { t, i18n } = useTranslation();
@@ -74,13 +73,7 @@ const MessagesPage = () => {
     return name.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
-  const formatTime = (dateStr: string) => {
-    const result = formatDistanceToNow(new Date(dateStr), {
-      addSuffix: true,
-      locale: isArabic ? ar : enUS
-    });
-    return result.replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
-  };
+  const formatTime = (dateStr: string) => formatTimeAgo(dateStr, i18n.language);
 
   const getConversationName = (conv: Conversation) => {
     if (conv.type === 'group') return conv.name || t('messages.group');
@@ -342,13 +335,7 @@ const ChatView = ({ conversationId, onBack, isOnline }: ChatViewProps) => {
     setShowDeleteDialog(null);
   };
 
-  const formatTime = (dateStr: string) => {
-    const result = formatDistanceToNow(new Date(dateStr), {
-      addSuffix: true,
-      locale: isArabic ? ar : enUS
-    });
-    return result.replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
-  };
+  const formatTime = (dateStr: string) => formatTimeAgo(dateStr, i18n.language);
 
   const conversationName = conversation?.type === 'group' 
     ? conversation.name 

@@ -271,7 +271,7 @@ export const ArticlesManagement = () => {
                         )}
                         <span className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
                           <Clock className="w-3 h-3" />
-                          {new Date(article.created_at).toLocaleDateString('ar')}
+                          {new Date(article.created_at).toLocaleDateString('ar-EG')}
                         </span>
                       </div>
                       <div className="flex items-center gap-1">

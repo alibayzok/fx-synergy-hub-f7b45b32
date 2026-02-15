@@ -254,7 +254,7 @@ const GamificationPage = () => {
                     {isArabic ? tx.description_ar : tx.description_en}
                   </p>
                   <p className="text-[10px] text-muted-foreground">
-                    {new Date(tx.created_at).toLocaleDateString(isArabic ? 'ar' : 'en')}
+                    {new Date(tx.created_at).toLocaleDateString(isArabic ? 'ar-EG' : 'en')}
                   </p>
                 </div>
                 <span className={cn(

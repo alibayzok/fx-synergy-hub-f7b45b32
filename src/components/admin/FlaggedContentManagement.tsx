@@ -22,8 +22,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
-import { ar } from 'date-fns/locale';
+import { formatDate } from '@/lib/date-utils';
 
 interface FlaggedContent {
   id: string;
@@ -300,7 +299,7 @@ const FlaggedContentManagement = () => {
                           <span>{item.profile?.display_name || item.profile?.username || 'مستخدم'}</span>
                           <span>•</span>
                           <Clock className="w-4 h-4" />
-                          <span>{format(new Date(item.created_at), 'dd MMM yyyy HH:mm', { locale: ar })}</span>
+                          <span>{formatDate(item.created_at, 'dd MMM yyyy HH:mm', 'ar')}</span>
                         </div>
 
                         {/* Actions */}
@@ -402,7 +401,7 @@ const FlaggedContentManagement = () => {
                 </div>
                 <div>
                   <p className="text-muted-foreground">تاريخ الاكتشاف</p>
-                  <p className="font-medium">{format(new Date(selectedItem.created_at), 'dd MMM yyyy HH:mm', { locale: ar })}</p>
+                  <p className="font-medium">{formatDate(selectedItem.created_at, 'dd MMM yyyy HH:mm', 'ar')}</p>
                 </div>
                 {selectedItem.reviewed && (
                   <div>

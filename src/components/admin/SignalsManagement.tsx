@@ -183,7 +183,7 @@ export const SignalsManagement = () => {
                     <div className="flex items-center gap-4 text-xs text-muted-foreground/60">
                       <span className="flex items-center gap-1"><Eye className="w-3.5 h-3.5" />{signal.views_count}</span>
                       <span className="flex items-center gap-1"><Heart className="w-3.5 h-3.5" />{signal.likes_count}</span>
-                      <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{new Date(signal.created_at).toLocaleDateString('ar')}</span>
+                      <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{new Date(signal.created_at).toLocaleDateString('ar-EG')}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-1">

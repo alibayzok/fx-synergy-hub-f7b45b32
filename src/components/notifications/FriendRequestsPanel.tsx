@@ -18,8 +18,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { formatDistanceToNow } from 'date-fns';
-import { ar, enUS } from 'date-fns/locale';
+import { formatTimeAgo } from '@/lib/date-utils';
 
 interface FriendRequest {
   id: string;
@@ -136,12 +135,7 @@ export const FriendRequestsPanel = () => {
     }
   };
 
-  const formatTime = (dateStr: string) => {
-    return formatDistanceToNow(new Date(dateStr), {
-      addSuffix: true,
-      locale: isArabic ? ar : enUS
-    });
-  };
+  const formatTime = (dateStr: string) => formatTimeAgo(dateStr, i18n.language);
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>

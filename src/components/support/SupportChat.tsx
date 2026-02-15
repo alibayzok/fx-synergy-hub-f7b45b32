@@ -12,8 +12,8 @@ import {
   ArrowUpRight, Forward, RotateCcw, User, Shield, Clock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
-import { ar } from 'date-fns/locale';
+import { formatDate } from '@/lib/date-utils';
+import { useTranslation } from 'react-i18next';
 
 interface Ticket {
   id: string;
@@ -85,6 +85,7 @@ const SupportChat = ({
   ticket, messages, agents, userId,
   getUserName, onClose, onReopen, onPriorityChange, onAssign, onTransfer, onTicketUpdate
 }: SupportChatProps) => {
+  const { i18n } = useTranslation();
   const { uploadAttachment } = useSupport();
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
@@ -285,7 +286,7 @@ const SupportChat = ({
                     {msg.is_admin ? getUserName(msg.sender_id) : getUserName(ticket.user_id)}
                   </span>
                   <span className="text-[10px] text-muted-foreground">
-                    {format(new Date(msg.created_at), 'HH:mm', { locale: ar })}
+                    {formatDate(msg.created_at, 'HH:mm', i18n.language)}
                   </span>
                 </div>
                 {msg.content && msg.content !== '📎 مرفق' && (

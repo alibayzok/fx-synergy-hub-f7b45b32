@@ -72,7 +72,7 @@ export const MyRequestsSection = ({ requests, loading }: MyRequestsSectionProps)
                     {t(`services.${request.type}`)}
                   </Badge>
                   <p className="text-xs text-muted-foreground">
-                    {new Date(request.created_at).toLocaleDateString(isArabic ? 'ar-SA' : 'en-US', {
+                    {new Date(request.created_at).toLocaleDateString(isArabic ? 'ar-EG' : 'en-US', {
                       year: 'numeric',
                       month: 'short',
                       day: 'numeric',

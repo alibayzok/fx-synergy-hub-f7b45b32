@@ -30,7 +30,7 @@ const ProjectDocsPage = () => {
         <div className="text-center mb-12 border-b-2 border-black pb-8">
           <h1 className="text-4xl font-bold mb-2">ASSASSIN FX COMMUNITY</h1>
           <p className="text-lg text-gray-600">توثيق شامل للمشروع</p>
-          <p className="text-sm text-gray-400 mt-2">تاريخ التوثيق: {new Date().toLocaleDateString('ar-SA')}</p>
+          <p className="text-sm text-gray-400 mt-2">تاريخ التوثيق: {new Date().toLocaleDateString('ar-EG')}</p>
         </div>
 
         {/* Section: App Type */}

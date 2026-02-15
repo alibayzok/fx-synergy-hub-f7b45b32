@@ -13,8 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { formatDistanceToNow } from 'date-fns';
-import { ar, enUS } from 'date-fns/locale';
+import { formatTimeAgo } from '@/lib/date-utils';
 import { RoomJoinDialog } from './RoomJoinDialog';
 
 interface RoomChatPanelProps {
@@ -119,12 +118,7 @@ export const RoomChatPanel = ({ roomId, roomName, onBack, onManage, isBroadcast 
     }
   };
 
-  const formatTime = (dateStr: string) => {
-    return formatDistanceToNow(new Date(dateStr), {
-      addSuffix: true,
-      locale: isArabic ? ar : enUS
-    });
-  };
+  const formatTime = (dateStr: string) => formatTimeAgo(dateStr, i18n.language);
 
   const BackArrow = isArabic ? ArrowRight : ArrowLeft;
 

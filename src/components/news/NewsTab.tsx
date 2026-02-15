@@ -157,7 +157,7 @@ export const NewsTab = () => {
     if (!dateStr) return '';
     try {
       const date = new Date(dateStr);
-      return date.toLocaleDateString(isArabic ? 'ar-SA' : 'en-US', {
+      return date.toLocaleDateString(isArabic ? 'ar-EG' : 'en-US', {
         year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
       });
     } catch { return ''; }

@@ -13,8 +13,7 @@ import {
 } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { formatDistanceToNow } from 'date-fns';
-import { ar, enUS } from 'date-fns/locale';
+import { formatTimeAgo } from '@/lib/date-utils';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 
@@ -33,12 +32,7 @@ export const NotificationsPanel = () => {
   const isArabic = i18n.language === 'ar';
   const [open, setOpen] = useState(false);
 
-  const formatTime = (dateStr: string) => {
-    return formatDistanceToNow(new Date(dateStr), {
-      addSuffix: true,
-      locale: isArabic ? ar : enUS
-    });
-  };
+  const formatTime = (dateStr: string) => formatTimeAgo(dateStr, i18n.language);
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
