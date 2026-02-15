@@ -674,6 +674,7 @@ export type Database = {
       learning_courses: {
         Row: {
           category_id: string
+          channel_url: string | null
           created_at: string
           created_by: string | null
           description_ar: string
@@ -690,6 +691,7 @@ export type Database = {
         }
         Insert: {
           category_id: string
+          channel_url?: string | null
           created_at?: string
           created_by?: string | null
           description_ar?: string
@@ -706,6 +708,7 @@ export type Database = {
         }
         Update: {
           category_id?: string
+          channel_url?: string | null
           created_at?: string
           created_by?: string | null
           description_ar?: string
