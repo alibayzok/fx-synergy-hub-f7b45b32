@@ -253,16 +253,12 @@ export const VerificationManagement = () => {
                     <p className="text-sm font-medium mb-1.5">{isRTL ? 'الوجه الأمامي' : 'Front Side'}</p>
                     <img src={selectedRequest.document_front_url} alt="Front" className="w-full max-h-64 object-contain rounded-xl border border-border/30" />
                   </div>
-                  {selectedRequest.document_back_url && (
+                  {selectedRequest.document_back_url && selectedRequest.document_back_url !== 'not_required' && (
                     <div>
                       <p className="text-sm font-medium mb-1.5">{isRTL ? 'الوجه الخلفي' : 'Back Side'}</p>
                       <img src={selectedRequest.document_back_url} alt="Back" className="w-full max-h-64 object-contain rounded-xl border border-border/30" />
                     </div>
                   )}
-                  <div>
-                    <p className="text-sm font-medium mb-1.5">{isRTL ? 'صورة سيلفي مع الهوية' : 'Selfie with ID'}</p>
-                    <img src={selectedRequest.selfie_url} alt="Selfie" className="w-full max-h-64 object-contain rounded-xl border border-border/30" />
-                  </div>
                 </div>
               )}
 

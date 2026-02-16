@@ -86,15 +86,19 @@ export const VerificationSection = () => {
 
   const handlePhoneVerification = async () => {
     if (!user || !profile.phone) return;
-    // Create a verification request of type phone_verification
-    await supabase.from('verification_requests').insert({
-      user_id: user.id,
-      document_type: 'phone_verification',
-      document_front_url: 'phone',
-      selfie_url: 'phone',
-      status: 'pending',
-    });
-    setPhoneRequestPending(true);
+    try {
+      const { error } = await supabase.from('verification_requests').insert({
+        user_id: user.id,
+        document_type: 'phone_verification',
+        document_front_url: 'phone',
+        selfie_url: 'not_required',
+        status: 'pending',
+      });
+      if (error) throw error;
+      setPhoneRequestPending(true);
+    } catch (err) {
+      console.error('Phone verification request failed:', err);
+    }
   };
 
   return (
