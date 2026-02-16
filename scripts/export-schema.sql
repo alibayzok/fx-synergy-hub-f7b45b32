@@ -35,6 +35,7 @@ CREATE TYPE public.privacy_setting AS ENUM ('everyone', 'friends_only', 'followe
 CREATE TYPE public.room_membership_status AS ENUM ('pending', 'approved', 'rejected', 'banned');
 CREATE TYPE public.room_role AS ENUM ('member', 'moderator', 'owner');
 CREATE TYPE public.service_status AS ENUM ('pending', 'in_progress', 'approved', 'rejected', 'completed');
+CREATE TYPE public.redemption_status AS ENUM ('pending', 'approved', 'rejected', 'delivered');
 CREATE TYPE public.service_type AS ENUM ('broker_deposit', 'broker_withdraw', 'usdt_buy', 'usdt_sell', 'broker_account', 'card_fund');
 CREATE TYPE public.signal_type AS ENUM ('signal', 'tip');
 CREATE TYPE public.timeframe AS ENUM ('M5', 'M15', 'H1', 'H4', 'D1');
@@ -59,6 +60,10 @@ CREATE TABLE public.profiles (
     language TEXT DEFAULT 'ar',
     onboarding_completed BOOLEAN DEFAULT false,
     trading_preferences JSONB,
+    referral_code TEXT,
+    is_verified BOOLEAN NOT NULL DEFAULT false,
+    phone_verified BOOLEAN NOT NULL DEFAULT false,
+    kyc_status TEXT NOT NULL DEFAULT 'none',
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
@@ -740,6 +745,88 @@ CREATE TABLE public.user_daily_progress (
     points_claimed BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
     UNIQUE(user_id, quest_id, quest_date)
+);
+
+-- جدول الإحالات
+CREATE TABLE public.referrals (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    referrer_id UUID NOT NULL,
+    referred_id UUID NOT NULL,
+    referral_code TEXT NOT NULL,
+    points_awarded INTEGER NOT NULL DEFAULT 50,
+    status TEXT NOT NULL DEFAULT 'completed',
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- جدول مكافآت الإحالات
+CREATE TABLE public.referral_rewards (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    name_ar TEXT NOT NULL,
+    name_en TEXT NOT NULL DEFAULT '',
+    description_ar TEXT NOT NULL DEFAULT '',
+    description_en TEXT NOT NULL DEFAULT '',
+    icon TEXT NOT NULL DEFAULT '🎁',
+    points_cost INTEGER NOT NULL,
+    reward_type TEXT NOT NULL DEFAULT 'custom',
+    reward_value TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    stock INTEGER,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- جدول استبدال المكافآت
+CREATE TABLE public.reward_redemptions (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID NOT NULL,
+    reward_id UUID REFERENCES public.referral_rewards(id) ON DELETE SET NULL,
+    redemption_type TEXT NOT NULL DEFAULT 'catalog',
+    points_spent INTEGER NOT NULL,
+    status public.redemption_status NOT NULL DEFAULT 'pending',
+    notes TEXT,
+    admin_notes TEXT,
+    reviewed_by UUID,
+    reviewed_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- جدول طلبات التوثيق
+CREATE TABLE public.verification_requests (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID NOT NULL,
+    document_type TEXT NOT NULL DEFAULT 'national_id',
+    document_front_url TEXT NOT NULL,
+    document_back_url TEXT,
+    selfie_url TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    rejection_reason TEXT,
+    reviewed_by UUID,
+    reviewed_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- جدول مشاهدات المحتوى
+CREATE TABLE public.content_views (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID NOT NULL,
+    content_type TEXT NOT NULL,
+    content_id UUID NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    UNIQUE(user_id, content_type, content_id)
+);
+
+-- جدول تحديثات الإشارات
+CREATE TABLE public.signal_updates (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    parent_id UUID NOT NULL,
+    parent_type TEXT NOT NULL,
+    content TEXT NOT NULL,
+    attachments TEXT[] DEFAULT '{}',
+    created_by UUID,
+    telegram_message_id INTEGER,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
 
@@ -1744,6 +1831,35 @@ CREATE POLICY "Users can view own progress" ON public.user_daily_progress FOR SE
 CREATE POLICY "Users can insert own progress" ON public.user_daily_progress FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can update own progress" ON public.user_daily_progress FOR UPDATE USING (auth.uid() = user_id);
 
+-- === referrals ===
+CREATE POLICY "Users can view own referrals" ON public.referrals FOR SELECT USING (auth.uid() = referrer_id OR auth.uid() = referred_id);
+CREATE POLICY "Authenticated users can insert referrals" ON public.referrals FOR INSERT WITH CHECK (auth.uid() = referred_id);
+CREATE POLICY "Admins can manage referrals" ON public.referrals FOR ALL USING (is_admin());
+
+-- === referral_rewards ===
+CREATE POLICY "Anyone can view active rewards" ON public.referral_rewards FOR SELECT USING (is_active = true OR is_admin());
+CREATE POLICY "Admins can manage rewards" ON public.referral_rewards FOR ALL USING (is_admin());
+
+-- === reward_redemptions ===
+CREATE POLICY "Users can view own redemptions" ON public.reward_redemptions FOR SELECT USING (auth.uid() = user_id OR is_admin());
+CREATE POLICY "Users can create redemptions" ON public.reward_redemptions FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Admins can update redemptions" ON public.reward_redemptions FOR UPDATE USING (is_admin());
+CREATE POLICY "Admins can delete redemptions" ON public.reward_redemptions FOR DELETE USING (is_admin());
+
+-- === verification_requests ===
+CREATE POLICY "Users can view own verification requests" ON public.verification_requests FOR SELECT USING (auth.uid() = user_id OR is_admin());
+CREATE POLICY "Users can submit verification requests" ON public.verification_requests FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Admins can update verification requests" ON public.verification_requests FOR UPDATE USING (is_admin());
+CREATE POLICY "Admins can delete verification requests" ON public.verification_requests FOR DELETE USING (is_admin());
+
+-- === content_views ===
+CREATE POLICY "Users can view own views" ON public.content_views FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own views" ON public.content_views FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- === signal_updates ===
+CREATE POLICY "Anyone authenticated can view updates" ON public.signal_updates FOR SELECT USING (auth.uid() IS NOT NULL);
+CREATE POLICY "Admins can manage updates" ON public.signal_updates FOR ALL USING (is_admin());
+
 
 -- ============================================================
 -- 7. INDEXES (الفهارس)
@@ -1799,6 +1915,12 @@ CREATE INDEX IF NOT EXISTS idx_user_points_user_id ON public.user_points(user_id
 CREATE INDEX IF NOT EXISTS idx_point_transactions_user_id ON public.point_transactions(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_daily_progress_user_date ON public.user_daily_progress(user_id, quest_date);
 CREATE INDEX IF NOT EXISTS idx_articles_is_published ON public.articles(is_published);
+CREATE INDEX IF NOT EXISTS idx_referrals_referrer_id ON public.referrals(referrer_id);
+CREATE INDEX IF NOT EXISTS idx_referrals_referred_id ON public.referrals(referred_id);
+CREATE INDEX IF NOT EXISTS idx_reward_redemptions_user_id ON public.reward_redemptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_verification_requests_user_id ON public.verification_requests(user_id);
+CREATE INDEX IF NOT EXISTS idx_content_views_user_id ON public.content_views(user_id);
+CREATE INDEX IF NOT EXISTS idx_signal_updates_parent_id ON public.signal_updates(parent_id);
 
 
 -- ============================================================
@@ -1813,6 +1935,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.app_settings;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.support_messages;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.subscription_messages;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.live_session_messages;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.signal_updates;
 
 
 -- ============================================================
@@ -1827,6 +1950,8 @@ INSERT INTO storage.buckets (id, name, public) VALUES ('lesson-videos', 'lesson-
 INSERT INTO storage.buckets (id, name, public) VALUES ('support-attachments', 'support-attachments', true);
 INSERT INTO storage.buckets (id, name, public) VALUES ('cms-assets', 'cms-assets', true);
 INSERT INTO storage.buckets (id, name, public) VALUES ('article-images', 'article-images', true);
+INSERT INTO storage.buckets (id, name, public) VALUES ('signal-attachments', 'signal-attachments', true);
+INSERT INTO storage.buckets (id, name, public) VALUES ('kyc-documents', 'kyc-documents', false);
 
 -- سياسات التخزين للصور الشخصية
 CREATE POLICY "Avatar images are publicly accessible" ON storage.objects FOR SELECT USING (bucket_id = 'avatars');
@@ -1861,6 +1986,14 @@ CREATE POLICY "Admins can upload analysis attachments" ON storage.objects FOR IN
 CREATE POLICY "Post attachments accessible" ON storage.objects FOR SELECT USING (bucket_id = 'post-attachments');
 CREATE POLICY "Users can upload post attachments" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'post-attachments' AND auth.uid() IS NOT NULL);
 
+-- سياسات تخزين مرفقات الإشارات
+CREATE POLICY "Signal attachments accessible" ON storage.objects FOR SELECT USING (bucket_id = 'signal-attachments');
+CREATE POLICY "Admins can upload signal attachments" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'signal-attachments' AND public.is_admin());
+
+-- سياسات تخزين وثائق KYC
+CREATE POLICY "KYC documents accessible by owner and admin" ON storage.objects FOR SELECT USING (bucket_id = 'kyc-documents' AND (auth.uid()::text = (storage.foldername(name))[1] OR public.is_admin()));
+CREATE POLICY "Users can upload KYC documents" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'kyc-documents' AND auth.uid()::text = (storage.foldername(name))[1]);
+
 
 -- ============================================================
 -- 10. SEED DATA (بيانات أولية)
@@ -1876,8 +2009,8 @@ INSERT INTO public.community_rooms (id, name, name_ar, description, description_
 
 -- ============================================================
 -- انتهى التنفيذ بنجاح! ✅
--- عدد الجداول: 48
+-- عدد الجداول: 54
 -- عدد الدوال: 50+
--- عدد سياسات RLS: 130+
--- عدد حاويات التخزين: 7
+-- عدد سياسات RLS: 160+
+-- عدد حاويات التخزين: 9
 -- ============================================================
