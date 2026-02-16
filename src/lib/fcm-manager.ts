@@ -42,8 +42,9 @@ export async function initializeFCM(): Promise<string | null> {
       return null;
     }
 
-    // الحصول على التوكن
-    const token = await getToken(messaging, { vapidKey });
+    // الحصول على التوكن - استخدام SW الذي يديره VitePWA
+    const swRegistration = await navigator.serviceWorker.ready;
+    const token = await getToken(messaging, { vapidKey, serviceWorkerRegistration: swRegistration });
     if (token) {
       fcmToken = token;
       console.log('FCM Token obtained');
