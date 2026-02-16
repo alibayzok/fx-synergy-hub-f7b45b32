@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Crown, User, Shield, Search, Users, Sparkles, Headphones, Eye, X, Check, Plus, Minus, ChevronRight } from 'lucide-react';
+import { Crown, User, Shield, Search, Users, Sparkles, Headphones, Eye, X, Check, Plus, Minus, ChevronRight, BadgeCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -397,6 +397,14 @@ export const UserManagement = () => {
                     </p>
                   </motion.div>
                 )}
+
+                {/* Verification Badge Toggle */}
+                <div className="pt-3 border-t border-border/15">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                    {isRTL ? 'شارة التوثيق' : 'Verification Badge'}
+                  </p>
+                  <VerificationToggle userId={selectedUser.user_id} />
+                </div>
               </div>
 
               {/* Save Footer */}
@@ -449,5 +457,65 @@ export const UserManagement = () => {
         </SheetContent>
       </Sheet>
     </div>
+  );
+};
+
+// Verification Badge Toggle Component
+const VerificationToggle = ({ userId }: { userId: string }) => {
+  const { i18n } = useTranslation();
+  const { toast } = useToast();
+  const isRTL = i18n.language === 'ar';
+  const [verified, setVerified] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [toggling, setToggling] = useState(false);
+
+  useEffect(() => {
+    supabase.from('profiles').select('is_verified').eq('user_id', userId).single().then(({ data }) => {
+      setVerified(data?.is_verified || false);
+      setLoading(false);
+    });
+  }, [userId]);
+
+  const toggle = async () => {
+    setToggling(true);
+    try {
+      const { error } = await supabase.rpc('toggle_user_verification', { p_user_id: userId, p_verified: !verified });
+      if (error) throw error;
+      setVerified(!verified);
+      toast({ title: !verified ? (isRTL ? 'تم منح شارة التوثيق ✅' : 'Verification granted ✅') : (isRTL ? 'تم سحب شارة التوثيق' : 'Verification revoked') });
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setToggling(false);
+    }
+  };
+
+  if (loading) return <div className="h-14 rounded-xl bg-muted/30 animate-pulse" />;
+
+  return (
+    <motion.div
+      layout
+      className={cn(
+        "p-4 rounded-xl border transition-all",
+        verified ? "bg-blue-500/10 border-blue-500/25 shadow-sm" : "bg-card/30 border-border/15"
+      )}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center border", verified ? "bg-blue-500/15 border-blue-500/25" : "bg-muted/30 border-border/20")}>
+            <BadgeCheck className={cn("w-5 h-5", verified ? "text-blue-500" : "text-muted-foreground/50")} />
+          </div>
+          <div>
+            <p className={cn("font-semibold text-sm", verified ? "text-foreground" : "text-muted-foreground")}>
+              {isRTL ? 'العلامة الزرقاء' : 'Blue Badge'}
+            </p>
+            <p className="text-[11px] text-muted-foreground/60">
+              {isRTL ? 'شارة الحساب الموثق' : 'Verified account badge'}
+            </p>
+          </div>
+        </div>
+        <Switch checked={verified} onCheckedChange={toggle} disabled={toggling} />
+      </div>
+    </motion.div>
   );
 };

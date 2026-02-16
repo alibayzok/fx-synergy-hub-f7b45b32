@@ -23,6 +23,7 @@ import { CMSManagement } from '@/components/admin/CMSManagement';
 import { SignalsManagement } from '@/components/admin/SignalsManagement';
 import { ArticlesManagement } from '@/components/admin/ArticlesManagement';
 import { ServicesAndBrokersManagement } from '@/components/admin/ServicesAndBrokersManagement';
+import { VerificationManagement } from '@/components/admin/VerificationManagement';
 
 const contentSections = [
   {
@@ -43,6 +44,7 @@ const contentSections = [
     description: 'المستخدمين والطلبات والإعدادات',
     items: [
       { value: 'users', icon: Users, label: 'المستخدمين', labelEn: 'Users', color: 'from-primary/20 to-primary/5', iconColor: 'text-primary', borderColor: 'border-primary/20' },
+      { value: 'verification', icon: Shield, label: 'التوثيق', labelEn: 'Verification', color: 'from-blue-500/20 to-cyan-500/20', iconColor: 'text-blue-500', borderColor: 'border-blue-500/20' },
       { value: 'requests', icon: ClipboardList, label: 'الطلبات', labelEn: 'Requests', color: 'from-orange-500/20 to-amber-500/20', iconColor: 'text-orange-500', borderColor: 'border-orange-500/20' },
       { value: 'services-mgmt', icon: BarChart3, label: 'الخدمات', labelEn: 'Services', color: 'from-teal-500/20 to-cyan-500/20', iconColor: 'text-teal-500', borderColor: 'border-teal-500/20' },
       { value: 'cms', icon: Settings2, label: 'CMS', labelEn: 'CMS', color: 'from-slate-500/20 to-gray-500/20', iconColor: 'text-slate-400', borderColor: 'border-slate-500/20' },
@@ -62,6 +64,7 @@ const componentMap: Record<string, React.FC> = {
   articles: ArticlesManagement,
   cms: CMSManagement,
   export: DatabaseExport,
+  verification: VerificationManagement,
 };
 
 const AdminPage = () => {

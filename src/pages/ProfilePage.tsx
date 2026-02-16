@@ -56,6 +56,8 @@ import { useToast } from '@/hooks/use-toast';
 import { NotificationSettings } from '@/components/notifications/NotificationSettings';
 import { FriendsSection } from '@/components/profile/FriendsSection';
 import { UserPostsSection } from '@/components/profile/UserPostsSection';
+import { VerificationSection } from '@/components/profile/VerificationSection';
+import { VerifiedBadge } from '@/components/ui/verified-badge';
 import { useSupport } from '@/hooks/useSupport';
 import { useBlockUser } from '@/hooks/useBlockUser';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -308,6 +310,7 @@ const ProfilePage = () => {
                   <h2 className="text-xl font-bold text-foreground">
                     {displayName}
                   </h2>
+                  {profile?.is_verified && <VerifiedBadge size="md" />}
                   <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-primary/10" onClick={() => setShowEditDialog(true)}>
                     <Edit className="w-3.5 h-3.5 text-muted-foreground" />
                   </Button>
@@ -419,6 +422,13 @@ const ProfilePage = () => {
               <ChevronRight className="w-4 h-4 text-muted-foreground rtl:rotate-180" />
             </button>
           </motion.div>
+        )}
+
+        {/* ═══════════════════════════════════════════ */}
+        {/* ★ VERIFICATION SECTION ★ */}
+        {/* ═══════════════════════════════════════════ */}
+        {user && (
+          <VerificationSection />
         )}
 
         {/* ═══════════════════════════════════════════ */}

@@ -41,6 +41,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { PremiumImageViewer } from '@/components/ui/premium-image-viewer';
+import { VerifiedBadge } from '@/components/ui/verified-badge';
 
 interface PostCardProps {
   post: UserPost;
@@ -104,8 +105,9 @@ export const PostCard = ({ post, onDelete }: PostCardProps) => {
               </AvatarFallback>
             </Avatar>
             <div>
-              <p className="font-medium text-sm">
+              <p className="font-medium text-sm flex items-center gap-1">
                 {post.profile?.display_name || post.profile?.username || t('common.user', 'مستخدم')}
+                {(post.profile as any)?.is_verified && <VerifiedBadge size="sm" />}
               </p>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span>{timeAgo}</span>

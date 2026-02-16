@@ -18,6 +18,9 @@ interface Profile {
   onboarding_completed?: boolean;
   trading_preferences?: any;
   referral_code?: string;
+  is_verified?: boolean;
+  phone_verified?: boolean;
+  kyc_status?: string;
   created_at: string;
   updated_at: string;
 }
