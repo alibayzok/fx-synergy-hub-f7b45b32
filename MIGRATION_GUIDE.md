@@ -1,200 +1,135 @@
-# 📱 دليل ترحيل ASSASSIN FX
+# 📱 دليل ترحيل ASSASSIN FX - Migration Checklist
 
-دليل شامل لنقل التطبيق من Lovable Cloud إلى بيئة مستقلة تماماً.
+دليل شامل ومحدّث لنقل التطبيق من Lovable Cloud إلى بيئة مستقلة تماماً.
+
+**آخر تحديث**: 2026-02-16
 
 ---
 
 ## 📋 جدول المحتويات
 
-1. [المتطلبات](#-المتطلبات)
-2. [تصدير الكود](#-الخطوة-1-تصدير-الكود)
-3. [إنشاء مشروع Supabase](#-الخطوة-2-إنشاء-مشروع-supabase)
-4. [تنفيذ Schema](#-الخطوة-3-تنفيذ-schema)
-5. [تحديث الإعدادات](#-الخطوة-4-تحديث-الإعدادات)
-6. [نشر Edge Functions](#-الخطوة-5-نشر-edge-functions)
-7. [إعداد Firebase FCM](#-الخطوة-6-إعداد-firebase-fcm)
-8. [التشغيل المحلي](#-الخطوة-7-التشغيل-المحلي)
-9. [بناء APK](#-الخطوة-8-بناء-apk-للأندرويد)
-10. [النشر على الويب](#-الخطوة-9-النشر-على-الويب)
-11. [ترحيل البيانات](#-الخطوة-10-ترحيل-البيانات-اختياري)
-12. [إعداد Google OAuth](#-الخطوة-11-إعداد-google-oauth)
-13. [قائمة التحقق](#-قائمة-التحقق-النهائية)
+1. [المرحلة 1: التحضير](#-المرحلة-1-التحضير)
+2. [المرحلة 2: قاعدة البيانات](#-المرحلة-2-قاعدة-البيانات-48-جدول)
+3. [المرحلة 3: حاويات التخزين](#-المرحلة-3-storage-buckets-8-حاويات)
+4. [المرحلة 4: Edge Functions](#-المرحلة-4-edge-functions-10-وظائف)
+5. [المرحلة 5: تعديلات الكود](#-المرحلة-5-تعديلات-الكود-4-ملفات)
+6. [المرحلة 6: Google OAuth](#-المرحلة-6-google-oauth)
+7. [المرحلة 7: Firebase Push Notifications](#-المرحلة-7-firebase-push-notifications)
+8. [المرحلة 8: Telegram Bot](#-المرحلة-8-telegram-bot)
+9. [المرحلة 9: بناء ونشر](#-المرحلة-9-بناء-ونشر)
+10. [المرحلة 10: اختبار نهائي](#-المرحلة-10-اختبار-نهائي)
+11. [ملخص الأسرار](#-ملخص-الأسرار-المطلوبة-15-سر)
+12. [حل المشاكل](#-حل-المشاكل-الشائعة)
 
 ---
 
-## 🔧 المتطلبات
+## 🔧 المرحلة 1: التحضير
 
-### للتطوير المحلي:
+### المتطلبات
 - [Node.js](https://nodejs.org/) (v18+)
 - [Git](https://git-scm.com/)
-- محرر أكواد (VS Code موصى به)
+- [Android Studio](https://developer.android.com/studio) + Java JDK 17 (لبناء APK)
+- حساب على [supabase.com](https://supabase.com)
+- [Supabase CLI](https://supabase.com/docs/guides/cli)
 
-### لبناء تطبيق أندرويد:
-- [Android Studio](https://developer.android.com/studio)
-- [Java JDK 17](https://adoptium.net/)
-
-### لحساب Supabase:
-- حساب مجاني على [supabase.com](https://supabase.com)
-
----
-
-## 📦 الخطوة 1: تصدير الكود
-
-### 1.1 ربط GitHub
-1. افتح المشروع في Lovable
-2. اذهب إلى **Settings → GitHub**
-3. اضغط **Connect to GitHub**
-4. اختر حسابك وأنشئ مستودع جديد
-
-### 1.2 استنساخ المستودع محلياً
-```bash
-git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git
-cd YOUR_REPO
-```
-
-### 1.3 تثبيت الـ Dependencies
-```bash
-npm install
-```
+### الخطوات
+- [ ] تصدير الكود من GitHub (Settings → GitHub → Connect)
+- [ ] استنساخ المستودع محلياً: `git clone ...`
+- [ ] تثبيت الحزم: `npm install`
+- [ ] إنشاء مشروع Supabase جديد على [supabase.com](https://supabase.com)
+- [ ] نسخ **Project URL** + **Anon Key** + **Service Role Key**
 
 ---
 
-## 🗄️ الخطوة 2: إنشاء مشروع Supabase
+## 🗄️ المرحلة 2: قاعدة البيانات (48+ جدول)
 
-1. سجّل الدخول إلى [supabase.com/dashboard](https://supabase.com/dashboard)
-2. اضغط **New Project**
-3. اختر:
-   - **اسم المشروع**: `assassin-fx` (أو أي اسم تريده)
-   - **Database Password**: احفظها في مكان آمن
-   - **Region**: اختر الأقرب لمستخدميك
-4. انتظر حتى يكتمل الإنشاء (1-2 دقيقة)
-
-### 2.1 نسخ بيانات الاتصال
-بعد الإنشاء، اذهب إلى **Settings → API** وانسخ:
-- **Project URL**: `https://xxxx.supabase.co`
-- **anon public key**: المفتاح العام
-
----
-
-## 🏗️ الخطوة 3: تنفيذ Schema
-
-### 3.1 تنفيذ السكريبت
+### 2.1 تنفيذ السكريبت
 1. اذهب إلى **SQL Editor** في Supabase Dashboard
 2. افتح ملف `scripts/export-schema.sql` من المشروع
-3. انسخ المحتوى كاملاً
-4. الصقه في SQL Editor
-5. اضغط **Run**
+3. انسخ المحتوى كاملاً → الصقه → **Run**
 
-### 3.2 التحقق من النجاح
-اذهب إلى **Table Editor** وتأكد من وجود جميع الجداول (48 جدول):
+### 2.2 التحقق اليدوي
+- [ ] التأكد من جدول `signal_updates` (جديد - قد يحتاج إضافة يدوية إذا لم يكن في السكريبت)
+- [ ] التأكد من عمود `referral_code` في جدول `profiles`
+- [ ] تفعيل **Realtime** على الجداول المطلوبة:
+  - `direct_messages`, `room_messages`, `user_notifications`, `support_messages`
+  - `signal_updates`, `subscription_messages`, `live_session_messages`
+- [ ] التحقق من جميع الـ **130+ RLS Policy** في **Authentication → Policies**
 
-**المستخدمون والأدوار:**
-- `profiles`, `user_roles`, `user_blocks`, `user_privacy_settings`
+### 2.3 قائمة الجداول (48 جدول)
 
-**الإشارات والتحليلات:**
-- `signals`, `signal_likes`, `analyses`, `analysis_likes`
-
-**المنشورات:**
-- `user_posts`, `post_likes`, `post_comments`
-
-**المجتمع:**
-- `community_rooms`, `room_members`, `room_join_requests`, `room_messages`
-- `threads`, `replies`, `reply_likes`
-
-**التعلم:**
-- `learning_categories`, `learning_courses`, `learning_lessons`
-
-**الرسائل:**
-- `conversations`, `conversation_participants`, `direct_messages`
-
-**العلاقات:**
-- `follows`, `friend_requests`
-
-**الخدمات:**
-- `service_requests`, `usdt_listings`, `brokers`, `services`
-
-**VIP والاشتراكات:**
-- `vip_subscriptions`, `subscription_messages`
-
-**البطاقات والجلسات:**
-- `virtual_cards`, `live_sessions`, `live_session_messages`
-
-**التلعيب (Gamification):**
-- `user_points`, `point_transactions`, `badges`, `user_badges`
-- `user_streaks`, `daily_quests`, `user_daily_progress`
-
-**الإشعارات والدعم:**
-- `user_notifications`, `admin_notifications`, `fcm_tokens`
-- `support_tickets`, `support_messages`, `support_agents`
-
-**الإعدادات:**
-- `app_settings`, `flagged_content`, `articles`
+| القسم | الجداول |
+|-------|---------|
+| **المستخدمون** | `profiles`, `user_roles`, `user_blocks`, `user_privacy_settings` |
+| **الإشارات** | `signals`, `signal_likes`, `signal_updates` |
+| **التحليلات** | `analyses`, `analysis_likes` |
+| **المنشورات** | `user_posts`, `post_likes`, `post_comments` |
+| **المجتمع** | `community_rooms`, `room_members`, `room_join_requests`, `room_messages`, `threads`, `replies`, `reply_likes` |
+| **التعلم** | `learning_categories`, `learning_courses`, `learning_lessons` |
+| **الرسائل** | `conversations`, `conversation_participants`, `direct_messages` |
+| **العلاقات** | `follows`, `friend_requests` |
+| **الخدمات** | `service_requests`, `usdt_listings`, `brokers`, `services` |
+| **VIP** | `vip_subscriptions`, `subscription_messages` |
+| **البطاقات** | `virtual_cards` |
+| **البث المباشر** | `live_sessions`, `live_session_messages` |
+| **التلعيب** | `user_points`, `point_transactions`, `badges`, `user_badges`, `user_streaks`, `daily_quests`, `user_daily_progress` |
+| **الإشعارات** | `user_notifications`, `admin_notifications`, `fcm_tokens` |
+| **الدعم** | `support_tickets`, `support_messages`, `support_agents` |
+| **النظام** | `app_settings`, `flagged_content`, `articles` |
 
 ---
 
-## ⚙️ الخطوة 4: تحديث الإعدادات
+## 📦 المرحلة 3: Storage Buckets (8 حاويات)
 
-### 4.1 إنشاء ملف `.env`
-أنشئ ملف `.env` في جذر المشروع:
+أنشئ هذه الحاويات كـ **Public** في Supabase Dashboard → Storage:
 
-```env
-VITE_SUPABASE_URL=https://YOUR_PROJECT_ID.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=your_anon_key_here
-VITE_SUPABASE_PROJECT_ID=YOUR_PROJECT_ID
-```
+- [ ] `avatars` — صور المستخدمين
+- [ ] `lesson-videos` — فيديوهات الأكاديمية
+- [ ] `cms-assets` — أصول CMS
+- [ ] `article-images` — صور المقالات
+- [ ] `support-attachments` — مرفقات الدعم
+- [ ] `analysis-attachments` — مرفقات التحليلات
+- [ ] `post-attachments` — مرفقات المنشورات
+- [ ] `signal-attachments` — صور شارتات الإشارات
 
-### 4.2 تحديث التكوين المركزي
-عدّل ملف `src/config/environment.ts`:
-
-```typescript
-export const APP_URLS = {
-  // غيّر هذا إلى دومينك الخاص
-  production: 'https://app.yourdomain.com',
-  preview: 'http://localhost:8080',
-};
-```
-
-### 4.3 تحديث Capacitor Config
-عدّل ملف `capacitor.config.ts`:
-
-```typescript
-const config: CapacitorConfig = {
-  // غيّر هذا إلى معرّف تطبيقك
-  appId: 'com.yourcompany.assassinfx',
-  appName: 'ASSASSIN FX',
-  webDir: 'dist',
-  // احذف قسم server للإنتاج
-};
-```
+> 💡 لا تنسَ إعداد سياسات RLS المناسبة لكل حاوية (الموجودة في `export-schema.sql`)
 
 ---
 
-## ⚡ الخطوة 5: نشر Edge Functions
+## ⚡ المرحلة 4: Edge Functions (10 وظائف)
 
-المشروع يحتوي على **8 وظائف خلفية** (Edge Functions) يجب نشرها:
-
-### 5.1 تثبيت Supabase CLI
+### 4.1 تثبيت CLI وربط المشروع
 ```bash
 npm install -g supabase
 supabase login
-```
-
-### 5.2 ربط المشروع
-```bash
 supabase link --project-ref YOUR_PROJECT_ID
 ```
 
-### 5.3 إعداد الأسرار (Secrets)
+### 4.2 إعداد الأسرار
 ```bash
-supabase secrets set GOOGLE_AI_API_KEY=your_google_ai_key
-supabase secrets set FINNHUB_API_KEY=your_finnhub_key
-supabase secrets set LOVABLE_API_KEY=your_lovable_api_key
-supabase secrets set MARQETA_APP_TOKEN=your_marqeta_app_token
-supabase secrets set MARQETA_ADMIN_TOKEN=your_marqeta_admin_token
-supabase secrets set MARQETA_BASE_URL=your_marqeta_base_url
+# المساعد الذكي
+supabase secrets set GOOGLE_AI_API_KEY=your_key
+
+# بيانات الأسواق
+supabase secrets set FINNHUB_API_KEY=your_key
+
+# فحص الصور (استبدله بـ GOOGLE_AI_API_KEY عند الاستقلال الكامل)
+supabase secrets set LOVABLE_API_KEY=your_key
+
+# تلغرام (مهم!)
+supabase secrets set TELEGRAM_BOT_TOKEN=your_bot_token
+supabase secrets set TELEGRAM_VIP_CHAT_ID=your_vip_chat_id
+supabase secrets set TELEGRAM_PUBLIC_CHAT_ID=your_public_chat_id
+supabase secrets set TELEGRAM_NEWS_CHAT_ID=your_news_chat_id
+supabase secrets set TELEGRAM_WEBHOOK_SECRET=your_webhook_secret
+
+# البطاقات الافتراضية (اختياري)
+supabase secrets set MARQETA_APP_TOKEN=your_token
+supabase secrets set MARQETA_ADMIN_TOKEN=your_token
+supabase secrets set MARQETA_BASE_URL=your_url
 ```
 
-### 5.4 نشر الوظائف
+### 4.3 نشر الوظائف
 ```bash
 supabase functions deploy chat
 supabase functions deploy market-data
@@ -204,237 +139,216 @@ supabase functions deploy fetch-news
 supabase functions deploy fetch-article
 supabase functions deploy fetch-calendar
 supabase functions deploy marqeta-cards
+supabase functions deploy telegram-webhook
+supabase functions deploy setup-telegram-webhook
 ```
 
-### 5.5 وصف الوظائف
+### 4.4 جدول الوظائف والأسرار
+
 | الوظيفة | الوصف | الأسرار المطلوبة |
 |---------|-------|-----------------|
-| `chat` | المساعد الذكي (AI Chat) | `GOOGLE_AI_API_KEY` |
+| `chat` | المساعد الذكي | `GOOGLE_AI_API_KEY` |
 | `market-data` | بيانات الأسواق اللحظية | `FINNHUB_API_KEY` |
 | `moderate-image` | فحص الصور المرفوعة | `LOVABLE_API_KEY` |
-| `send-push-notification` | إرسال إشعارات FCM | `SUPABASE_SERVICE_ROLE_KEY` |
-| `fetch-news` | جلب أخبار الأسواق | - |
-| `fetch-article` | جلب تفاصيل المقالات | - |
-| `fetch-calendar` | جلب التقويم الاقتصادي | - |
-| `marqeta-cards` | إدارة البطاقات الافتراضية | `MARQETA_APP_TOKEN`, `MARQETA_ADMIN_TOKEN`, `MARQETA_BASE_URL` |
+| `send-push-notification` | إشعارات FCM | `SUPABASE_SERVICE_ROLE_KEY` (تلقائي) |
+| `fetch-news` | جلب أخبار الأسواق | — |
+| `fetch-article` | جلب تفاصيل المقالات | — |
+| `fetch-calendar` | التقويم الاقتصادي | — |
+| `marqeta-cards` | البطاقات الافتراضية | `MARQETA_APP_TOKEN`, `MARQETA_ADMIN_TOKEN`, `MARQETA_BASE_URL` |
+| `telegram-webhook` | استقبال رسائل تلغرام | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_VIP_CHAT_ID`, `TELEGRAM_PUBLIC_CHAT_ID`, `TELEGRAM_NEWS_CHAT_ID`, `TELEGRAM_WEBHOOK_SECRET` |
+| `setup-telegram-webhook` | تسجيل Webhook مع تلغرام | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET` |
 
 ---
 
-## 🔔 الخطوة 6: إعداد Firebase FCM
+## 🔧 المرحلة 5: تعديلات الكود (4 ملفات)
 
-إشعارات الدفع (Push Notifications) مُعدّة بالفعل في الكود باستخدام Firebase Cloud Messaging.
-
-### 6.1 إعداد مشروع Firebase
-1. اذهب إلى [Firebase Console](https://console.firebase.google.com)
-2. أنشئ مشروعاً أو استخدم مشروع `assassin-fx` الموجود
-3. فعّل **Cloud Messaging**
-
-### 6.2 تحديث الإعدادات (إذا لزم الأمر)
-الإعدادات الحالية موجودة في:
-- `src/lib/firebase-config.ts` - إعدادات Firebase + VAPID Key
-- `public/sw.js` - Service Worker لاستقبال الإشعارات في الخلفية
-
-### 6.3 ملاحظة
-إذا كنت تستخدم مشروع Firebase مختلف، عدّل:
-- `firebaseConfig` في `src/lib/firebase-config.ts`
-- `firebase.initializeApp()` في `public/sw.js`
-- أنشئ VAPID Key جديد من **Cloud Messaging → Web Push certificates**
-
----
-
-## 🖥️ الخطوة 7: التشغيل المحلي
-
-### 7.1 تشغيل خادم التطوير
-```bash
-npm run dev
+### 5.1 ملف `.env`
+```env
+VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=your_anon_key
+VITE_SUPABASE_PROJECT_ID=YOUR_PROJECT_ID
 ```
 
-### 7.2 فتح التطبيق
-افتح المتصفح على: `http://localhost:8080`
+### 5.2 ملف `src/config/environment.ts`
+- [ ] تغيير `APP_URLS.production` إلى الدومين الخاص بك
+- [ ] تغيير `APP_URLS.preview` إلى `http://localhost:8080`
 
-### 7.3 اختبار التسجيل والدخول
-1. أنشئ حساب جديد
-2. تحقق من البريد الإلكتروني (أو فعّل auto-confirm في Supabase)
-3. سجّل الدخول
-
----
-
-## 📱 الخطوة 8: بناء APK للأندرويد
-
-### 8.1 بناء ملفات الويب
-```bash
-npm run build
-```
-
-### 8.2 إضافة Android Platform
-```bash
-npx cap add android
-```
-
-### 8.3 مزامنة المشروع
-```bash
-npx cap sync android
-```
-
-### 8.4 فتح Android Studio
-```bash
-npx cap open android
-```
-
-### 8.5 بناء APK موقّع
-في Android Studio:
-1. **Build → Generate Signed Bundle / APK**
-2. اختر **APK**
-3. أنشئ Keystore جديد (احفظه في مكان آمن!)
-4. اختر **release**
-5. انتظر اكتمال البناء
-
-الملف سيكون في:
-```
-android/app/release/app-release.apk
-```
-
----
-
-## 🌐 الخطوة 9: النشر على الويب
-
-### Vercel (موصى به)
-```bash
-npm install -g vercel
-vercel
-```
-
-### Netlify
-```bash
-npm install -g netlify-cli
-netlify deploy --prod
-```
-
-### بعد النشر
-حدّث `APP_URLS.production` في `src/config/environment.ts` بالرابط الجديد.
-
----
-
-## 📊 الخطوة 10: ترحيل البيانات (اختياري)
-
-### 10.1 تصدير البيانات من Lovable
-1. اذهب إلى `/admin` في التطبيق
-2. اختر تبويب **تصدير**
-3. حمّل **نسخة احتياطية كاملة** (تشمل 48 جدول + هيكل + إعدادات)
-
-### 10.2 استيراد البيانات
-استخدم Supabase Dashboard:
-1. **Table Editor → Import**
-2. اختر ملف CSV أو أدخل البيانات يدوياً
-
-### ⚠️ ملاحظات مهمة:
-- **المستخدمون**: يجب إعادة التسجيل (كلمات المرور لا تُصدَّر)
-- **الملفات**: إذا كان لديك Storage، صدّرها يدوياً
-- **إعدادات التطبيق**: جدول `app_settings` يحتوي على إعدادات CMS المهمة
-
----
-
-## 🔐 الخطوة 11: إعداد Google OAuth
-
-### 11.1 إنشاء OAuth في Google Cloud
-1. اذهب إلى [Google Cloud Console](https://console.cloud.google.com)
-2. أنشئ مشروع جديد أو اختر مشروعاً موجوداً
-3. فعّل **Google+ API**
-4. اذهب إلى **APIs & Services → Credentials**
-5. اضغط **Create Credentials → OAuth Client ID**
-6. اختر **Web application**
-
-### 11.2 إعداد Redirect URIs
-أضف هذه الروابط في **Authorized redirect URIs**:
-```
-https://YOUR_PROJECT_ID.supabase.co/auth/v1/callback
-```
-
-### 11.3 إعداد Supabase
-1. في Supabase Dashboard: **Authentication → Providers → Google**
-2. فعّل Google Provider
-3. الصق **Client ID** و **Client Secret**
-
-### 11.4 تحديث الكود
-عدّل ملف `src/lib/auth-helpers.ts`:
+### 5.3 ملف `src/lib/auth-helpers.ts`
 ```typescript
 const USE_LOVABLE_AUTH = false;  // غيّر من true إلى false
 ```
 
+### 5.4 ملف `capacitor.config.ts` (لبناء APK)
+- [ ] تغيير `appId` إلى `com.assassinfx.app`
+- [ ] **حذف قسم `server` بالكامل** (مهم جداً!)
+
+```typescript
+const config: CapacitorConfig = {
+  appId: 'com.assassinfx.app',
+  appName: 'ASSASSIN FX',
+  webDir: 'dist',
+  // لا تضع قسم server هنا!
+};
+```
+
 ---
 
-## ✅ قائمة التحقق النهائية
+## 🔐 المرحلة 6: Google OAuth
 
-### إعداد Supabase
-- [ ] إنشاء مشروع جديد
-- [ ] تنفيذ `scripts/export-schema.sql` (48 جدول)
-- [ ] التحقق من إنشاء جميع الجداول
-- [ ] تفعيل RLS على جميع الجداول
-- [ ] التحقق من حاويات التخزين الـ 7
+- [ ] إنشاء مشروع في [Google Cloud Console](https://console.cloud.google.com)
+- [ ] تفعيل **Google+ API**
+- [ ] إنشاء **OAuth 2.0 credentials** (Web Application)
+- [ ] إضافة Redirect URI:
+  ```
+  https://YOUR_PROJECT_ID.supabase.co/auth/v1/callback
+  ```
+- [ ] في Supabase Dashboard: **Authentication → Providers → Google**
+- [ ] لصق **Client ID** و **Client Secret**
 
-### Edge Functions
-- [ ] تثبيت Supabase CLI
-- [ ] إعداد الأسرار (API Keys)
-- [ ] نشر 8 وظائف: `chat`, `market-data`, `moderate-image`, `send-push-notification`, `fetch-news`, `fetch-article`, `fetch-calendar`, `marqeta-cards`
-- [ ] اختبار المساعد الذكي وبيانات الأسواق
+---
 
-### Firebase FCM
-- [ ] التحقق من إعدادات Firebase في `firebase-config.ts`
-- [ ] التحقق من Service Worker في `public/sw.js`
-- [ ] اختبار إشعارات الدفع
+## 🔔 المرحلة 7: Firebase Push Notifications
 
-### إعداد المشروع
-- [ ] استنساخ الكود من GitHub
-- [ ] تثبيت الـ dependencies
-- [ ] إنشاء ملف `.env`
-- [ ] تحديث `environment.ts`
-- [ ] تغيير `USE_LOVABLE_AUTH = false` في `auth-helpers.ts`
-- [ ] اختبار التشغيل المحلي
+- [ ] التحقق من إعدادات `src/lib/firebase-config.ts`
+- [ ] التحقق من `public/sw.js` (Service Worker)
+- [ ] إذا غيّرت مشروع Firebase:
+  - تحديث `firebaseConfig` في `firebase-config.ts`
+  - تحديث `firebase.initializeApp()` في `public/sw.js`
+  - إنشاء VAPID Key جديد من **Cloud Messaging → Web Push certificates**
 
-### بناء التطبيق
-- [ ] بناء ملفات الويب (`npm run build`)
-- [ ] إضافة Android (`npx cap add android`)
-- [ ] حذف قسم `server` من `capacitor.config.ts`
-- [ ] مزامنة Capacitor (`npx cap sync`)
-- [ ] بناء APK موقّع
-- [ ] اختبار APK على جهاز حقيقي
+---
 
-### النشر
-- [ ] نشر على Vercel/Netlify
-- [ ] تحديث روابط التطبيق
-- [ ] إعداد Google OAuth
-- [ ] اختبار إعادة تعيين كلمة المرور
-- [ ] اختبار التسجيل الجديد
-- [ ] اختبار نظام الدعم الفني
-- [ ] اختبار إعدادات CMS
-- [ ] اختبار نظام التلعيب (النقاط/الشارات)
-- [ ] اختبار إشعارات الدفع (FCM)
+## 🤖 المرحلة 8: Telegram Bot
+
+> ⚠️ هذه الخطوة ضرورية إذا كنت تستخدم النشر التلقائي من تلغرام
+
+- [ ] التأكد من أن `TELEGRAM_BOT_TOKEN` مضاف كـ Secret في Supabase الجديد
+- [ ] التأكد من إضافة Chat IDs الثلاثة:
+  - `TELEGRAM_VIP_CHAT_ID` — قناة VIP
+  - `TELEGRAM_PUBLIC_CHAT_ID` — القناة العامة
+  - `TELEGRAM_NEWS_CHAT_ID` — قناة الأخبار
+- [ ] **تسجيل Webhook الجديد** (مهم جداً!):
+  ```bash
+  curl -X POST https://YOUR_PROJECT.supabase.co/functions/v1/setup-telegram-webhook \
+    -H "Authorization: Bearer YOUR_ANON_KEY" \
+    -H "Content-Type: application/json"
+  ```
+- [ ] اختبار النشر من تلغرام:
+  - نشر إشارة مع `#نشر` في القناة العامة
+  - نشر إشارة مع `#نشر` في قناة VIP
+  - نشر مقال مع `#نشر` في قناة الأخبار
+
+---
+
+## 🚀 المرحلة 9: بناء ونشر
+
+### الويب
+```bash
+npm run build
+# نشر على Vercel
+npx vercel --prod
+# أو Netlify
+npx netlify deploy --prod
+```
+- [ ] تحديث `APP_URLS.production` بالرابط النهائي
+- [ ] تحديث Auth Redirect URLs في Supabase Dashboard
+
+### APK (أندرويد)
+```bash
+npm run build
+npx cap add android      # مرة واحدة فقط
+npx cap sync android
+npx cap open android
+```
+في Android Studio: **Build → Generate Signed Bundle / APK → APK → release**
+
+الملف: `android/app/release/app-release.apk`
+
+---
+
+## ✅ المرحلة 10: اختبار نهائي
+
+### المصادقة
+- [ ] تسجيل حساب جديد
+- [ ] تسجيل دخول بـ Google OAuth
+- [ ] إعادة تعيين كلمة المرور
+
+### الإشارات والتحليلات
+- [ ] استقبال إشارة من تلغرام
+- [ ] استقبال تحديث على إشارة
+- [ ] نشر مقال من تلغرام
+- [ ] نشر إشارة سريعة من داخل التطبيق (أدمن)
+- [ ] نشر تحليل سريع من داخل التطبيق (أدمن)
+- [ ] رفع صور شارتات مع الإشارات
+
+### الميزات الأساسية
+- [ ] المساعد الذكي (AI Chat)
+- [ ] بيانات الأسواق
+- [ ] إشعارات الدفع (Push)
+- [ ] نظام التلعيب (النقاط والشارات)
+- [ ] الدعم الفني
+- [ ] الرسائل الخاصة
+- [ ] المجتمع (الغرف، المواضيع)
+- [ ] خدمة USDT
+- [ ] أكاديمية التعلم
+
+---
+
+## 🔑 ملخص الأسرار المطلوبة (15 سر)
+
+| السر | الاستخدام | ملاحظات |
+|------|-----------|---------|
+| `SUPABASE_URL` | الاتصال بقاعدة البيانات | تلقائي |
+| `SUPABASE_ANON_KEY` | المفتاح العام | تلقائي |
+| `SUPABASE_SERVICE_ROLE_KEY` | Push Notifications | تلقائي |
+| `GOOGLE_AI_API_KEY` | المساعد الذكي | [Google AI Studio](https://aistudio.google.com) |
+| `FINNHUB_API_KEY` | بيانات الأسواق | [finnhub.io](https://finnhub.io) |
+| `LOVABLE_API_KEY` | فحص الصور | يمكن استبداله بـ `GOOGLE_AI_API_KEY` |
+| `TELEGRAM_BOT_TOKEN` | بوت تلغرام | من [@BotFather](https://t.me/BotFather) |
+| `TELEGRAM_VIP_CHAT_ID` | قناة VIP | رقم القناة |
+| `TELEGRAM_PUBLIC_CHAT_ID` | القناة العامة | رقم القناة |
+| `TELEGRAM_NEWS_CHAT_ID` | قناة الأخبار | رقم القناة |
+| `TELEGRAM_WEBHOOK_SECRET` | أمان الـ Webhook | نص عشوائي آمن |
+| `MARQETA_APP_TOKEN` | البطاقات الافتراضية | اختياري |
+| `MARQETA_ADMIN_TOKEN` | البطاقات الافتراضية | اختياري |
+| `MARQETA_BASE_URL` | البطاقات الافتراضية | اختياري |
+
+> 💡 **ملاحظة**: `LOVABLE_API_KEY` يُستخدم حالياً لفحص الصور عبر بوابة Lovable AI. عند الاستقلال الكامل، عدّل وظيفة `moderate-image` لاستخدام `GOOGLE_AI_API_KEY` مباشرةً بدلاً منه.
 
 ---
 
 ## 🆘 حل المشاكل الشائعة
 
 ### "Cannot connect to Supabase"
-- تأكد من صحة `VITE_SUPABASE_URL`
-- تأكد من صحة `VITE_SUPABASE_PUBLISHABLE_KEY`
+- تأكد من صحة `VITE_SUPABASE_URL` و `VITE_SUPABASE_PUBLISHABLE_KEY` في `.env`
 
 ### "RLS policy violation"
 - تأكد من تنفيذ جميع سياسات RLS في Schema
 - تأكد من تسجيل دخول المستخدم
 
 ### "APK لا يعمل"
-- تأكد من حذف قسم `server` من `capacitor.config.ts`
-- أعد بناء المشروع: `npm run build && npx cap sync`
+- تأكد من **حذف قسم `server`** من `capacitor.config.ts`
+- أعد البناء: `npm run build && npx cap sync android`
 
-### "Google Sign-In لا يعمل بعد الترحيل"
-- تأكد من تغيير `USE_LOVABLE_AUTH = false` في `auth-helpers.ts`
+### "Google Sign-In لا يعمل"
+- تأكد من `USE_LOVABLE_AUTH = false` في `auth-helpers.ts`
 - تأكد من إعداد Google OAuth في Supabase Dashboard
 - تحقق من صحة Redirect URI
 
 ### "Push Notifications لا تعمل"
 - تأكد من إعدادات Firebase في `firebase-config.ts`
-- تأكد من تشغيل Service Worker بشكل صحيح
-- تحقق من أن `send-push-notification` Edge Function منشورة
+- تأكد من نشر `send-push-notification` Edge Function
+- تحقق من Service Worker
+
+### "تلغرام لا ينشر في التطبيق"
+- تأكد من تشغيل `setup-telegram-webhook` بعد النشر
+- تحقق من صحة Chat IDs الثلاثة
+- تأكد من استخدام `#نشر` أو `#publish` في الرسالة
+- تحقق من Logs في Supabase Dashboard → Edge Functions → `telegram-webhook`
+
+### "الصور لا تظهر"
+- تأكد من إنشاء جميع حاويات التخزين الـ 8 كـ Public
+- تحقق من سياسات RLS على `storage.objects`
 
 ---
 
