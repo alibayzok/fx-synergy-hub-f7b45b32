@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Radio, Users, Newspaper, Briefcase, BarChart3, User, Crown, MessageSquare, Settings, HelpCircle, GraduationCap } from 'lucide-react';
+import { Home, Radio, Users, Newspaper, Briefcase, BarChart3, User, Crown, MessageSquare, Settings, HelpCircle, GraduationCap, Gift } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { useAuth } from '@/hooks/useAuth';
@@ -16,6 +16,7 @@ const allNavItems = [
   { key: 'messages', path: '/messages', icon: MessageSquare, labelAr: 'الرسائل', labelEn: 'Messages', settingKey: null },
   { key: 'gamification', path: '/gamification', icon: Crown, labelAr: 'النقاط', labelEn: 'Points', settingKey: null },
   { key: 'vip', path: '/vip', icon: Crown, labelAr: 'VIP', labelEn: 'VIP', settingKey: null },
+  { key: 'rewards', path: '/rewards', icon: Gift, labelAr: 'المكافآت', labelEn: 'Rewards', settingKey: null },
 ];
 
 const bottomNavItems = [
