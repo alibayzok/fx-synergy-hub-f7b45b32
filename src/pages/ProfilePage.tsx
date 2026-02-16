@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, Link2, Copy, Check as CheckIcon2 } from 'lucide-react';
+import { MessageSquare, Link2, Copy, Check as CheckIcon2, Gift } from 'lucide-react';
 import { 
   Settings, 
   Globe, 
@@ -463,6 +463,26 @@ const ProfilePage = () => {
         )}
 
         {/* ═══════════════════════════════════════════ */}
+        {/* ★ REWARDS SHORTCUT ★ */}
+        {/* ═══════════════════════════════════════════ */}
+        {user && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.115 }}>
+            <button onClick={() => navigate('/rewards')}
+              className="w-full flex items-center justify-between p-4 rounded-xl glass-card hover-glow transition-all border border-primary/20">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-500/20 to-primary/20 flex items-center justify-center">
+                  <Gift className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <span className="font-medium text-foreground block text-start">{isRTL ? 'المكافآت والاستبدال' : 'Rewards & Redeem'}</span>
+                  <span className="text-[10px] text-muted-foreground">{isRTL ? 'استبدل نقاطك بمكافآت رائعة' : 'Redeem your points for rewards'}</span>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground rtl:rotate-180" />
+            </button>
+          </motion.div>
+        )}
+
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
