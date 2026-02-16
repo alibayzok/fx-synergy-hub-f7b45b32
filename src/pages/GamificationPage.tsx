@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { APP_URLS } from '@/config/environment';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Trophy, Star, Award, History, Crown, ChevronRight, ArrowLeft, Link2, Copy, Check } from 'lucide-react';
@@ -27,7 +28,7 @@ const GamificationPage = () => {
   const { toast } = useToast();
 
   const referralCode = profile?.referral_code || '';
-  const referralLink = referralCode ? `https://fx-synergy-hub.lovable.app/?ref=${referralCode}` : '';
+  const referralLink = referralCode ? `${APP_URLS.production}/?ref=${referralCode}` : '';
 
   const copyReferralLink = () => {
     if (referralLink) {
