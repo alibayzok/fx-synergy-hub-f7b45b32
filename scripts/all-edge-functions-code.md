@@ -1,36 +1,20 @@
-# 📋 جميع أكواد Edge Functions - جاهزة للنسخ
+# 📦 جميع أكواد Edge Functions - جاهزة للنسخ
 
-## 🔧 تعليمات الاستخدام
-
-1. افتح داشبورد Supabase → Edge Functions
-2. أنشئ function جديدة بالاسم المحدد
-3. انسخ الكود والصقه
-4. **مهم:** عطّل "Verify JWT" لكل function من الإعدادات
-5. أضف الـ Secrets المطلوبة من: Project Settings → Edge Functions → Secrets
-
----
-
-## 📑 قائمة الأسرار المطلوبة (Secrets)
-
-| Secret | مطلوب لـ |
-|--------|---------|
-| `LOVABLE_API_KEY` أو `GOOGLE_AI_API_KEY` | chat, moderate-image, fetch-news, fetch-article, fetch-calendar |
-| `FINNHUB_API_KEY` | market-data |
-| `FCM_SERVER_KEY` | send-push-notification |
-| `MARQETA_APP_TOKEN` | marqeta-cards |
-| `MARQETA_ADMIN_TOKEN` | marqeta-cards |
-| `MARQETA_BASE_URL` | marqeta-cards (اختياري، الافتراضي: sandbox) |
-| `TELEGRAM_BOT_TOKEN` | telegram-webhook, setup-telegram-webhook |
-| `TELEGRAM_WEBHOOK_SECRET` | telegram-webhook, setup-telegram-webhook |
-
-> ملاحظة: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` تكون متوفرة تلقائياً.
+> هذا الملف يحتوي على كود كل الـ Edge Functions جاهز للنسخ واللصق في داشبورد Supabase.
+> 
+> **تعليمات الاستخدام:**
+> 1. اذهب إلى Supabase Dashboard → Edge Functions
+> 2. أنشئ Function جديدة بنفس الاسم
+> 3. انسخ الكود والصقه
+> 4. **مهم:** عطّل "Verify JWT" لكل function من الإعدادات
+> 5. أضف الأسرار (Secrets) المطلوبة من Dashboard → Settings → Secrets
 
 ---
 
-## 1️⃣ chat
+## 1. chat
 
-**الوصف:** مساعد AI ذكي للتداول
-**الأسرار:** `LOVABLE_API_KEY` أو `GOOGLE_AI_API_KEY`
+**الوصف:** مساعد ذكي بالذكاء الاصطناعي  
+**الأسرار المطلوبة:** `LOVABLE_API_KEY` أو `GOOGLE_AI_API_KEY` (اختياري)
 
 ```typescript
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -200,10 +184,10 @@ serve(async (req) => {
 
 ---
 
-## 2️⃣ market-data
+## 2. market-data
 
-**الوصف:** بيانات أسعار السوق (فوركس، معادن، كريبتو)
-**الأسرار:** `FINNHUB_API_KEY`
+**الوصف:** جلب بيانات الأسواق المالية  
+**الأسرار المطلوبة:** `FINNHUB_API_KEY`
 
 ```typescript
 const corsHeaders = {
@@ -317,10 +301,10 @@ Deno.serve(async (req) => {
 
 ---
 
-## 3️⃣ moderate-image
+## 3. moderate-image
 
-**الوصف:** فحص الصور تلقائياً للمحتوى غير اللائق
-**الأسرار:** `LOVABLE_API_KEY`
+**الوصف:** فحص الصور بالذكاء الاصطناعي  
+**الأسرار المطلوبة:** `LOVABLE_API_KEY`
 
 ```typescript
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -532,10 +516,10 @@ function getModerationMessage(category: string): string {
 
 ---
 
-## 4️⃣ send-push-notification
+## 4. send-push-notification
 
-**الوصف:** إرسال إشعارات push عبر Firebase
-**الأسرار:** `FCM_SERVER_KEY`
+**الوصف:** إرسال إشعارات Firebase  
+**الأسرار المطلوبة:** `FCM_SERVER_KEY`
 
 ```typescript
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -674,10 +658,10 @@ Deno.serve(async (req) => {
 
 ---
 
-## 5️⃣ fetch-news
+## 5. fetch-news
 
-**الوصف:** جلب أخبار الأسواق من مصادر RSS وترجمتها للعربية
-**الأسرار:** `LOVABLE_API_KEY`
+**الوصف:** جلب الأخبار من RSS مع ترجمة عربية  
+**الأسرار المطلوبة:** `LOVABLE_API_KEY`
 
 ```typescript
 const corsHeaders = {
@@ -908,10 +892,10 @@ Deno.serve(async (req) => {
 
 ---
 
-## 6️⃣ fetch-article
+## 6. fetch-article
 
-**الوصف:** جلب وترجمة محتوى المقالات
-**الأسرار:** `LOVABLE_API_KEY`
+**الوصف:** جلب وترجمة محتوى المقالات  
+**الأسرار المطلوبة:** `LOVABLE_API_KEY`
 
 ```typescript
 const corsHeaders = {
@@ -1069,10 +1053,10 @@ Deno.serve(async (req) => {
 
 ---
 
-## 7️⃣ fetch-calendar
+## 7. fetch-calendar
 
-**الوصف:** التقويم الاقتصادي مع ترجمة عربية
-**الأسرار:** `LOVABLE_API_KEY`
+**الوصف:** التقويم الاقتصادي مع ترجمة عربية  
+**الأسرار المطلوبة:** `LOVABLE_API_KEY`
 
 ```typescript
 const corsHeaders = {
@@ -1253,10 +1237,10 @@ Deno.serve(async (req) => {
 
 ---
 
-## 8️⃣ marqeta-cards
+## 8. marqeta-cards
 
-**الوصف:** إدارة البطاقات الافتراضية عبر Marqeta API
-**الأسرار:** `MARQETA_APP_TOKEN`, `MARQETA_ADMIN_TOKEN`, `MARQETA_BASE_URL` (اختياري)
+**الوصف:** إدارة البطاقات الافتراضية  
+**الأسرار المطلوبة:** `MARQETA_APP_TOKEN`, `MARQETA_ADMIN_TOKEN`, `MARQETA_BASE_URL` (اختياري)
 
 ```typescript
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -1665,25 +1649,23 @@ Deno.serve(async (req) => {
 
 ---
 
-## 9️⃣ telegram-webhook
+## 9. telegram-webhook
 
-**الوصف:** استقبال رسائل تلغرام وحفظها كتحديثات إشارات
-**الأسرار:** `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`
+**الوصف:** استقبال تحديثات تلغرام  
+**الأسرار المطلوبة:** `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`
 
-> ⚠️ هذا الملف يحتاج لكتابة الكود الكامل. الملف الحالي فارغ تقريباً. يجب كتابة الكود حسب احتياجات البوت.
+> ⚠️ **ملاحظة:** هذا الملف فارغ حالياً في المشروع ويحتاج لإعادة كتابته حسب احتياجاتك.
 
 ```typescript
-// TODO: أضف كود webhook الخاص ببوت تلغرام هنا
-// الكود يجب أن يستقبل رسائل من قناة تلغرام ويحفظها في جدول signal_updates
-// يحتاج: TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+d
 ```
 
 ---
 
-## 🔟 setup-telegram-webhook
+## 10. setup-telegram-webhook
 
-**الوصف:** تسجيل webhook تلغرام مع Telegram API
-**الأسرار:** `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`
+**الوصف:** تسجيل webhook في تلغرام  
+**الأسرار المطلوبة:** `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`
 
 ```typescript
 const corsHeaders = {
@@ -1747,18 +1729,33 @@ Deno.serve(async (req) => {
 
 ---
 
-## ⚙️ إعدادات config.toml
+## 📋 ملخص الأسرار المطلوبة
 
-عطّل "Verify JWT" لكل function في الداشبورد، أو استخدم هذا التكوين:
+| السر | الوظائف التي تستخدمه |
+|------|---------------------|
+| `LOVABLE_API_KEY` | chat, moderate-image, fetch-news, fetch-article, fetch-calendar |
+| `GOOGLE_AI_API_KEY` | chat (بديل اختياري) |
+| `FINNHUB_API_KEY` | market-data |
+| `FCM_SERVER_KEY` | send-push-notification |
+| `MARQETA_APP_TOKEN` | marqeta-cards |
+| `MARQETA_ADMIN_TOKEN` | marqeta-cards |
+| `MARQETA_BASE_URL` | marqeta-cards (اختياري) |
+| `TELEGRAM_BOT_TOKEN` | telegram-webhook, setup-telegram-webhook |
+| `TELEGRAM_WEBHOOK_SECRET` | telegram-webhook, setup-telegram-webhook |
+
+## ⚙️ إعدادات config.toml
 
 ```toml
 [functions.chat]
 verify_jwt = false
 
+[functions.market-data]
+verify_jwt = false
+
 [functions.moderate-image]
 verify_jwt = false
 
-[functions.market-data]
+[functions.send-push-notification]
 verify_jwt = false
 
 [functions.fetch-news]
@@ -1773,12 +1770,11 @@ verify_jwt = false
 [functions.marqeta-cards]
 verify_jwt = false
 
-[functions.send-push-notification]
-verify_jwt = false
-
 [functions.telegram-webhook]
 verify_jwt = false
 
 [functions.setup-telegram-webhook]
 verify_jwt = false
 ```
+
+> **⚠️ تذكير:** عطّل "Verify JWT" لكل function من داشبورد Supabase → Edge Functions → Settings
