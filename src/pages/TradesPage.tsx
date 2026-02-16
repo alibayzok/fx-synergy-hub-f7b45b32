@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Radio, Eye, Heart, Lock, Share2, LogIn, Crown, Zap, 
-  TrendingUp, Clock, Sparkles, Shield, ChevronDown, Plus
+  TrendingUp, Clock, Sparkles, Shield, ChevronDown, Plus,
+  ArrowUpRight
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Badge } from '@/components/ui/badge';
@@ -286,152 +287,186 @@ const SignalsPage = () => {
             {filteredSignals.map((post, index) => {
               const isLocked = post.visibility === 'vip' && !isVipUser;
               const isVipSignal = post.visibility === 'vip';
+              const signalUpdates = updatesMap[post.id] || [];
 
               return (
                 <motion.div
                   key={post.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0, y: 30, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ delay: index * 0.05, type: 'spring', damping: 25 }}
+                  transition={{ delay: index * 0.06, type: 'spring', damping: 28, stiffness: 200 }}
                 >
-                  <div
-                    className={`relative rounded-2xl overflow-hidden shadow-sm transition-all hover:shadow-md ${
-                      isVipSignal
-                        ? 'border border-amber-500/25'
-                        : 'border border-border/30'
-                    }`}
-                    style={{
-                      background: isVipSignal
-                        ? 'linear-gradient(145deg, hsl(var(--card) / 0.95) 0%, hsl(38 100% 50% / 0.03) 100%)'
-                        : 'linear-gradient(145deg, hsl(var(--card) / 0.9) 0%, hsl(var(--card) / 0.7) 100%)',
-                      backdropFilter: 'blur(8px)',
-                    }}
+                  <div className={`relative rounded-2xl overflow-hidden transition-all duration-300 ${
+                    isVipSignal ? 'signal-card-vip' : 'signal-card-free'
+                  }`}
+                    style={{ backdropFilter: 'blur(12px)' }}
                   >
-                    {/* VIP Header Strip */}
+                    {/* ═══ VIP Header Strip with shimmer ═══ */}
                     {isVipSignal && (
-                      <div className="flex items-center gap-2 px-4 py-2" style={{
-                        background: 'linear-gradient(90deg, hsl(45 100% 50% / 0.12) 0%, hsl(38 100% 40% / 0.06) 100%)',
-                        borderBottom: '1px solid hsl(45 100% 50% / 0.1)',
-                      }}>
-                        <Crown className="w-3.5 h-3.5 text-amber-400" />
-                        <span className="text-xs font-bold text-amber-400 tracking-wide">VIP SIGNAL</span>
+                      <div className="vip-header-strip flex items-center gap-2 px-4 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <div className="w-5 h-5 rounded-md bg-gradient-to-br from-amber-400 to-yellow-600 flex items-center justify-center" style={{
+                            boxShadow: '0 0 10px hsl(45 100% 50% / 0.3)',
+                          }}>
+                            <Crown className="w-3 h-3 text-black" />
+                          </div>
+                          <span className="text-xs font-extrabold tracking-[0.15em] uppercase gold-gradient">VIP SIGNAL</span>
+                        </div>
                         <div className="flex-1" />
-                        <Shield className="w-3 h-3 text-amber-400/60" />
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                          <span className="text-[10px] text-amber-400/70 font-medium">EXCLUSIVE</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ═══ Free Signal Header ═══ */}
+                    {!isVipSignal && (
+                      <div className="flex items-center gap-2 px-4 py-2" style={{
+                        borderBottom: '1px solid hsl(var(--border) / 0.15)',
+                      }}>
+                        <div className="w-5 h-5 rounded-md bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center">
+                          <Radio className="w-3 h-3 text-primary" />
+                        </div>
+                        <span className="text-[10px] font-bold tracking-[0.1em] uppercase text-primary/70">FREE SIGNAL</span>
+                        <div className="flex-1" />
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-1.5 h-1.5 rounded-full bg-profit animate-pulse" />
+                          <span className="text-[10px] text-muted-foreground/60 font-medium">LIVE</span>
+                        </div>
                       </div>
                     )}
 
                     <div className="p-4 space-y-3">
-                      {/* Badges row */}
+                      {/* ═══ Badges Row ═══ */}
                       <div className="flex items-center gap-2 flex-wrap">
                         {post.symbol && (
-                          <Badge className="font-mono text-xs bg-primary/15 text-primary border border-primary/30 font-bold tracking-wider px-2.5">
+                          <Badge className="symbol-badge font-mono text-xs bg-gradient-to-r from-primary/20 to-primary/10 text-primary border border-primary/30 font-extrabold tracking-widest px-3 py-0.5">
                             {post.symbol}
                           </Badge>
                         )}
                         {post.asset_type && (
-                          <Badge variant="secondary" className="text-[10px] font-medium">
+                          <Badge variant="secondary" className="text-[10px] font-semibold bg-secondary/60 border border-border/30">
                             {post.asset_type === 'forex' ? '💱 فوركس' : post.asset_type === 'crypto' ? '₿ كريبتو' : '🥇 معادن'}
                           </Badge>
                         )}
                         {post.timeframe && (
-                          <Badge variant="outline" className="text-[10px] font-medium bg-muted/30">
-                            <Clock className="w-3 h-3 mr-0.5" />
+                          <Badge variant="outline" className="text-[10px] font-semibold bg-muted/20 border-border/40">
+                            <Clock className="w-3 h-3 mr-0.5 opacity-60" />
                             {post.timeframe}
                           </Badge>
                         )}
                       </div>
 
-                      {/* Title */}
+                      {/* ═══ Title ═══ */}
                       <h3 className="font-bold text-[15px] leading-snug text-foreground">{post.title}</h3>
 
-                      {/* Chart images - Premium gallery */}
+                      {/* ═══ Chart Images - Cinematic gallery ═══ */}
                       {!isLocked && post.attachments && post.attachments.length > 0 && (
-                        <div className={`${
-                          post.attachments.length === 1 
-                            ? '' 
-                            : post.attachments.length === 2 
-                              ? 'grid grid-cols-2 gap-1.5' 
-                              : 'grid grid-cols-2 gap-1.5'
+                        <div className={`rounded-xl overflow-hidden ${
+                          post.attachments.length === 1 ? '' : 'grid grid-cols-2 gap-1'
                         }`}>
                           {post.attachments.map((url, imgIdx) => (
                             <div
                               key={imgIdx}
-                              className={`relative rounded-xl overflow-hidden bg-muted/50 cursor-pointer group ${
-                                post.attachments!.length === 1 ? 'aspect-[16/10]' : 'aspect-video'
+                              className={`relative overflow-hidden cursor-pointer group ${
+                                post.attachments!.length === 1 
+                                  ? 'aspect-[16/10] rounded-xl' 
+                                  : 'aspect-video'
+                              } ${
+                                post.attachments!.length === 3 && imgIdx === 0 ? 'col-span-2' : ''
                               }`}
                               onClick={() => setSelectedImage(url)}
                             >
                               <img
                                 src={url}
                                 alt={`Chart ${imgIdx + 1}`}
-                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                                 loading="lazy"
                               />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                              <div className="absolute inset-0 signal-image-overlay opacity-0 group-hover:opacity-100 transition-all duration-500" />
+                              <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:translate-y-0 translate-y-2">
+                                <div className="w-7 h-7 rounded-lg bg-black/60 backdrop-blur-sm flex items-center justify-center border border-white/10">
+                                  <ArrowUpRight className="w-3.5 h-3.5 text-white" />
+                                </div>
+                              </div>
+                              {isVipSignal && imgIdx === 0 && (
+                                <div className="absolute top-2 left-2">
+                                  <div className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-gradient-to-r from-amber-400/90 to-yellow-500/90 text-black backdrop-blur-sm">
+                                    📊 CHART
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
                       )}
 
-                      {/* Content */}
-                      <div className={`relative ${isLocked ? 'max-h-20 overflow-hidden' : ''}`}>
-                        <p className="text-sm text-foreground/75 leading-relaxed whitespace-pre-wrap">
+                      {/* ═══ Content ═══ */}
+                      <div className={`relative ${isLocked ? 'max-h-24 overflow-hidden' : ''}`}>
+                        <p className="text-sm text-foreground/70 leading-relaxed whitespace-pre-wrap">
                           {isLocked ? post.content.substring(0, 100) + '...' : post.content}
                         </p>
                         {isLocked && (
-                          <div className="absolute inset-0 flex flex-col items-center justify-end pb-1" style={{
-                            background: 'linear-gradient(to top, hsl(var(--card)) 20%, hsl(var(--card) / 0.8) 60%, transparent 100%)',
-                          }}>
-                            <Button
-                              size="sm"
-                              onClick={() => navigate('/vip')}
-                              className="bg-gradient-to-r from-amber-400 to-yellow-500 text-black text-xs h-8 font-bold shadow-lg gap-1.5 px-4"
-                              style={{ boxShadow: '0 4px 16px hsl(45 100% 50% / 0.3)' }}
+                          <div className="absolute inset-0 vip-lock-overlay flex flex-col items-center justify-end pb-2">
+                            <motion.div
+                              initial={{ scale: 0.9, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              transition={{ delay: 0.2 }}
                             >
-                              <Lock className="w-3.5 h-3.5" />
-                              فتح بالترقية لـ VIP
-                            </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => navigate('/vip')}
+                                className="bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-400 text-black text-xs h-9 font-bold gap-1.5 px-5 rounded-xl border-0"
+                                style={{ 
+                                  boxShadow: '0 4px 20px hsl(45 100% 50% / 0.35), inset 0 1px 0 hsl(0 0% 100% / 0.2)',
+                                }}
+                              >
+                                <Lock className="w-3.5 h-3.5" />
+                                فتح المحتوى الحصري
+                                <Crown className="w-3.5 h-3.5" />
+                              </Button>
+                            </motion.div>
                           </div>
                         )}
                       </div>
 
-                      {/* Updates Section */}
-                      {!isLocked && (
+                      {/* ═══ Updates Section ═══ */}
+                      {!isLocked && signalUpdates.length > 0 && (
                         <UpdatesSection
-                          updates={updatesMap[post.id] || []}
+                          updates={signalUpdates}
                           language={i18n.language}
                         />
                       )}
 
-                      {/* Footer - Premium reactions bar */}
-                      <div className="flex items-center justify-between pt-2 border-t border-border/20">
-                        <div className="flex items-center gap-1.5">
-                          {/* Like button */}
+                      {/* ═══ Footer - Premium reactions bar ═══ */}
+                      <div className="flex items-center justify-between pt-3" style={{
+                        borderTop: isVipSignal 
+                          ? '1px solid hsl(45 100% 50% / 0.1)' 
+                          : '1px solid hsl(var(--border) / 0.15)',
+                      }}>
+                        <div className="flex items-center gap-2">
                           <button
                             onClick={() => !isLocked && handleLike(post.id)}
                             disabled={isLocked}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${
                               likedPosts.has(post.id)
-                                ? 'bg-red-500/15 text-red-400 border border-red-500/20'
-                                : 'bg-muted/40 text-muted-foreground hover:bg-muted/70 border border-transparent'
+                                ? 'bg-gradient-to-r from-red-500/15 to-pink-500/10 text-red-400 border border-red-500/25 shadow-sm'
+                                : 'bg-muted/30 text-muted-foreground hover:bg-muted/60 border border-transparent'
                             }`}
                           >
-                            <Heart className={`w-3.5 h-3.5 ${likedPosts.has(post.id) ? 'fill-current' : ''}`} />
+                            <Heart className={`w-3.5 h-3.5 transition-all ${likedPosts.has(post.id) ? 'fill-current scale-110' : ''}`} />
                             {(post.likes_count || 0) > 0 && <span>{post.likes_count}</span>}
                           </button>
-
-                          {/* Share */}
                           <button
                             onClick={() => handleShare(post)}
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs bg-muted/40 text-muted-foreground hover:bg-muted/70 transition-all border border-transparent"
+                            className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs bg-muted/30 text-muted-foreground hover:bg-muted/60 transition-all duration-200 border border-transparent"
                           >
                             <Share2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
-
-                        {/* Meta info */}
-                        <div className="flex items-center gap-3 text-[11px] text-muted-foreground/70">
+                        <div className="flex items-center gap-3 text-[10px] font-medium text-muted-foreground/50">
                           <span className="flex items-center gap-1">
                             <Eye className="w-3 h-3" />
                             {post.views_count || 0}
