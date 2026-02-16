@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import {
   Briefcase, Plus, Trash2, Save, Edit2, ExternalLink, Eye, EyeOff,
-  GripVertical, Star, StarOff, Loader2, Building2, Palette, Link2, Type
+  GripVertical, Star, StarOff, Loader2, Building2, Palette, Link2, Type,
+  Coins, CreditCard
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -90,18 +91,36 @@ export const ServicesAndBrokersManagement = () => {
   const [featuresText, setFeaturesText] = useState({ ar: '', en: '' });
   const [statsText, setStatsText] = useState('');
 
+  // Payment methods
+  const [paymentMethods, setPaymentMethods] = useState<{ key: string; label: string }[]>([]);
+  const [savingPayments, setSavingPayments] = useState(false);
+  const [newMethodKey, setNewMethodKey] = useState('');
+  const [newMethodLabel, setNewMethodLabel] = useState('');
+
   useEffect(() => { fetchAll(); }, []);
 
   const fetchAll = async () => {
     setLoading(true);
-    const [sRes, bRes] = await Promise.all([
+    const [sRes, bRes, pmRes] = await Promise.all([
       supabase.from('services').select('*').order('sort_order'),
       supabase.from('brokers').select('*').order('sort_order'),
+      supabase.from('app_settings').select('setting_value').eq('setting_key', 'usdt_payment_methods').single(),
     ]);
     if (sRes.data) setServices(sRes.data as any);
     if (bRes.data) setBrokers(bRes.data.map((b: any) => ({ ...b, stats: b.stats || [] })) as any);
+    // Parse payment methods
+    if (pmRes.data?.setting_value) {
+      const parsed = pmRes.data.setting_value.split(',').filter(Boolean).map((pair: string) => {
+        const [key, ...rest] = pair.split(':');
+        return { key: key.trim(), label: (rest.join(':') || key).trim() };
+      });
+      setPaymentMethods(parsed);
+    }
     setLoading(false);
   };
+
+
+
 
   // ===== SERVICES =====
   const openServiceDialog = (service?: Service) => {
@@ -239,14 +258,18 @@ export const ServicesAndBrokersManagement = () => {
       </motion.div>
 
       <Tabs defaultValue="services">
-        <TabsList className="w-full grid grid-cols-2">
+        <TabsList className="w-full grid grid-cols-3">
           <TabsTrigger value="services" className="gap-2">
             <Briefcase className="w-4 h-4" />
-            الخدمات ({services.length})
+            الخدمات
           </TabsTrigger>
           <TabsTrigger value="brokers" className="gap-2">
             <Building2 className="w-4 h-4" />
-            البروكرات ({brokers.length})
+            البروكرات
+          </TabsTrigger>
+          <TabsTrigger value="payments" className="gap-2">
+            <CreditCard className="w-4 h-4" />
+            طرق الدفع
           </TabsTrigger>
         </TabsList>
 
@@ -396,6 +419,109 @@ export const ServicesAndBrokersManagement = () => {
               لا توجد بروكرات بعد. أضف بروكر جديد!
             </div>
           )}
+        </TabsContent>
+
+        {/* Payment Methods Tab */}
+        <TabsContent value="payments" className="space-y-4 mt-4">
+          <div className="rounded-xl border border-border/40 bg-card/50 p-4 space-y-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                <Coins className="w-5 h-5 text-emerald-400" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground">طرق الدفع المتاحة</h3>
+                <p className="text-xs text-muted-foreground">تظهر للمستخدمين عند طلب شراء/بيع USDT</p>
+              </div>
+            </div>
+
+            {/* Existing methods */}
+            <div className="space-y-2">
+              {paymentMethods.map((method, idx) => (
+                <div key={idx} className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-muted/20">
+                  <div className="flex-1">
+                    <Input
+                      value={method.label}
+                      onChange={(e) => {
+                        const updated = [...paymentMethods];
+                        updated[idx] = { ...updated[idx], label: e.target.value };
+                        setPaymentMethods(updated);
+                      }}
+                      placeholder="اسم طريقة الدفع"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <Badge variant="secondary" className="text-[10px] font-mono shrink-0">{method.key}</Badge>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-destructive h-8 w-8 p-0"
+                    onClick={() => setPaymentMethods(prev => prev.filter((_, i) => i !== idx))}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+
+            {/* Add new method */}
+            <div className="flex items-end gap-2 pt-2 border-t border-border/30">
+              <div className="flex-1 space-y-1">
+                <Label className="text-xs">المعرّف (إنجليزي)</Label>
+                <Input
+                  value={newMethodKey}
+                  onChange={(e) => setNewMethodKey(e.target.value.replace(/[^a-z0-9_]/gi, '_').toLowerCase())}
+                  placeholder="omt"
+                  className="h-8 text-sm font-mono"
+                  dir="ltr"
+                />
+              </div>
+              <div className="flex-1 space-y-1">
+                <Label className="text-xs">الاسم</Label>
+                <Input
+                  value={newMethodLabel}
+                  onChange={(e) => setNewMethodLabel(e.target.value)}
+                  placeholder="OMT"
+                  className="h-8 text-sm"
+                />
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 gap-1"
+                disabled={!newMethodKey || !newMethodLabel}
+                onClick={() => {
+                  setPaymentMethods(prev => [...prev, { key: newMethodKey, label: newMethodLabel }]);
+                  setNewMethodKey('');
+                  setNewMethodLabel('');
+                }}
+              >
+                <Plus className="w-3.5 h-3.5" /> إضافة
+              </Button>
+            </div>
+
+            {/* Save */}
+            <Button
+              className="w-full gap-2"
+              disabled={savingPayments}
+              onClick={async () => {
+                setSavingPayments(true);
+                const value = paymentMethods.map(m => `${m.key}:${m.label}`).join(',');
+                const { error } = await supabase
+                  .from('app_settings')
+                  .update({ setting_value: value })
+                  .eq('setting_key', 'usdt_payment_methods');
+                if (error) {
+                  toast({ title: 'خطأ', description: error.message, variant: 'destructive' });
+                } else {
+                  toast({ title: 'تم حفظ طرق الدفع ✅' });
+                }
+                setSavingPayments(false);
+              }}
+            >
+              {savingPayments ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              حفظ التغييرات
+            </Button>
+          </div>
         </TabsContent>
       </Tabs>
 
@@ -592,6 +718,7 @@ export const ServicesAndBrokersManagement = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
     </div>
   );
 };
