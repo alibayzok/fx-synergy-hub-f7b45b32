@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { APP_URLS } from '@/config/environment';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -93,7 +94,7 @@ const ProfilePage = () => {
 
   const isRTL = i18n.language === 'ar';
   const referralCode = profile?.referral_code || '';
-  const referralLink = referralCode ? `https://fx-synergy-hub.lovable.app/?ref=${referralCode}` : '';
+  const referralLink = referralCode ? `${APP_URLS.production}/?ref=${referralCode}` : '';
 
   const copyReferralLink = () => {
     if (referralLink) {

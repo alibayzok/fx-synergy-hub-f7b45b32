@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { APP_URLS } from '@/config/environment';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Gift, ArrowLeft, Users, Trophy, Clock, CheckCircle2, XCircle, Send, Link2, Copy, Check, ArrowDownToLine } from 'lucide-react';
@@ -44,7 +45,7 @@ const RewardsPage = () => {
   const [confirmReward, setConfirmReward] = useState<any>(null);
 
   const referralCode = profile?.referral_code || '';
-  const referralLink = referralCode ? `https://fx-synergy-hub.lovable.app/?ref=${referralCode}` : '';
+  const referralLink = referralCode ? `${APP_URLS.production}/?ref=${referralCode}` : '';
   const currentPoints = myPoints?.total_points || 0;
 
   const copyReferralLink = () => {
