@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Upload, FileCheck, Camera, Loader2, CheckCircle2 } from 'lucide-react';
+import { Upload, FileCheck, Loader2, CheckCircle2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -23,7 +23,6 @@ export const KYCUploadDialog = ({ open, onOpenChange }: KYCUploadDialogProps) =>
   const [docType, setDocType] = useState('id_card');
   const [frontFile, setFrontFile] = useState<File | null>(null);
   const [backFile, setBackFile] = useState<File | null>(null);
-  const [selfieFile, setSelfieFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -47,13 +46,12 @@ export const KYCUploadDialog = ({ open, onOpenChange }: KYCUploadDialogProps) =>
   };
 
   const handleSubmit = async () => {
-    if (!user || !frontFile || !selfieFile) return;
+    if (!user || !frontFile) return;
 
     setUploading(true);
     try {
       const timestamp = Date.now();
       const frontUrl = await uploadFile(frontFile, `${user.id}/front_${timestamp}.${frontFile.name.split('.').pop()}`);
-      const selfieUrl = await uploadFile(selfieFile, `${user.id}/selfie_${timestamp}.${selfieFile.name.split('.').pop()}`);
       let backUrl = null;
       if (backFile) {
         backUrl = await uploadFile(backFile, `${user.id}/back_${timestamp}.${backFile.name.split('.').pop()}`);
@@ -64,7 +62,7 @@ export const KYCUploadDialog = ({ open, onOpenChange }: KYCUploadDialogProps) =>
         document_type: docType,
         document_front_url: frontUrl,
         document_back_url: backUrl,
-        selfie_url: selfieUrl,
+        selfie_url: 'not_required',
         status: 'pending',
       });
 
@@ -81,7 +79,6 @@ export const KYCUploadDialog = ({ open, onOpenChange }: KYCUploadDialogProps) =>
         setSuccess(false);
         setFrontFile(null);
         setBackFile(null);
-        setSelfieFile(null);
       }, 2000);
     } catch (err: any) {
       toast({ title: isRTL ? 'خطأ' : 'Error', description: err.message, variant: 'destructive' });
@@ -192,18 +189,10 @@ export const KYCUploadDialog = ({ open, onOpenChange }: KYCUploadDialogProps) =>
             icon={Upload}
           />
 
-          {/* Selfie */}
-          <FileInput
-            label={isRTL ? 'صورة سيلفي مع الهوية' : 'Selfie with ID'}
-            file={selfieFile}
-            onFile={setSelfieFile}
-            icon={Camera}
-          />
-
           {/* Submit */}
           <Button
             onClick={handleSubmit}
-            disabled={!frontFile || !selfieFile || uploading}
+            disabled={!frontFile || uploading}
             className="w-full gap-2 rounded-xl"
           >
             {uploading ? (
