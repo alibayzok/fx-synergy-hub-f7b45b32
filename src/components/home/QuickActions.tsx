@@ -13,7 +13,7 @@ const actions = [
   { key: 'gamification', icon: Trophy, gradient: 'from-amber-500 to-yellow-400', glow: 'shadow-amber-500/20', settingKey: null },
   { key: 'rewards', icon: Gift, gradient: 'from-rose-500 to-pink-400', glow: 'shadow-rose-500/20', settingKey: null },
   { key: 'pipCalculator', icon: Calculator, gradient: 'from-orange-500 to-red-400', glow: 'shadow-orange-500/20', settingKey: null },
-  { key: 'installApp', icon: Download, gradient: 'from-green-500 to-emerald-400', glow: 'shadow-green-500/20', settingKey: null },
+  { key: 'installApp', icon: Download, gradient: 'from-green-500 to-emerald-400', glow: 'shadow-green-500/20', settingKey: 'show_install_button' },
 ];
 
 interface QuickActionsProps {
