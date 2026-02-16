@@ -1005,10 +1005,13 @@ export type Database = {
           display_name: string | null
           first_name: string | null
           id: string
+          is_verified: boolean
+          kyc_status: string
           language: string | null
           last_name: string | null
           onboarding_completed: boolean | null
           phone: string | null
+          phone_verified: boolean
           referral_code: string | null
           trading_preferences: Json | null
           updated_at: string
@@ -1022,10 +1025,13 @@ export type Database = {
           display_name?: string | null
           first_name?: string | null
           id?: string
+          is_verified?: boolean
+          kyc_status?: string
           language?: string | null
           last_name?: string | null
           onboarding_completed?: boolean | null
           phone?: string | null
+          phone_verified?: boolean
           referral_code?: string | null
           trading_preferences?: Json | null
           updated_at?: string
@@ -1039,10 +1045,13 @@ export type Database = {
           display_name?: string | null
           first_name?: string | null
           id?: string
+          is_verified?: boolean
+          kyc_status?: string
           language?: string | null
           last_name?: string | null
           onboarding_completed?: boolean | null
           phone?: string | null
+          phone_verified?: boolean
           referral_code?: string | null
           trading_preferences?: Json | null
           updated_at?: string
@@ -2015,6 +2024,48 @@ export type Database = {
         }
         Relationships: []
       }
+      verification_requests: {
+        Row: {
+          created_at: string
+          document_back_url: string | null
+          document_front_url: string
+          document_type: string
+          id: string
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          selfie_url: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          document_back_url?: string | null
+          document_front_url: string
+          document_type?: string
+          id?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          selfie_url: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          document_back_url?: string | null
+          document_front_url?: string
+          document_type?: string
+          id?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          selfie_url?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       vip_subscriptions: {
         Row: {
           admin_notes: string | null
@@ -2112,10 +2163,13 @@ export type Database = {
           display_name: string | null
           first_name: string | null
           id: string | null
+          is_verified: boolean | null
+          kyc_status: string | null
           language: string | null
           last_name: string | null
           onboarding_completed: boolean | null
           phone: string | null
+          phone_verified: boolean | null
           trading_preferences: Json | null
           updated_at: string | null
           user_id: string | null
@@ -2128,10 +2182,13 @@ export type Database = {
           display_name?: string | null
           first_name?: string | null
           id?: string | null
+          is_verified?: boolean | null
+          kyc_status?: string | null
           language?: string | null
           last_name?: string | null
           onboarding_completed?: boolean | null
           phone?: string | null
+          phone_verified?: boolean | null
           trading_preferences?: Json | null
           updated_at?: string | null
           user_id?: string | null
@@ -2144,10 +2201,13 @@ export type Database = {
           display_name?: string | null
           first_name?: string | null
           id?: string | null
+          is_verified?: boolean | null
+          kyc_status?: string | null
           language?: string | null
           last_name?: string | null
           onboarding_completed?: boolean | null
           phone?: string | null
+          phone_verified?: boolean | null
           trading_preferences?: Json | null
           updated_at?: string | null
           user_id?: string | null
@@ -2163,6 +2223,7 @@ export type Database = {
           display_name: string | null
           first_name: string | null
           id: string | null
+          is_verified: boolean | null
           language: string | null
           last_name: string | null
           updated_at: string | null
@@ -2176,6 +2237,7 @@ export type Database = {
           display_name?: string | null
           first_name?: string | null
           id?: string | null
+          is_verified?: boolean | null
           language?: string | null
           last_name?: string | null
           updated_at?: string | null
@@ -2189,6 +2251,7 @@ export type Database = {
           display_name?: string | null
           first_name?: string | null
           id?: string | null
+          is_verified?: boolean | null
           language?: string | null
           last_name?: string | null
           updated_at?: string | null
@@ -2301,6 +2364,18 @@ export type Database = {
         Returns: undefined
       }
       request_vip_subscription: { Args: { p_plan: string }; Returns: undefined }
+      toggle_user_verification: {
+        Args: { p_user_id: string; p_verified: boolean }
+        Returns: undefined
+      }
+      update_kyc_status: {
+        Args: { p_status: string; p_user_id: string }
+        Returns: undefined
+      }
+      verify_user_phone: {
+        Args: { p_user_id: string; p_verified: boolean }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "vip" | "free" | "moderator" | "support"

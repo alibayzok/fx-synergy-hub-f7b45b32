@@ -13,6 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { VerifiedBadge } from '@/components/ui/verified-badge';
 import { formatTimeAgo } from '@/lib/date-utils';
 import { RoomJoinDialog } from './RoomJoinDialog';
 
@@ -409,9 +410,10 @@ const MessageBubble = ({
           <div className="flex items-center gap-1.5 mb-1">
             <button 
               onClick={() => onUserClick(message.user_id)}
-              className="text-xs text-muted-foreground hover:text-primary transition-colors"
+              className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
             >
               {authorName}
+              {(message.author as any)?.is_verified && <VerifiedBadge size="sm" />}
             </button>
             {userRole === 'owner' && (
               <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/30 text-[9px] px-1 py-0 gap-0.5">

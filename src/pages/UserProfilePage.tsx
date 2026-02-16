@@ -37,6 +37,7 @@ import { countries } from '@/data/countries';
 import { formatTimeAgo } from '@/lib/date-utils';
 import { cn } from '@/lib/utils';
 import { useBlockUser } from '@/hooks/useBlockUser';
+import { VerifiedBadge } from '@/components/ui/verified-badge';
 
 interface UserProfile {
   id: string;
@@ -45,6 +46,7 @@ interface UserProfile {
   display_name?: string;
   avatar_url?: string;
   country?: string;
+  is_verified?: boolean;
   created_at: string;
 }
 
@@ -93,7 +95,7 @@ const UserProfilePage = () => {
         // Fetch profile
         const { data: profileData, error: profileError } = await supabase
           .from('profiles_public')
-          .select('id, user_id, username, display_name, avatar_url, country, created_at')
+          .select('id, user_id, username, display_name, avatar_url, country, is_verified, created_at')
           .eq('user_id', userId)
           .single();
 
@@ -312,6 +314,7 @@ const UserProfilePage = () => {
 
               <div className="flex items-center justify-center gap-2 mb-2">
                 <h2 className="text-xl font-bold text-foreground">{displayName}</h2>
+                {profile?.is_verified && <VerifiedBadge size="md" />}
                 {isAdmin && (
                   <Badge className="bg-primary text-primary-foreground gap-1">
                     <Shield className="w-3 h-3" />
