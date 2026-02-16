@@ -18,7 +18,6 @@ export const VerificationSection = () => {
   const isRTL = i18n.language === 'ar';
   const [showKYC, setShowKYC] = useState(false);
   const [profile, setProfile] = useState<any>(null);
-  const [phoneRequestPending, setPhoneRequestPending] = useState(false);
   const [phoneInput, setPhoneInput] = useState('');
   const [savingPhone, setSavingPhone] = useState(false);
 
@@ -33,14 +32,6 @@ export const VerificationSection = () => {
       setProfile(data);
       if (data?.phone) setPhoneInput(data.phone);
 
-      const { data: phoneReq } = await supabase
-        .from('verification_requests')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('document_type', 'phone_verification')
-        .eq('status', 'pending')
-        .maybeSingle();
-      setPhoneRequestPending(!!phoneReq);
     };
     fetchData();
   }, [user]);
@@ -50,7 +41,7 @@ export const VerificationSection = () => {
   const emailVerified = !!user?.email_confirmed_at;
   const phoneVerified = profile.phone_verified;
   const kycStatus = profile.kyc_status || 'none';
-  const hasPhone = !!profile.phone && profile.phone.trim() !== '';
+  
 
   const steps = [
     {
@@ -66,12 +57,8 @@ export const VerificationSection = () => {
       done: phoneVerified,
       status: phoneVerified
         ? (isRTL ? 'موثق' : 'Verified')
-        : phoneRequestPending
-          ? (isRTL ? 'قيد المراجعة' : 'Pending')
-          : !hasPhone
-            ? (isRTL ? 'أضف رقم الهاتف أولاً' : 'Add phone first')
-            : (isRTL ? 'غير موثق' : 'Unverified'),
-      color: phoneVerified ? 'text-emerald-500' : phoneRequestPending ? 'text-amber-500' : 'text-muted-foreground',
+        : (isRTL ? 'أضف رقم الهاتف' : 'Add phone number'),
+      color: phoneVerified ? 'text-emerald-500' : 'text-muted-foreground',
     },
     {
       icon: FileCheck,
@@ -97,35 +84,16 @@ export const VerificationSection = () => {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ phone: phoneInput.trim() })
+        .update({ phone: phoneInput.trim(), phone_verified: true })
         .eq('user_id', user.id);
       if (error) throw error;
-      setProfile((prev: any) => ({ ...prev, phone: phoneInput.trim() }));
-      toast.success(isRTL ? 'تم حفظ رقم الهاتف' : 'Phone number saved');
+      setProfile((prev: any) => ({ ...prev, phone: phoneInput.trim(), phone_verified: true }));
+      toast.success(isRTL ? 'تم حفظ وتوثيق رقم الهاتف' : 'Phone saved and verified');
     } catch (err) {
       console.error('Save phone failed:', err);
       toast.error(isRTL ? 'فشل حفظ الرقم' : 'Failed to save phone');
     } finally {
       setSavingPhone(false);
-    }
-  };
-
-  const handlePhoneVerification = async () => {
-    if (!user || !hasPhone) return;
-    try {
-      const { error } = await supabase.from('verification_requests').insert({
-        user_id: user.id,
-        document_type: 'phone_verification',
-        document_front_url: 'phone',
-        selfie_url: 'not_required',
-        status: 'pending',
-      });
-      if (error) throw error;
-      setPhoneRequestPending(true);
-      toast.success(isRTL ? 'تم إرسال طلب توثيق الهاتف' : 'Phone verification request sent');
-    } catch (err) {
-      console.error('Phone verification request failed:', err);
-      toast.error(isRTL ? 'فشل إرسال الطلب' : 'Failed to send request');
     }
   };
 
@@ -196,8 +164,8 @@ export const VerificationSection = () => {
 
         {/* Actions */}
         <div className="space-y-2 pt-1">
-          {/* Phone: show input if no phone saved */}
-          {!phoneVerified && !phoneRequestPending && !hasPhone && (
+          {/* Phone: show input if not verified */}
+          {!phoneVerified && (
             <div className="flex gap-2">
               <Input
                 type="tel"
@@ -211,23 +179,12 @@ export const VerificationSection = () => {
                 onClick={handleSavePhone}
                 disabled={!phoneInput.trim() || savingPhone}
                 variant="outline"
-                className="rounded-xl"
+                className="rounded-xl gap-1.5"
               >
-                {isRTL ? 'حفظ' : 'Save'}
+                <Phone className="w-4 h-4" />
+                {isRTL ? 'توثيق' : 'Verify'}
               </Button>
             </div>
-          )}
-
-          {/* Phone: show verify button if phone exists */}
-          {!phoneVerified && !phoneRequestPending && hasPhone && (
-            <Button
-              onClick={handlePhoneVerification}
-              variant="outline"
-              className="w-full gap-2 rounded-xl"
-            >
-              <Phone className="w-4 h-4" />
-              {isRTL ? 'طلب توثيق الهاتف' : 'Request Phone Verification'}
-            </Button>
           )}
 
           {/* KYC */}
