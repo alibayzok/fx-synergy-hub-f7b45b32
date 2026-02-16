@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { BarChart3, Clock, Eye, Heart, Lock, Image as ImageIcon } from 'lucide-react';
@@ -21,7 +21,7 @@ import { Plus } from 'lucide-react';
 
 const AnalysesPage = () => {
   const { t, i18n } = useTranslation();
-  const { analyses, loading, likeAnalysis, unlikeAnalysis, fetchAnalyses } = useAnalyses();
+  const { analyses, loading, likeAnalysis, unlikeAnalysis, fetchAnalyses, incrementView } = useAnalyses();
   const { isVip, isAdmin } = useAuth();
   const { getBoolean } = useAppSettings();
   const navigate = useNavigate();
@@ -29,6 +29,18 @@ const AnalysesPage = () => {
   const [likedAnalyses, setLikedAnalyses] = useState<Set<string>>(new Set());
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const viewedRef = useRef<Set<string>>(new Set());
+
+  // Track views for visible analyses
+  useEffect(() => {
+    if (!analyses.length) return;
+    analyses.forEach(a => {
+      if (!viewedRef.current.has(a.id)) {
+        viewedRef.current.add(a.id);
+        incrementView(a.id);
+      }
+    });
+  }, [analyses, incrementView]);
 
   const enabled = getBoolean('enable_analyses', true);
 

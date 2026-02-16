@@ -167,6 +167,14 @@ export const useAnalyses = () => {
     return !error;
   };
 
+  const incrementView = useCallback(async (analysisId: string) => {
+    try {
+      await supabase.rpc('increment_view_count', { p_table_name: 'analyses', p_id: analysisId });
+    } catch (err) {
+      // silent fail
+    }
+  }, []);
+
   return {
     analyses,
     loading,
@@ -176,6 +184,7 @@ export const useAnalyses = () => {
     updateAnalysis,
     deleteAnalysis,
     likeAnalysis,
-    unlikeAnalysis
+    unlikeAnalysis,
+    incrementView
   };
 };
