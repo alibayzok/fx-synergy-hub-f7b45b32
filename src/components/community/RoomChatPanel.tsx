@@ -217,9 +217,9 @@ export const RoomChatPanel = ({ roomId, roomName, onBack, onManage, isBroadcast 
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-200px)] relative" ref={constraintsRef}>
+    <div className="flex flex-col h-[calc(100vh-180px)] relative" ref={constraintsRef}>
       {/* Chat Header */}
-      <div className="flex items-center gap-3 p-4 border-b border-border/30">
+      <div className="flex items-center gap-3 p-3 border-b border-border/30">
         <Button variant="ghost" size="icon" onClick={onBack}>
           <BackArrow className="w-5 h-5" />
         </Button>
@@ -241,10 +241,10 @@ export const RoomChatPanel = ({ roomId, roomName, onBack, onManage, isBroadcast 
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={onManage}
-          className="fixed z-50 bottom-32 left-4 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center cursor-grab active:cursor-grabbing"
+          className="absolute z-50 bottom-20 left-3 w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center cursor-grab active:cursor-grabbing"
           style={{ touchAction: 'none' }}
         >
-          <Settings className="w-6 h-6" />
+          <Settings className="w-5 h-5" />
         </motion.button>
       )}
 
@@ -284,29 +284,30 @@ export const RoomChatPanel = ({ roomId, roomName, onBack, onManage, isBroadcast 
           </ScrollArea>
 
           {/* Input Area */}
-          <div className="p-4 border-t border-border/30">
+          <div className="p-3 border-t border-border/30 bg-background">
             {isBroadcast && !canPost ? (
               <div className="flex items-center justify-center gap-2 py-2 text-muted-foreground text-sm">
                 <Megaphone className="w-4 h-4" />
                 <span>{isArabic ? 'هذه قناة إعلانات - للقراءة فقط' : 'This is an announcements channel - read only'}</span>
               </div>
             ) : (
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={handleSend}
+                  disabled={!newMessage.trim() || !user || sending}
+                  size="icon"
+                  className="shrink-0 rounded-full w-10 h-10"
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
                 <Input
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder={t('community.typeMessage')}
-                  className="flex-1"
+                  className="flex-1 rounded-full"
                   disabled={!user || sending}
                 />
-                <Button
-                  onClick={handleSend}
-                  disabled={!newMessage.trim() || !user || sending}
-                  size="icon"
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
               </div>
             )}
           </div>
@@ -451,13 +452,13 @@ const MessageBubble = ({
           <div className="flex items-center gap-1">
             <div
               className={cn(
-                "px-3 py-2 rounded-2xl",
+                "px-4 py-2.5 rounded-2xl min-w-[60px]",
                 isOwn
                   ? "bg-primary text-primary-foreground rounded-br-sm"
                   : "bg-muted text-foreground rounded-bl-sm"
               )}
             >
-              <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+              <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">{message.content}</p>
             </div>
             
             {(canEdit || canDelete) && (
