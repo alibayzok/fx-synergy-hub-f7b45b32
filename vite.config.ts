@@ -20,6 +20,7 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       includeAssets: ["favicon.png", "favicon.ico"],
       workbox: {
+        importScripts: ['/firebase-messaging-sw.js'],
         globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,webp,woff,woff2}"],
         navigateFallbackDenylist: [/^\/~oauth/],
         runtimeCaching: [
