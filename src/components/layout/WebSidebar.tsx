@@ -8,15 +8,15 @@ import appLogo from '@/assets/logo-dark.png';
 
 const allNavItems = [
   { key: 'home', path: '/', icon: Home, labelAr: 'الرئيسية', labelEn: 'Home', settingKey: null },
-  { key: 'signals', path: '/trades', icon: Radio, labelAr: 'الإشارات', labelEn: 'Signals', settingKey: null },
-  { key: 'analyses', path: '/analyses', icon: BarChart3, labelAr: 'التحليلات', labelEn: 'Analyses', settingKey: null },
+  { key: 'signals', path: '/trades', icon: Radio, labelAr: 'الإشارات', labelEn: 'Signals', settingKey: 'enable_trades_page' },
+  { key: 'analyses', path: '/analyses', icon: BarChart3, labelAr: 'التحليلات', labelEn: 'Analyses', settingKey: 'enable_analyses_page' },
   { key: 'community', path: '/community', icon: Users, labelAr: 'المجتمع', labelEn: 'Community', settingKey: 'enable_community' },
-  { key: 'news', path: '/news', icon: Newspaper, labelAr: 'الأخبار', labelEn: 'News', settingKey: null },
-  { key: 'services', path: '/services', icon: Briefcase, labelAr: 'الخدمات', labelEn: 'Services', settingKey: null },
+  { key: 'news', path: '/news', icon: Newspaper, labelAr: 'الأخبار', labelEn: 'News', settingKey: 'enable_news_page' },
+  { key: 'services', path: '/services', icon: Briefcase, labelAr: 'الخدمات', labelEn: 'Services', settingKey: 'enable_services_page' },
   { key: 'messages', path: '/messages', icon: MessageSquare, labelAr: 'الرسائل', labelEn: 'Messages', settingKey: null },
-  { key: 'gamification', path: '/gamification', icon: Crown, labelAr: 'النقاط', labelEn: 'Points', settingKey: null },
+  { key: 'gamification', path: '/gamification', icon: Crown, labelAr: 'النقاط', labelEn: 'Points', settingKey: 'enable_gamification' },
   { key: 'vip', path: '/vip', icon: Crown, labelAr: 'VIP', labelEn: 'VIP', settingKey: null },
-  { key: 'rewards', path: '/rewards', icon: Gift, labelAr: 'المكافآت', labelEn: 'Rewards', settingKey: null },
+  { key: 'rewards', path: '/rewards', icon: Gift, labelAr: 'المكافآت', labelEn: 'Rewards', settingKey: 'enable_gamification' },
 ];
 
 const bottomNavItems = [

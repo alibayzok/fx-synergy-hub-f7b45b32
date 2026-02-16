@@ -42,6 +42,9 @@ const CATEGORIES = [
   { key: 'services', label: 'الخدمات', icon: Globe, color: 'from-teal-500/20 to-cyan-500/20', iconColor: 'text-teal-500', borderColor: 'border-teal-500/20' },
   { key: 'announcements', label: 'الإعلانات', icon: Megaphone, color: 'from-amber-500/20 to-yellow-500/20', iconColor: 'text-amber-500', borderColor: 'border-amber-500/20' },
   { key: 'images', label: 'الصور', icon: ImageIcon, color: 'from-rose-500/20 to-pink-500/20', iconColor: 'text-rose-500', borderColor: 'border-rose-500/20' },
+  { key: 'appearance', label: 'المظهر', icon: Palette, color: 'from-fuchsia-500/20 to-pink-500/20', iconColor: 'text-fuchsia-500', borderColor: 'border-fuchsia-500/20' },
+  { key: 'navigation', label: 'التنقل والصفحات', icon: ToggleRight, color: 'from-sky-500/20 to-blue-500/20', iconColor: 'text-sky-500', borderColor: 'border-sky-500/20' },
+  { key: 'pwa', label: 'تثبيت التطبيق', icon: Globe, color: 'from-indigo-500/20 to-violet-500/20', iconColor: 'text-indigo-500', borderColor: 'border-indigo-500/20' },
 ];
 
 export const CMSManagement = () => {

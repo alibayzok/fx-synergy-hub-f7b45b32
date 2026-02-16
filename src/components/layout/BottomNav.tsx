@@ -7,10 +7,10 @@ import { useAppSettings } from '@/hooks/useAppSettings';
 
 const allNavItems = [
   { key: 'home', path: '/', icon: Home, settingKey: null },
-  { key: 'signals', path: '/trades', icon: Radio, settingKey: null },
+  { key: 'signals', path: '/trades', icon: Radio, settingKey: 'enable_trades_page' },
   { key: 'community', path: '/community', icon: Users, settingKey: 'enable_community' },
-  { key: 'news', path: '/news', icon: Newspaper, settingKey: null },
-  { key: 'services', path: '/services', icon: Briefcase, settingKey: null },
+  { key: 'news', path: '/news', icon: Newspaper, settingKey: 'enable_news_page' },
+  { key: 'services', path: '/services', icon: Briefcase, settingKey: 'enable_services_page' },
 ];
 
 export const BottomNav = () => {
