@@ -1060,6 +1060,87 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_rewards: {
+        Row: {
+          created_at: string
+          description_ar: string
+          description_en: string
+          icon: string
+          id: string
+          is_active: boolean
+          name_ar: string
+          name_en: string
+          points_cost: number
+          reward_type: string
+          reward_value: string | null
+          sort_order: number
+          stock: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description_ar?: string
+          description_en?: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          name_ar: string
+          name_en?: string
+          points_cost: number
+          reward_type?: string
+          reward_value?: string | null
+          sort_order?: number
+          stock?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description_ar?: string
+          description_en?: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          name_ar?: string
+          name_en?: string
+          points_cost?: number
+          reward_type?: string
+          reward_value?: string | null
+          sort_order?: number
+          stock?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          created_at: string
+          id: string
+          points_awarded: number
+          referral_code: string
+          referred_id: string
+          referrer_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          points_awarded?: number
+          referral_code: string
+          referred_id: string
+          referrer_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          points_awarded?: number
+          referral_code?: string
+          referred_id?: string
+          referrer_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
       replies: {
         Row: {
           content: string
@@ -1136,6 +1217,59 @@ export type Database = {
             columns: ["reply_id"]
             isOneToOne: false
             referencedRelation: "replies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reward_redemptions: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          points_spent: number
+          redemption_type: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          reward_id: string | null
+          status: Database["public"]["Enums"]["redemption_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          points_spent: number
+          redemption_type?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reward_id?: string | null
+          status?: Database["public"]["Enums"]["redemption_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          points_spent?: number
+          redemption_type?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reward_id?: string | null
+          status?: Database["public"]["Enums"]["redemption_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reward_redemptions_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "referral_rewards"
             referencedColumns: ["id"]
           },
         ]
@@ -2359,6 +2493,10 @@ export type Database = {
         }[]
       }
       mask_phone_number: { Args: { phone: string }; Returns: string }
+      process_referral: {
+        Args: { p_referral_code: string; p_referred_user_id: string }
+        Returns: undefined
+      }
       reject_vip_subscription: {
         Args: { p_reason?: string; p_subscription_id: string }
         Returns: undefined
@@ -2386,6 +2524,7 @@ export type Database = {
       friend_request_status: "pending" | "accepted" | "rejected"
       post_visibility: "everyone" | "friends_only" | "followers_only" | "nobody"
       privacy_setting: "everyone" | "friends_only" | "followers_only" | "nobody"
+      redemption_status: "pending" | "approved" | "rejected" | "delivered"
       room_membership_status: "pending" | "approved" | "rejected" | "banned"
       room_role: "member" | "moderator" | "owner"
       service_status:
@@ -2539,6 +2678,7 @@ export const Constants = {
       friend_request_status: ["pending", "accepted", "rejected"],
       post_visibility: ["everyone", "friends_only", "followers_only", "nobody"],
       privacy_setting: ["everyone", "friends_only", "followers_only", "nobody"],
+      redemption_status: ["pending", "approved", "rejected", "delivered"],
       room_membership_status: ["pending", "approved", "rejected", "banned"],
       room_role: ["member", "moderator", "owner"],
       service_status: [

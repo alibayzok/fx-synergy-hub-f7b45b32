@@ -8,8 +8,12 @@ import { AuthProvider } from "./hooks/useAuth";
 import { ThemeProvider } from "./hooks/useTheme";
 import { AppSettingsProvider } from "./hooks/useAppSettings";
 import { SplashScreen } from "./components/layout/SplashScreen";
+import { captureReferralCode } from "./hooks/useReferrals";
 import HomePage from "./pages/HomePage";
 import "./i18n";
+
+// Capture referral code from URL immediately
+captureReferralCode();
 
 // Lazy load non-critical pages
 const TradesPage = lazy(() => import("./pages/TradesPage"));
@@ -31,6 +35,7 @@ const SupportDashboardPage = lazy(() => import("./pages/SupportDashboardPage"));
 const VipPage = lazy(() => import("./pages/VipPage"));
 const SubscriptionsPage = lazy(() => import("./pages/SubscriptionsPage"));
 const GamificationPage = lazy(() => import("./pages/GamificationPage"));
+const RewardsPage = lazy(() => import("./pages/RewardsPage"));
 const ProjectDocsPage = lazy(() => import("./pages/ProjectDocsPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -104,6 +109,7 @@ const App = () => {
                   <Route path="/vip" element={<VipPage />} />
                   <Route path="/admin/subscriptions" element={<SubscriptionsPage />} />
                   <Route path="/gamification" element={<GamificationPage />} />
+                  <Route path="/rewards" element={<RewardsPage />} />
                   <Route path="/project-docs" element={<ProjectDocsPage />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />

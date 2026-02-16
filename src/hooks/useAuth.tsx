@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, useRef, ReactNode } fro
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { AUTH_CONFIG } from '@/config/environment';
+import { processReferralAfterSignup } from '@/hooks/useReferrals';
 import { useToast } from '@/hooks/use-toast';
 
 type AppRole = 'admin' | 'moderator' | 'support' | 'vip' | 'free';
@@ -67,6 +68,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
+
+        // Process referral on first sign-in after signup
+        if (event === 'SIGNED_IN' && session?.user) {
+          processReferralAfterSignup(session.user.id);
+        }
         
         if (session?.user) {
           // Defer role fetching to avoid blocking
