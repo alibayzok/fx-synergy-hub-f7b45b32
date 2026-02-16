@@ -41,7 +41,7 @@
 
 ---
 
-## 🗄️ المرحلة 2: قاعدة البيانات (48+ جدول)
+## 🗄️ المرحلة 2: قاعدة البيانات (54 جدول)
 
 ### 2.1 تنفيذ السكريبت
 1. اذهب إلى **SQL Editor** في Supabase Dashboard
@@ -49,14 +49,16 @@
 3. انسخ المحتوى كاملاً → الصقه → **Run**
 
 ### 2.2 التحقق اليدوي
-- [ ] التأكد من جدول `signal_updates` (جديد - قد يحتاج إضافة يدوية إذا لم يكن في السكريبت)
-- [ ] التأكد من عمود `referral_code` في جدول `profiles`
+- [ ] التأكد من جدول `signal_updates` (موجود في السكريبت)
+- [ ] التأكد من جداول `referrals`, `referral_rewards`, `reward_redemptions` (موجودة في السكريبت)
+- [ ] التأكد من جدول `verification_requests` و `content_views` (موجودة في السكريبت)
+- [ ] التأكد من عمود `referral_code`, `is_verified`, `phone_verified`, `kyc_status` في جدول `profiles`
 - [ ] تفعيل **Realtime** على الجداول المطلوبة:
   - `direct_messages`, `room_messages`, `user_notifications`, `support_messages`
   - `signal_updates`, `subscription_messages`, `live_session_messages`
-- [ ] التحقق من جميع الـ **130+ RLS Policy** في **Authentication → Policies**
+- [ ] التحقق من جميع الـ **160+ RLS Policy** في **Authentication → Policies**
 
-### 2.3 قائمة الجداول (48 جدول)
+### 2.3 قائمة الجداول (54 جدول)
 
 | القسم | الجداول |
 |-------|---------|
@@ -75,22 +77,25 @@
 | **التلعيب** | `user_points`, `point_transactions`, `badges`, `user_badges`, `user_streaks`, `daily_quests`, `user_daily_progress` |
 | **الإشعارات** | `user_notifications`, `admin_notifications`, `fcm_tokens` |
 | **الدعم** | `support_tickets`, `support_messages`, `support_agents` |
-| **النظام** | `app_settings`, `flagged_content`, `articles` |
+| **الإحالات** | `referrals`, `referral_rewards`, `reward_redemptions` |
+| **التوثيق** | `verification_requests` |
+| **النظام** | `app_settings`, `flagged_content`, `articles`, `content_views` |
 
 ---
 
-## 📦 المرحلة 3: Storage Buckets (8 حاويات)
+## 📦 المرحلة 3: Storage Buckets (9 حاويات)
 
-أنشئ هذه الحاويات كـ **Public** في Supabase Dashboard → Storage:
+أنشئ هذه الحاويات في Supabase Dashboard → Storage:
 
-- [ ] `avatars` — صور المستخدمين
-- [ ] `lesson-videos` — فيديوهات الأكاديمية
-- [ ] `cms-assets` — أصول CMS
-- [ ] `article-images` — صور المقالات
-- [ ] `support-attachments` — مرفقات الدعم
-- [ ] `analysis-attachments` — مرفقات التحليلات
-- [ ] `post-attachments` — مرفقات المنشورات
-- [ ] `signal-attachments` — صور شارتات الإشارات
+- [ ] `avatars` — صور المستخدمين (Public)
+- [ ] `lesson-videos` — فيديوهات الأكاديمية (Public)
+- [ ] `cms-assets` — أصول CMS (Public)
+- [ ] `article-images` — صور المقالات (Public)
+- [ ] `support-attachments` — مرفقات الدعم (Public)
+- [ ] `analysis-attachments` — مرفقات التحليلات (Public)
+- [ ] `post-attachments` — مرفقات المنشورات (Public)
+- [ ] `signal-attachments` — صور شارتات الإشارات (Public)
+- [ ] `kyc-documents` — وثائق التوثيق (Private)
 
 > 💡 لا تنسَ إعداد سياسات RLS المناسبة لكل حاوية (الموجودة في `export-schema.sql`)
 
