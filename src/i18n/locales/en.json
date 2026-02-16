@@ -11,7 +11,8 @@
     "markets": "News",
     "services": "Services",
     "profile": "Profile",
-    "aiAssistant": "AI"
+    "aiAssistant": "AI",
+    "rewards": "Rewards"
   },
   "home": {
     "latestTrades": "Latest Trades",
