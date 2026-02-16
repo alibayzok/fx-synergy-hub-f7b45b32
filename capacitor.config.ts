@@ -22,7 +22,7 @@ const config: CapacitorConfig = {
   // معرّف التطبيق - غيّره عند النشر على متجر التطبيقات
   // مثال للإنتاج: 'com.yourcompany.assassinfx'
   // ============================================================
-  appId: 'app.lovable.ebc9336e82be4f7fb9ee83ee20c32755',
+  appId: 'com.assassinfx.app',
   
   // اسم التطبيق
   appName: 'ASSASSIN FX',
