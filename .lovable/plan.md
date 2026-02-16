@@ -1,53 +1,41 @@
 
 
-# سكريبت نشر شامل لجميع Edge Functions
+# ملف مرجعي شامل لجميع أكواد Edge Functions
 
 ## الهدف
-انشاء ملف `scripts/deploy-all.sh` يقوم بنشر جميع الـ 10 Edge Functions وإعداد الأسرار (Secrets) المطلوبة بأمر واحد.
+إنشاء ملف واحد `scripts/all-edge-functions-code.md` يحتوي على كود كل الـ 10 Edge Functions جاهز للنسخ واللصق في داشبورد Supabase.
 
 ## ما سيتم إنشاؤه
 
-ملف واحد: `scripts/deploy-all.sh`
+ملف واحد: `scripts/all-edge-functions-code.md`
 
-### محتوى السكريبت
+### المحتوى
+الملف سيحتوي على أقسام واضحة لكل function مع:
+- اسم الوظيفة كعنوان
+- الأسرار المطلوبة لكل وظيفة
+- الكود الكامل جاهز للنسخ
 
-1. **التحقق من تثبيت Supabase CLI** - يتأكد ان الأداة موجودة قبل البدء
-2. **إعداد الأسرار** - يطلب من المستخدم إدخال كل مفتاح API مطلوب ويرسلها دفعة واحدة عبر `supabase secrets set`
-3. **نشر الوظائف العشرة بالترتيب:**
-   - chat
-   - market-data
-   - moderate-image
-   - send-push-notification
-   - fetch-news
-   - fetch-article
-   - fetch-calendar
-   - marqeta-cards
-   - telegram-webhook
-   - setup-telegram-webhook
-4. **تقرير نهائي** - يعرض عدد الوظائف التي نُشرت بنجاح وأي أخطاء حصلت
+### الوظائف العشرة بالترتيب:
 
-### الأسرار المدعومة
-- `GOOGLE_AI_API_KEY`
-- `FINNHUB_API_KEY`
-- `FCM_SERVER_KEY`
-- `TELEGRAM_BOT_TOKEN`
-- `TELEGRAM_WEBHOOK_SECRET`
-- `MARQETA_APP_TOKEN`
-- `MARQETA_ADMIN_ACCESS_TOKEN`
-- `MARQETA_BASE_URL`
+1. **chat** - مساعد AI ذكي (يحتاج: LOVABLE_API_KEY او GOOGLE_AI_API_KEY)
+2. **market-data** - بيانات السوق (يحتاج: FINNHUB_API_KEY)
+3. **moderate-image** - فحص الصور (يحتاج: LOVABLE_API_KEY)
+4. **send-push-notification** - إشعارات (يحتاج: FCM_SERVER_KEY)
+5. **fetch-news** - جلب الأخبار (يحتاج: LOVABLE_API_KEY)
+6. **fetch-article** - جلب المقالات (يحتاج: LOVABLE_API_KEY)
+7. **fetch-calendar** - التقويم الاقتصادي (يحتاج: LOVABLE_API_KEY)
+8. **marqeta-cards** - البطاقات الافتراضية (يحتاج: MARQETA_APP_TOKEN, MARQETA_ADMIN_TOKEN)
+9. **telegram-webhook** - ويب هوك تلغرام (يحتاج: TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET)
+10. **setup-telegram-webhook** - إعداد ويب هوك تلغرام (يحتاج: TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET)
 
-### ميزات السكريبت
-- يعمل على Windows (Git Bash)، macOS، و Linux
-- يتخطى الأسرار التي يتركها المستخدم فارغة
-- يعرض نتيجة نجاح/فشل لكل وظيفة بألوان واضحة
-- ملخص نهائي بعدد النجاحات والإخفاقات
+### ملاحظة مهمة
+- الأكواد ستكون نسخة طبق الأصل من الملفات الموجودة في المشروع
+- كل كود داخل بلوك ```typescript جاهز للنسخ
+- تذكير بإيقاف "Verify JWT" لكل function في الداشبورد
 
----
-
-## التفاصيل التقنية
-
-- الملف سيكون bash script مع `#!/bin/bash` و `set -e` للتوقف عند الأخطاء الحرجة
-- سيستخدم `command -v supabase` للتحقق من وجود CLI
-- كل عملية deploy ستُلتقط نتيجتها لعرض تقرير دقيق
-- السكريبت يُشغّل بالأمر: `bash scripts/deploy-all.sh`
+### التفاصيل التقنية
+- الملف بصيغة Markdown لسهولة القراءة والنسخ
+- كل قسم يبدأ بعنوان h2 (##) باسم الوظيفة
+- قائمة الأسرار المطلوبة قبل كل كود
+- تعليمات واضحة في البداية عن كيفية الاستخدام
 
