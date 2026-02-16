@@ -38,6 +38,7 @@ const SubscriptionsPage = lazy(() => import("./pages/SubscriptionsPage"));
 const GamificationPage = lazy(() => import("./pages/GamificationPage"));
 const RewardsPage = lazy(() => import("./pages/RewardsPage"));
 const ProjectDocsPage = lazy(() => import("./pages/ProjectDocsPage"));
+const InstallPage = lazy(() => import("./pages/InstallPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -113,6 +114,7 @@ const App = () => {
                   <Route path="/gamification" element={<GamificationPage />} />
                   <Route path="/rewards" element={<RewardsPage />} />
                   <Route path="/project-docs" element={<ProjectDocsPage />} />
+                  <Route path="/install" element={<InstallPage />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
