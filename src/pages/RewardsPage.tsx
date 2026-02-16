@@ -57,8 +57,14 @@ const RewardsPage = () => {
     }
   };
 
+  const MIN_REDEEM_POINTS = 1000;
+
   const handleRedeem = async () => {
     if (!confirmReward) return;
+    if (currentPoints < MIN_REDEEM_POINTS) {
+      toast({ title: isRTL ? `الحد الأدنى للاستبدال هو ${MIN_REDEEM_POINTS} نقطة` : `Minimum ${MIN_REDEEM_POINTS} points required for redemption`, variant: 'destructive' });
+      return;
+    }
     if (currentPoints < confirmReward.points_cost) {
       toast({ title: isRTL ? 'نقاطك غير كافية' : 'Insufficient points', variant: 'destructive' });
       return;
@@ -69,8 +75,8 @@ const RewardsPage = () => {
 
   const handleWithdrawal = async () => {
     const pts = parseInt(withdrawPoints);
-    if (!pts || pts <= 0 || pts > currentPoints) {
-      toast({ title: isRTL ? 'عدد نقاط غير صالح' : 'Invalid points amount', variant: 'destructive' });
+    if (!pts || pts < MIN_REDEEM_POINTS || pts > currentPoints) {
+      toast({ title: isRTL ? `الحد الأدنى للسحب هو ${MIN_REDEEM_POINTS} نقطة` : `Minimum withdrawal is ${MIN_REDEEM_POINTS} points`, variant: 'destructive' });
       return;
     }
     requestWithdrawal.mutate({ points: pts, notes: withdrawNotes });
