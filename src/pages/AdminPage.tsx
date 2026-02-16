@@ -79,7 +79,7 @@ const AdminPage = () => {
 
   // Moderators can access content sections, admins can access everything
   const hasAccess = isAdmin || isModerator;
-  const moderatorOnlyItems = ['analyses', 'signals', 'articles', 'courses', 'moderation'];
+  const moderatorOnlyItems = ['analyses', 'signals', 'articles', 'courses', 'moderation', 'verification', 'users'];
 
   useEffect(() => {
     if (!authLoading && !hasAccess) navigate('/');
@@ -184,19 +184,21 @@ const AdminPage = () => {
             {isAdmin && <DashboardStats />}
 
             {/* Quick Actions - admin only */}
-            {isAdmin && (
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  onClick={() => navigate('/admin/subscriptions')}
-                  className={cn(
-                    "h-auto py-4 rounded-2xl gap-2 text-sm font-semibold",
-                    "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600",
-                    "text-white border-0 shadow-lg shadow-amber-500/20"
-                  )}
-                >
-                  <Crown className="w-5 h-5" />
-                  إدارة VIP
-                </Button>
+            {(isAdmin || isModerator) && (
+              <div className={cn("grid gap-3", isAdmin ? "grid-cols-2" : "grid-cols-1")}>
+                {isAdmin && (
+                  <Button
+                    onClick={() => navigate('/admin/subscriptions')}
+                    className={cn(
+                      "h-auto py-4 rounded-2xl gap-2 text-sm font-semibold",
+                      "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600",
+                      "text-white border-0 shadow-lg shadow-amber-500/20"
+                    )}
+                  >
+                    <Crown className="w-5 h-5" />
+                    إدارة VIP
+                  </Button>
+                )}
                 <Button
                   onClick={() => navigate('/support-dashboard')}
                   variant="outline"
@@ -257,7 +259,7 @@ const AdminPage = () => {
             ))}
 
             {/* Recent Activity - admin only */}
-            {isAdmin && (
+            {(isAdmin || isModerator) && (
               <motion.section
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
