@@ -86,7 +86,7 @@ const HomePage = () => {
       case 'viewSignals': navigate('/trades'); break;
       case 'gamification': navigate('/gamification'); break;
       case 'rewards': navigate('/rewards'); break;
-
+      case 'installApp': navigate('/install'); break;
       default: break;
     }
   };
