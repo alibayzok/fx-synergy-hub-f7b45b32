@@ -103,14 +103,68 @@
 
 ## ⚡ المرحلة 4: Edge Functions (10 وظائف)
 
-### 4.1 تثبيت CLI وربط المشروع
+### 4.1 تثبيت Supabase CLI
+
+#### Windows
+
+**الطريقة 1: عبر npm (الأسهل)**
 ```bash
 npm install -g supabase
-supabase login
-supabase link --project-ref YOUR_PROJECT_ID
 ```
 
-### 4.2 إعداد الأسرار
+**الطريقة 2: عبر Scoop**
+```powershell
+# تثبيت Scoop أولاً (إذا لم يكن مثبتاً)
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
+
+# تثبيت Supabase CLI
+scoop bucket add supabase https://github.com/supabase/scoop-bucket.git
+scoop install supabase
+```
+
+**الطريقة 3: عبر WinGet**
+```powershell
+winget install Supabase.CLI
+```
+
+#### macOS
+```bash
+brew install supabase/tap/supabase
+```
+
+#### Linux
+```bash
+brew install supabase/tap/supabase
+# أو بدون Homebrew:
+curl -fsSL https://raw.githubusercontent.com/supabase/cli/main/install.sh | sh
+```
+
+#### التحقق من التثبيت
+```bash
+supabase --version
+# يجب أن يظهر رقم الإصدار مثل: 2.x.x
+```
+
+### 4.2 تسجيل الدخول وربط المشروع
+
+```bash
+# 1. تسجيل الدخول (يفتح المتصفح تلقائياً)
+supabase login
+
+# 2. ربط المشروع الجديد
+#    استبدل YOUR_PROJECT_ID بالـ Reference ID من:
+#    Supabase Dashboard → Settings → General → Reference ID
+supabase link --project-ref YOUR_PROJECT_ID
+
+# 3. التحقق من الربط
+supabase status
+```
+
+> 💡 **أين تجد Reference ID؟**
+> اذهب إلى [supabase.com/dashboard](https://supabase.com/dashboard) → اختر مشروعك → **Settings** → **General** → انسخ **Reference ID**
+
+### 4.3 إعداد الأسرار
 ```bash
 # المساعد الذكي
 supabase secrets set GOOGLE_AI_API_KEY=your_key
@@ -134,7 +188,7 @@ supabase secrets set MARQETA_ADMIN_TOKEN=your_token
 supabase secrets set MARQETA_BASE_URL=your_url
 ```
 
-### 4.3 نشر الوظائف
+### 4.4 نشر الوظائف
 ```bash
 supabase functions deploy chat
 supabase functions deploy market-data
@@ -148,7 +202,7 @@ supabase functions deploy telegram-webhook
 supabase functions deploy setup-telegram-webhook
 ```
 
-### 4.4 جدول الوظائف والأسرار
+### 4.5 جدول الوظائف والأسرار
 
 | الوظيفة | الوصف | الأسرار المطلوبة |
 |---------|-------|-----------------|
