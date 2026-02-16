@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { Bot, Radio, BarChart3, Trophy, Calculator } from 'lucide-react';
+import { Bot, Radio, BarChart3, Trophy, Calculator, Gift } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { PipCalculatorDialog } from './PipCalculatorDialog';
@@ -11,6 +11,7 @@ const actions = [
   { key: 'viewAnalyses', icon: BarChart3, gradient: 'from-purple-500 to-pink-400', glow: 'shadow-purple-500/20', settingKey: 'enable_analyses' },
   { key: 'viewSignals', icon: Radio, gradient: 'from-emerald-500 to-teal-400', glow: 'shadow-emerald-500/20', adminOnly: false, settingKey: null },
   { key: 'gamification', icon: Trophy, gradient: 'from-amber-500 to-yellow-400', glow: 'shadow-amber-500/20', settingKey: null },
+  { key: 'rewards', icon: Gift, gradient: 'from-rose-500 to-pink-400', glow: 'shadow-rose-500/20', settingKey: null },
   { key: 'pipCalculator', icon: Calculator, gradient: 'from-orange-500 to-red-400', glow: 'shadow-orange-500/20', settingKey: null },
 ];
 
