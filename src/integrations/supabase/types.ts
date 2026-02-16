@@ -2457,6 +2457,10 @@ export type Database = {
         Args: { p_increment?: number; p_quest_key: string; p_user_id: string }
         Returns: Json
       }
+      increment_view_count: {
+        Args: { p_id: string; p_table_name: string }
+        Returns: undefined
+      }
       is_admin: { Args: never; Returns: boolean }
       is_blocked: {
         Args: { checker_id: string; target_id: string }

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -22,7 +22,7 @@ import { SignalFormDialog } from '@/components/admin/SignalFormDialog';
 
 const SignalsPage = () => {
   const { t, i18n } = useTranslation();
-  const { signals, loading, likeSignal, unlikeSignal, fetchSignals } = useSignals();
+  const { signals, loading, likeSignal, unlikeSignal, fetchSignals, incrementView } = useSignals();
   const { user, isVip, isAdmin } = useAuth();
   const { getSetting } = useAppSettings();
   const navigate = useNavigate();
@@ -37,6 +37,18 @@ const SignalsPage = () => {
 
   const signalIds = useMemo(() => signals.map(s => s.id), [signals]);
   const { updatesMap } = useBatchUpdates(signalIds, 'signal');
+
+  // Track views for visible signals
+  const viewedRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!signals.length) return;
+    signals.forEach(s => {
+      if (!viewedRef.current.has(s.id)) {
+        viewedRef.current.add(s.id);
+        incrementView(s.id);
+      }
+    });
+  }, [signals, incrementView]);
 
   const filteredSignals = useMemo(() => {
     let filtered = signals;

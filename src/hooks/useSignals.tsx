@@ -131,5 +131,13 @@ export const useSignals = () => {
     return !error;
   };
 
-  return { signals, loading, error, fetchSignals, createSignal, updateSignal, deleteSignal, likeSignal, unlikeSignal };
+  const incrementView = useCallback(async (signalId: string) => {
+    try {
+      await supabase.rpc('increment_view_count', { p_table_name: 'signals', p_id: signalId });
+    } catch (err) {
+      // silent fail
+    }
+  }, []);
+
+  return { signals, loading, error, fetchSignals, createSignal, updateSignal, deleteSignal, likeSignal, unlikeSignal, incrementView };
 };
