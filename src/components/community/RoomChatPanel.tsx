@@ -217,36 +217,24 @@ export const RoomChatPanel = ({ roomId, roomName, onBack, onManage, isBroadcast 
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-180px)] relative" ref={constraintsRef}>
+    <div className="flex flex-col h-[calc(100vh-160px)] relative" ref={constraintsRef}>
       {/* Chat Header */}
-      <div className="flex items-center gap-3 p-3 border-b border-border/30">
-        <Button variant="ghost" size="icon" onClick={onBack}>
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-border/40 bg-card/80 backdrop-blur-sm">
+        <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0">
           <BackArrow className="w-5 h-5" />
         </Button>
-        <div className="flex-1">
-          <h2 className="font-semibold text-foreground">{roomName}</h2>
-          <span className="text-xs text-muted-foreground">
-            ({messages.length} {t('community.messages')})
+        <div className="flex-1 min-w-0">
+          <h2 className="font-bold text-foreground truncate">{roomName}</h2>
+          <span className="text-[11px] text-muted-foreground">
+            {messages.length} {t('community.messages')}
           </span>
         </div>
+        {canManage && onManage && (
+          <Button variant="ghost" size="icon" onClick={onManage} className="shrink-0 text-muted-foreground hover:text-primary">
+            <Settings className="w-5 h-5" />
+          </Button>
+        )}
       </div>
-
-      {/* Floating Admin Button - Draggable */}
-      {canManage && onManage && (
-        <motion.button
-          drag
-          dragConstraints={constraintsRef}
-          dragElastic={0.1}
-          whileDrag={{ scale: 1.1 }}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={onManage}
-          className="absolute z-50 bottom-20 left-3 w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center cursor-grab active:cursor-grabbing"
-          style={{ touchAction: 'none' }}
-        >
-          <Settings className="w-5 h-5" />
-        </motion.button>
-      )}
 
       {/* Loading State */}
       {(loading || membershipLoading) ? (
@@ -256,35 +244,52 @@ export const RoomChatPanel = ({ roomId, roomName, onBack, onManage, isBroadcast 
       ) : (
         <>
           {/* Messages Area */}
-          <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+          <ScrollArea className="flex-1 px-3 py-4" ref={scrollRef}>
             {messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-center">
-                <p className="text-muted-foreground">{t('community.noMessages')}</p>
-                <p className="text-sm text-muted-foreground/70">{t('community.startConversation')}</p>
+              <div className="flex flex-col items-center justify-center h-full text-center py-12">
+                <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mb-3">
+                  <Send className="w-7 h-7 text-muted-foreground/50" />
+                </div>
+                <p className="text-muted-foreground font-medium">{t('community.noMessages')}</p>
+                <p className="text-xs text-muted-foreground/60 mt-1">{t('community.startConversation')}</p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {messages.map((message, index) => (
-                  <MessageBubble
-                    key={message.id}
-                    message={message}
-                    isOwn={message.user_id === user?.id}
-                    isAdmin={isAdmin}
-                    isModerator={isModerator}
-                    userRole={memberRolesMap.get(message.user_id)}
-                    onEdit={(content) => updateMessage(message.id, content)}
-                    onDelete={() => deleteMessage(message.id)}
-                    onUserClick={handleUserClick}
-                    formatTime={formatTime}
-                    showAvatar={index === 0 || messages[index - 1].user_id !== message.user_id}
-                  />
-                ))}
+              <div className="space-y-1">
+                {messages.map((message, index) => {
+                  const showDateSeparator = index === 0 || 
+                    new Date(message.created_at).toDateString() !== new Date(messages[index - 1].created_at).toDateString();
+                  return (
+                    <div key={message.id}>
+                      {showDateSeparator && (
+                        <div className="flex items-center justify-center my-4">
+                          <div className="px-3 py-1 rounded-full bg-muted/60 text-[10px] text-muted-foreground">
+                            {new Date(message.created_at).toLocaleDateString(isArabic ? 'ar' : 'en', { 
+                              weekday: 'long', month: 'short', day: 'numeric' 
+                            })}
+                          </div>
+                        </div>
+                      )}
+                      <MessageBubble
+                        message={message}
+                        isOwn={message.user_id === user?.id}
+                        isAdmin={isAdmin}
+                        isModerator={isModerator}
+                        userRole={memberRolesMap.get(message.user_id)}
+                        onEdit={(content) => updateMessage(message.id, content)}
+                        onDelete={() => deleteMessage(message.id)}
+                        onUserClick={handleUserClick}
+                        formatTime={formatTime}
+                        showAvatar={index === 0 || messages[index - 1].user_id !== message.user_id}
+                      />
+                    </div>
+                  );
+                })}
               </div>
             )}
           </ScrollArea>
 
           {/* Input Area */}
-          <div className="p-3 border-t border-border/30 bg-background">
+          <div className="px-3 py-2.5 border-t border-border/40 bg-card/80 backdrop-blur-sm">
             {isBroadcast && !canPost ? (
               <div className="flex items-center justify-center gap-2 py-2 text-muted-foreground text-sm">
                 <Megaphone className="w-4 h-4" />
@@ -305,7 +310,7 @@ export const RoomChatPanel = ({ roomId, roomName, onBack, onManage, isBroadcast 
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder={t('community.typeMessage')}
-                  className="flex-1 rounded-full"
+                  className="flex-1 rounded-full bg-muted/50 border-border/30 focus-visible:ring-primary/30"
                   disabled={!user || sending}
                 />
               </div>
@@ -388,42 +393,47 @@ const MessageBubble = ({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 5 }}
       animate={{ opacity: 1, y: 0 }}
-      className={cn("flex gap-2 group", isOwn ? "flex-row-reverse" : "flex-row")}
+      transition={{ duration: 0.15 }}
+      className={cn(
+        "flex gap-2.5 group px-1",
+        isOwn ? "flex-row-reverse" : "flex-row",
+        showAvatar ? "mt-3" : "mt-0.5"
+      )}
     >
       {showAvatar ? (
         <Avatar 
-          className="w-8 h-8 flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+          className="w-9 h-9 flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all ring-1 ring-border/20"
           onClick={() => onUserClick(message.user_id)}
         >
           <AvatarImage src={message.author?.avatar_url || undefined} />
-          <AvatarFallback className="bg-primary/20 text-primary text-xs">
+          <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
             {authorName.charAt(0)}
           </AvatarFallback>
         </Avatar>
       ) : (
-        <div className="w-8 flex-shrink-0" />
+        <div className="w-9 flex-shrink-0" />
       )}
 
-      <div className={cn("flex flex-col max-w-[75%]", isOwn ? "items-end" : "items-start")}>
+      <div className={cn("flex flex-col max-w-[78%]", isOwn ? "items-end" : "items-start")}>
         {showAvatar && (
-          <div className="flex items-center gap-1.5 mb-1">
+          <div className={cn("flex items-center gap-1.5 mb-1 px-1", isOwn ? "flex-row-reverse" : "flex-row")}>
             <button 
               onClick={() => onUserClick(message.user_id)}
-              className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
+              className="text-xs font-semibold text-foreground/80 hover:text-primary transition-colors flex items-center gap-1"
             >
               {authorName}
               {(message.author as any)?.is_verified && <VerifiedBadge size="sm" />}
             </button>
             {userRole === 'owner' && (
-              <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/30 text-[9px] px-1 py-0 gap-0.5">
+              <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/30 text-[9px] px-1.5 py-0 gap-0.5 font-medium">
                 <Crown className="w-2.5 h-2.5" />
                 {isArabic ? 'مالك' : 'Owner'}
               </Badge>
             )}
             {userRole === 'moderator' && (
-              <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/30 text-[9px] px-1 py-0 gap-0.5">
+              <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/30 text-[9px] px-1.5 py-0 gap-0.5 font-medium">
                 <Shield className="w-2.5 h-2.5" />
                 {isArabic ? 'مشرف' : 'Mod'}
               </Badge>
@@ -437,7 +447,7 @@ const MessageBubble = ({
               value={editContent}
               onChange={(e) => setEditContent(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="flex-1"
+              className="flex-1 rounded-xl"
               disabled={saving}
               autoFocus
             />
@@ -449,28 +459,30 @@ const MessageBubble = ({
             </Button>
           </div>
         ) : (
-          <div className="flex items-center gap-1">
+          <div className={cn("flex items-end gap-1", isOwn ? "flex-row-reverse" : "flex-row")}>
             <div
               className={cn(
-                "px-4 py-2.5 rounded-2xl min-w-[60px]",
+                "px-4 py-2 shadow-sm",
                 isOwn
-                  ? "bg-primary text-primary-foreground rounded-br-sm"
-                  : "bg-muted text-foreground rounded-bl-sm"
+                  ? "bg-primary text-primary-foreground rounded-2xl rounded-br-md"
+                  : "bg-card border border-border/40 text-foreground rounded-2xl rounded-bl-md",
+                !showAvatar && isOwn && "rounded-2xl rounded-br-md",
+                !showAvatar && !isOwn && "rounded-2xl rounded-bl-md"
               )}
             >
               <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">{message.content}</p>
             </div>
             
             {(canEdit || canDelete) && (
-              <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center gap-0 opacity-0 group-hover:opacity-100 transition-opacity mb-1">
                 {canEdit && (
-                  <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setIsEditing(true)}>
-                    <Pencil className="w-3 h-3 text-muted-foreground hover:text-primary" />
+                  <Button size="icon" variant="ghost" className="h-6 w-6 rounded-full" onClick={() => setIsEditing(true)}>
+                    <Pencil className="w-3 h-3 text-muted-foreground" />
                   </Button>
                 )}
                 {canDelete && (
-                  <Button size="icon" variant="ghost" className="h-6 w-6" onClick={handleDelete}>
-                    <Trash2 className="w-3 h-3 text-muted-foreground hover:text-destructive" />
+                  <Button size="icon" variant="ghost" className="h-6 w-6 rounded-full" onClick={handleDelete}>
+                    <Trash2 className="w-3 h-3 text-muted-foreground" />
                   </Button>
                 )}
               </div>
@@ -478,7 +490,7 @@ const MessageBubble = ({
           </div>
         )}
         
-        <span className="text-[10px] text-muted-foreground mt-1">
+        <span className={cn("text-[10px] text-muted-foreground/60 mt-0.5 px-1", isOwn ? "text-end" : "text-start")}>
           {formatTime(message.created_at)}
         </span>
       </div>

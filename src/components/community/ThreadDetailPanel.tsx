@@ -57,18 +57,18 @@ export const ThreadDetailPanel = ({ thread, onBack, onDelete }: ThreadDetailPane
   const BackArrow = isArabic ? ArrowRight : ArrowLeft;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-200px)]">
+    <div className="flex flex-col h-[calc(100vh-160px)]">
       {/* Header */}
-      <div className="flex items-center gap-3 p-4 border-b border-border/30">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-border/40 bg-card/80 backdrop-blur-sm">
         <Button variant="ghost" size="icon" onClick={onBack}>
           <BackArrow className="w-5 h-5" />
         </Button>
-        <span className="text-sm text-muted-foreground">{t('community.backToThreads')}</span>
+        <span className="text-sm text-muted-foreground flex-1">{t('community.backToThreads')}</span>
         {canDelete && (
           <Button
             variant="ghost"
             size="icon"
-            className="ms-auto text-destructive hover:text-destructive"
+            className="text-destructive hover:text-destructive"
             onClick={onDelete}
           >
             <Trash2 className="w-4 h-4" />
@@ -81,20 +81,20 @@ export const ThreadDetailPanel = ({ thread, onBack, onDelete }: ThreadDetailPane
         <div className="p-4 border-b border-border/30">
           <div className="flex items-start gap-3">
             <Avatar 
-              className="w-10 h-10 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+              className="w-10 h-10 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all ring-1 ring-border/20"
               onClick={() => handleUserClick(thread.user_id)}
             >
               <AvatarImage src={thread.author?.avatar_url || undefined} />
-              <AvatarFallback className="bg-primary/20 text-primary">
+              <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                 {authorName.charAt(0)}
               </AvatarFallback>
             </Avatar>
 
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap mb-2">
                 <button 
                   onClick={() => handleUserClick(thread.user_id)}
-                  className="font-medium text-foreground hover:text-primary transition-colors"
+                  className="font-semibold text-foreground hover:text-primary transition-colors"
                 >
                   {authorName}
                 </button>
@@ -104,11 +104,11 @@ export const ThreadDetailPanel = ({ thread, onBack, onDelete }: ThreadDetailPane
                 {thread.is_pinned && (
                   <Badge variant="secondary" className="text-[10px] px-1.5">📌</Badge>
                 )}
-                <span className="text-xs text-muted-foreground">{formatTime(thread.created_at)}</span>
+                <span className="text-[11px] text-muted-foreground/60">{formatTime(thread.created_at)}</span>
               </div>
 
-              <h2 className="text-lg font-semibold text-foreground mb-2">{thread.title}</h2>
-              <p className="text-muted-foreground whitespace-pre-wrap">{thread.content}</p>
+              <h2 className="text-lg font-bold text-foreground mb-2">{thread.title}</h2>
+              <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">{thread.content}</p>
 
               <div className="flex items-center gap-4 mt-4 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1">
@@ -128,7 +128,7 @@ export const ThreadDetailPanel = ({ thread, onBack, onDelete }: ThreadDetailPane
 
         {/* Replies */}
         <div className="p-4 space-y-4">
-          <h3 className="font-semibold text-foreground">
+          <h3 className="font-bold text-foreground">
             {t('community.replies')} ({replies.length})
           </h3>
 
@@ -142,7 +142,7 @@ export const ThreadDetailPanel = ({ thread, onBack, onDelete }: ThreadDetailPane
               <p>{t('community.noReplies')}</p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {replies.map((reply) => (
                 <ReplyCard
                   key={reply.id}
@@ -165,20 +165,20 @@ export const ThreadDetailPanel = ({ thread, onBack, onDelete }: ThreadDetailPane
 
       {/* Reply Input */}
       {!thread.is_locked && user && (
-        <div className="p-4 border-t border-border/30">
-          <div className="flex gap-2">
+        <div className="px-3 py-2.5 border-t border-border/40 bg-card/80 backdrop-blur-sm">
+          <div className="flex items-end gap-2">
             <Textarea
               value={newReply}
               onChange={(e) => setNewReply(e.target.value)}
               placeholder={t('community.writeReply')}
-              className="flex-1 min-h-[60px]"
+              className="flex-1 min-h-[44px] max-h-[120px] rounded-xl bg-muted/50 border-border/30 resize-none"
               disabled={sending}
             />
             <Button
               onClick={handleSubmitReply}
               disabled={!newReply.trim() || sending}
               size="icon"
-              className="h-auto"
+              className="shrink-0 rounded-full w-10 h-10"
             >
               <Send className="w-4 h-4" />
             </Button>
@@ -187,7 +187,7 @@ export const ThreadDetailPanel = ({ thread, onBack, onDelete }: ThreadDetailPane
       )}
 
       {thread.is_locked && (
-        <div className="p-4 border-t border-border/30 text-center text-muted-foreground">
+        <div className="p-3 border-t border-border/40 text-center text-muted-foreground text-sm">
           🔒 {t('community.threadLocked')}
         </div>
       )}
