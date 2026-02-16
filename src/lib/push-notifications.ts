@@ -66,10 +66,10 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
   }
 
   try {
-    const registration = await navigator.serviceWorker.register('/sw.js', {
-      scope: '/'
-    });
-    console.log('Service Worker registered:', registration);
+    // VitePWA يدير تسجيل الـ Service Worker تلقائياً
+    // نستخدم navigator.serviceWorker.ready للحصول على التسجيل الحالي
+    const registration = await navigator.serviceWorker.ready;
+    console.log('Service Worker ready:', registration);
     return registration;
   } catch (error) {
     console.error('Service Worker registration failed:', error);
