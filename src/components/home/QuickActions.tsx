@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { Bot, Radio, BarChart3, Trophy, Calculator, Gift } from 'lucide-react';
+import { Bot, Radio, BarChart3, Trophy, Calculator, Gift, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { PipCalculatorDialog } from './PipCalculatorDialog';
@@ -13,6 +13,7 @@ const actions = [
   { key: 'gamification', icon: Trophy, gradient: 'from-amber-500 to-yellow-400', glow: 'shadow-amber-500/20', settingKey: null },
   { key: 'rewards', icon: Gift, gradient: 'from-rose-500 to-pink-400', glow: 'shadow-rose-500/20', settingKey: null },
   { key: 'pipCalculator', icon: Calculator, gradient: 'from-orange-500 to-red-400', glow: 'shadow-orange-500/20', settingKey: null },
+  { key: 'installApp', icon: Download, gradient: 'from-green-500 to-emerald-400', glow: 'shadow-green-500/20', settingKey: null },
 ];
 
 interface QuickActionsProps {

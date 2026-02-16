@@ -31,7 +31,8 @@
     "liveSession": "Live",
     "viewAll": "View All",
     "welcome": "Welcome",
-    "marketOverview": "Market Overview"
+    "marketOverview": "Market Overview",
+    "installApp": "Install App"
   },
   "trades": {
     "title": "Trades",
