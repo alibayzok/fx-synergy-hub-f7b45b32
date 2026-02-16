@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { Mail, Phone, FileCheck, CheckCircle2, Clock, AlertCircle, ShieldCheck, ChevronRight } from 'lucide-react';
+import { Mail, FileCheck, CheckCircle2, Clock, AlertCircle, ShieldCheck, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
+
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,19 +18,16 @@ export const VerificationSection = () => {
   const isRTL = i18n.language === 'ar';
   const [showKYC, setShowKYC] = useState(false);
   const [profile, setProfile] = useState<any>(null);
-  const [phoneInput, setPhoneInput] = useState('');
-  const [savingPhone, setSavingPhone] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
       const { data } = await supabase
         .from('profiles')
-        .select('is_verified, phone_verified, kyc_status, phone')
+        .select('is_verified, kyc_status')
         .eq('user_id', user.id)
         .single();
       setProfile(data);
-      if (data?.phone) setPhoneInput(data.phone);
 
     };
     fetchData();
@@ -39,9 +36,7 @@ export const VerificationSection = () => {
   if (!profile) return null;
 
   const emailVerified = !!user?.email_confirmed_at;
-  const phoneVerified = profile.phone_verified;
   const kycStatus = profile.kyc_status || 'none';
-  
 
   const steps = [
     {
@@ -50,15 +45,6 @@ export const VerificationSection = () => {
       done: emailVerified,
       status: emailVerified ? (isRTL ? 'مؤكد' : 'Verified') : (isRTL ? 'غير مؤكد' : 'Unverified'),
       color: emailVerified ? 'text-emerald-500' : 'text-muted-foreground',
-    },
-    {
-      icon: Phone,
-      label: isRTL ? 'رقم الهاتف' : 'Phone',
-      done: phoneVerified,
-      status: phoneVerified
-        ? (isRTL ? 'موثق' : 'Verified')
-        : (isRTL ? 'أضف رقم الهاتف' : 'Add phone number'),
-      color: phoneVerified ? 'text-emerald-500' : 'text-muted-foreground',
     },
     {
       icon: FileCheck,
@@ -77,25 +63,6 @@ export const VerificationSection = () => {
 
   const completedCount = steps.filter(s => s.done).length;
   const progress = Math.round((completedCount / steps.length) * 100);
-
-  const handleSavePhone = async () => {
-    if (!user || !phoneInput.trim()) return;
-    setSavingPhone(true);
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ phone: phoneInput.trim(), phone_verified: true })
-        .eq('user_id', user.id);
-      if (error) throw error;
-      setProfile((prev: any) => ({ ...prev, phone: phoneInput.trim(), phone_verified: true }));
-      toast.success(isRTL ? 'تم حفظ وتوثيق رقم الهاتف' : 'Phone saved and verified');
-    } catch (err) {
-      console.error('Save phone failed:', err);
-      toast.error(isRTL ? 'فشل حفظ الرقم' : 'Failed to save phone');
-    } finally {
-      setSavingPhone(false);
-    }
-  };
 
   return (
     <>
@@ -164,29 +131,6 @@ export const VerificationSection = () => {
 
         {/* Actions */}
         <div className="space-y-2 pt-1">
-          {/* Phone: show input if not verified */}
-          {!phoneVerified && (
-            <div className="flex gap-2">
-              <Input
-                type="tel"
-                placeholder={isRTL ? 'أدخل رقم الهاتف' : 'Enter phone number'}
-                value={phoneInput}
-                onChange={(e) => setPhoneInput(e.target.value)}
-                className="flex-1 rounded-xl"
-                dir="ltr"
-              />
-              <Button
-                onClick={handleSavePhone}
-                disabled={!phoneInput.trim() || savingPhone}
-                variant="outline"
-                className="rounded-xl gap-1.5"
-              >
-                <Phone className="w-4 h-4" />
-                {isRTL ? 'توثيق' : 'Verify'}
-              </Button>
-            </div>
-          )}
-
           {/* KYC */}
           {kycStatus !== 'approved' && kycStatus !== 'pending' && (
             <Button
