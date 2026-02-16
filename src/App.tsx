@@ -8,6 +8,7 @@ import { AuthProvider } from "./hooks/useAuth";
 import { ThemeProvider } from "./hooks/useTheme";
 import { AppSettingsProvider } from "./hooks/useAppSettings";
 import { SplashScreen } from "./components/layout/SplashScreen";
+import { PWAInstallBanner } from "./components/layout/PWAInstallBanner";
 import { captureReferralCode } from "./hooks/useReferrals";
 import HomePage from "./pages/HomePage";
 import "./i18n";
@@ -85,6 +86,7 @@ const App = () => {
             )}
             <Toaster />
             <Sonner />
+            <PWAInstallBanner />
             <BrowserRouter>
               <Suspense fallback={<PageLoader />}>
                 <Routes>
