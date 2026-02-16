@@ -831,14 +831,31 @@ CREATE TABLE public.signal_updates (
 
 
 -- ============================================================
--- 3. VIEWS (العروض)
+-- 3. HELPER FUNCTIONS (دوال مساعدة - يجب إنشاؤها قبل Views)
+-- ============================================================
+
+-- دالة إخفاء رقم الهاتف (مطلوبة للـ Views)
+CREATE OR REPLACE FUNCTION public.mask_phone_number(phone text)
+RETURNS text LANGUAGE sql IMMUTABLE SET search_path = public
+AS $$
+    SELECT CASE
+        WHEN phone IS NULL THEN NULL
+        WHEN length(phone) <= 4 THEN '****'
+        ELSE concat(repeat('*', length(phone) - 4), right(phone, 4))
+    END
+$$;
+
+
+-- ============================================================
+-- 4. VIEWS (العروض)
 -- ============================================================
 
 -- عرض الملفات الشخصية العامة (بدون بيانات حساسة)
 CREATE OR REPLACE VIEW public.profiles_public AS
 SELECT 
     id, user_id, username, display_name, first_name, last_name,
-    avatar_url, country, language, created_at, updated_at
+    avatar_url, country, language, is_verified,
+    created_at, updated_at
 FROM public.profiles;
 
 -- عرض الملفات الشخصية للأدمن (مع إخفاء أرقام الهاتف)
@@ -847,12 +864,13 @@ SELECT
     id, user_id, username, display_name, first_name, last_name,
     avatar_url, country, public.mask_phone_number(phone) as phone,
     language, onboarding_completed, trading_preferences,
+    is_verified, kyc_status, phone_verified,
     created_at, updated_at
 FROM public.profiles;
 
 
 -- ============================================================
--- 4. FUNCTIONS (الدوال)
+-- 5. FUNCTIONS (الدوال)
 -- ============================================================
 
 -- دالة تحديث updated_at
@@ -889,16 +907,7 @@ CREATE OR REPLACE FUNCTION public.is_vip()
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
 AS $$ SELECT public.has_role(auth.uid(), 'vip') $$;
 
--- دالة إخفاء رقم الهاتف
-CREATE OR REPLACE FUNCTION public.mask_phone_number(phone text)
-RETURNS text LANGUAGE sql IMMUTABLE SET search_path = public
-AS $$
-    SELECT CASE
-        WHEN phone IS NULL THEN NULL
-        WHEN length(phone) <= 4 THEN '****'
-        ELSE concat(repeat('*', length(phone) - 4), right(phone, 4))
-    END
-$$;
+-- (mask_phone_number تم نقلها لقبل Views)
 
 -- دالة التحقق من الوصول للمحتوى
 CREATE OR REPLACE FUNCTION public.can_access_content(content_vis content_visibility)
