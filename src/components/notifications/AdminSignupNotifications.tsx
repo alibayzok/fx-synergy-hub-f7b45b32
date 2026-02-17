@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { UserPlus, Check, X, Trash2, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -31,6 +32,7 @@ interface SignupNotification {
 export const AdminSignupNotifications = () => {
   const { i18n } = useTranslation();
   const { isAdmin } = useAuth();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<SignupNotification[]>([]);
   const [open, setOpen] = useState(false);
   const isArabic = i18n.language === 'ar';
@@ -161,17 +163,25 @@ export const AdminSignupNotifications = () => {
             </div>
           ) : (
             <div className="space-y-2">
-              {notifications.map((notification) => (
+              {notifications.map((notification) => {
+                const data = notification.data as Record<string, string> | null;
+                return (
                 <motion.div
                   key={notification.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   className={cn(
-                    "p-3 rounded-lg border transition-colors group",
+                    "p-3 rounded-lg border transition-colors group cursor-pointer",
                     notification.read
                       ? "bg-card/30 border-border/20"
                       : "bg-blue-500/5 border-blue-500/20"
                   )}
+                  onClick={() => {
+                    if (!notification.read) markAsRead(notification.id);
+                    setOpen(false);
+                    // Navigate to admin user management
+                    navigate('/admin');
+                  }}
                 >
                   <div className="flex items-start gap-3">
                     <div className={cn(
@@ -228,7 +238,8 @@ export const AdminSignupNotifications = () => {
                     )}
                   </div>
                 </motion.div>
-              ))}
+                );
+              })}
             </div>
           )}
         </ScrollArea>

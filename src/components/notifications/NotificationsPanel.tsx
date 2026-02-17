@@ -79,35 +79,52 @@ export const NotificationsPanel = () => {
     switch (notification.type) {
       case 'reply':
       case 'reply_like':
-        if (data?.thread_id) target = '/community';
+        target = '/community';
         break;
       case 'trade':
       case 'new_trade':
       case 'trade_update':
       case 'trade_comment':
       case 'comment_like':
-        if (data?.trade_id) target = '/trades';
+      case 'signal_like':
+        target = '/trades';
         break;
-      case 'message':
-        if (data?.conversation_id) target = `/messages?conv=${data.conversation_id}`;
-        break;
-      case 'friend_request':
-        if (data?.sender_id) target = `/user/${data.sender_id}`;
-        break;
-      case 'friend_accepted':
-        if (data?.friend_id) target = `/user/${data.friend_id}`;
-        else if (data?.sender_id) target = `/user/${data.sender_id}`;
+      case 'analysis_like':
+      case 'new_analysis':
+        target = '/analyses';
         break;
       case 'post_like':
       case 'post_comment':
       case 'comment_reply':
-        if (data?.post_id) target = '/profile';
-        break;
-      case 'analysis_like':
-        if (data?.analysis_id) target = '/analyses';
+        if (data?.user_id) {
+          target = `/user/${data.user_id}`;
+        } else {
+          target = '/profile';
+        }
         break;
       case 'support_reply':
         target = '/support';
+        break;
+      case 'vip_approved':
+      case 'vip_rejected':
+      case 'subscription_update':
+        target = '/vip';
+        break;
+      case 'verification_approved':
+      case 'verification_rejected':
+        target = '/profile';
+        break;
+      case 'reward_approved':
+      case 'reward_rejected':
+        target = '/rewards';
+        break;
+      case 'room_join_approved':
+      case 'room_message':
+        target = '/community';
+        break;
+      default:
+        // For any unrecognized type, try to infer from data
+        if (data?.redirect) target = data.redirect;
         break;
     }
 
