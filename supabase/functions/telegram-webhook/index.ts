@@ -231,20 +231,20 @@ Deno.serve(async (req) => {
     // ─── Determine destination based on hashtag + channel ───
     let destination: "signal_free" | "signal_vip" | "article" | null = null;
 
-    // First check content type hashtag
-    if (hasArticleTag) {
-      // #مقال forces article regardless of channel
-      destination = "article";
-    } else if (hasSignalTag || !hasArticleTag) {
-      // #إشارة or default (no type tag) → signal, channel determines free/vip
+    // #إشارة → signal (channel determines free/vip)
+    // #مقال or default (no type tag) → article
+    if (hasSignalTag) {
       if (publicChatId && chatId === publicChatId) {
         destination = "signal_free";
       } else if (vipChatId && chatId === vipChatId) {
         destination = "signal_vip";
-      } else if (newsChatId && chatId === newsChatId) {
-        // News channel defaults to article if no signal tag
-        destination = hasSignalTag ? "signal_free" : "article";
+      } else {
+        // Any other channel with #إشارة defaults to free signal
+        destination = "signal_free";
       }
+    } else {
+      // Default (no type tag) or #مقال → article
+      destination = "article";
     }
 
     if (!destination) {
