@@ -1398,6 +1398,67 @@ export type Database = {
           },
         ]
       }
+      room_message_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          message_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          id?: string
+          message_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          message_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_message_reactions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "room_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      room_message_views: {
+        Row: {
+          created_at: string
+          id: string
+          message_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_message_views_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "room_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       room_messages: {
         Row: {
           content: string
@@ -1405,6 +1466,7 @@ export type Database = {
           id: string
           room_id: string
           user_id: string
+          views_count: number
         }
         Insert: {
           content: string
@@ -1412,6 +1474,7 @@ export type Database = {
           id?: string
           room_id: string
           user_id: string
+          views_count?: number
         }
         Update: {
           content?: string
@@ -1419,6 +1482,7 @@ export type Database = {
           id?: string
           room_id?: string
           user_id?: string
+          views_count?: number
         }
         Relationships: []
       }

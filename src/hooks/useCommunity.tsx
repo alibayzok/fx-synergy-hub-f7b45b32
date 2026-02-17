@@ -40,13 +40,21 @@ export interface Reply {
   user_liked?: boolean;
 }
 
+export interface MessageReaction {
+  emoji: string;
+  count: number;
+  user_reacted: boolean;
+}
+
 export interface RoomMessage {
   id: string;
   room_id: string;
   user_id: string;
   content: string;
   created_at: string;
+  views_count?: number;
   author?: ThreadAuthor;
+  reactions?: MessageReaction[];
 }
 
 export const useCommunity = () => {
@@ -395,11 +403,36 @@ export const useReplies = (threadId: string) => {
 };
 
 // Hook for room chat
-export const useRoomChat = (roomId: string) => {
+export const useRoomChat = (roomId: string, isBroadcast: boolean = false) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [messages, setMessages] = useState<RoomMessage[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const fetchReactions = useCallback(async (messageIds: string[]): Promise<Map<string, MessageReaction[]>> => {
+    if (!messageIds.length || !user) return new Map();
+    const { data } = await supabase
+      .from('room_message_reactions')
+      .select('message_id, emoji, user_id')
+      .in('message_id', messageIds);
+    
+    const map = new Map<string, MessageReaction[]>();
+    if (!data) return map;
+
+    // Group by message_id + emoji
+    const grouped: Record<string, Record<string, { count: number; user_reacted: boolean }>> = {};
+    data.forEach(r => {
+      if (!grouped[r.message_id]) grouped[r.message_id] = {};
+      if (!grouped[r.message_id][r.emoji]) grouped[r.message_id][r.emoji] = { count: 0, user_reacted: false };
+      grouped[r.message_id][r.emoji].count++;
+      if (r.user_id === user.id) grouped[r.message_id][r.emoji].user_reacted = true;
+    });
+
+    Object.entries(grouped).forEach(([msgId, emojis]) => {
+      map.set(msgId, Object.entries(emojis).map(([emoji, info]) => ({ emoji, ...info })));
+    });
+    return map;
+  }, [user]);
 
   const fetchMessages = useCallback(async () => {
     if (!roomId) return;
@@ -417,24 +450,31 @@ export const useRoomChat = (roomId: string) => {
 
       if (data && data.length > 0) {
         const userIds = [...new Set(data.map(m => m.user_id))];
-        const { data: profiles } = await supabase
-          .from('profiles_public')
-          .select('user_id, display_name, username, avatar_url')
-          .in('user_id', userIds);
+        const [profilesRes, reactionsMap] = await Promise.all([
+          supabase.from('profiles_public').select('user_id, display_name, username, avatar_url').in('user_id', userIds),
+          isBroadcast ? fetchReactions(data.map(m => m.id)) : Promise.resolve(new Map<string, MessageReaction[]>()),
+        ]);
 
-        const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+        const profileMap = new Map(profilesRes.data?.map(p => [p.user_id, p]) || []);
 
-        const messagesWithAuthors = data.map(msg => ({
+        const messagesWithAuthors: RoomMessage[] = data.map(msg => ({
           ...msg,
+          views_count: (msg as any).views_count || 0,
           author: profileMap.get(msg.user_id) || {
-            user_id: msg.user_id,
-            display_name: null,
-            username: null,
-            avatar_url: null
-          }
+            user_id: msg.user_id, display_name: null, username: null, avatar_url: null
+          },
+          reactions: reactionsMap.get(msg.id) || [],
         }));
 
         setMessages(messagesWithAuthors);
+
+        // Track views for broadcast channels
+        if (isBroadcast && user) {
+          const msgIds = data.map(m => m.id);
+          // Insert views for all visible messages (ignore conflicts)
+          const viewRows = msgIds.map(mid => ({ message_id: mid, user_id: user.id }));
+          supabase.from('room_message_views').insert(viewRows).then(() => {});
+        }
       } else {
         setMessages([]);
       }
@@ -443,7 +483,28 @@ export const useRoomChat = (roomId: string) => {
     } finally {
       setLoading(false);
     }
-  }, [roomId]);
+  }, [roomId, isBroadcast, user, fetchReactions]);
+
+  const toggleReaction = async (messageId: string, emoji: string) => {
+    if (!user) return;
+    
+    // Check if user already reacted with this emoji
+    const msg = messages.find(m => m.id === messageId);
+    const existingReaction = msg?.reactions?.find(r => r.emoji === emoji && r.user_reacted);
+
+    if (existingReaction) {
+      await supabase.from('room_message_reactions').delete()
+        .eq('message_id', messageId).eq('user_id', user.id).eq('emoji', emoji);
+    } else {
+      await supabase.from('room_message_reactions').insert({ message_id: messageId, user_id: user.id, emoji });
+    }
+
+    // Refresh reactions for this message
+    const reactionsMap = await fetchReactions([messageId]);
+    setMessages(prev => prev.map(m => 
+      m.id === messageId ? { ...m, reactions: reactionsMap.get(messageId) || [] } : m
+    ));
+  };
 
   const sendMessage = async (content: string, isModerator: boolean = false) => {
     if (!user || !content.trim()) return null;
@@ -605,6 +666,7 @@ export const useRoomChat = (roomId: string) => {
     sendMessage,
     updateMessage,
     deleteMessage,
-    fetchMessages
+    fetchMessages,
+    toggleReaction,
   };
 };
