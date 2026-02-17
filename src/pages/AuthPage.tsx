@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -113,13 +114,40 @@ const AuthPage = () => {
           navigate('/');
         }
       } else if (mode === 'register') {
+        // Check if phone already exists
+        if (phone) {
+          const { data: existingPhone } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('phone', phone)
+            .maybeSingle();
+          if (existingPhone) {
+            toast({
+              title: t('auth.duplicatePhone'),
+              description: t('auth.duplicatePhoneDesc'),
+              variant: 'destructive'
+            });
+            setLoading(false);
+            return;
+          }
+        }
+
         const { error } = await signUp(email, password, { firstName, lastName, country, phone });
         if (error) {
-          toast({
-            title: t('common.error'),
-            description: error.message,
-            variant: 'destructive'
-          });
+          const msg = error.message?.toLowerCase() || '';
+          if (msg.includes('already registered') || msg.includes('already been registered') || msg.includes('user already registered')) {
+            toast({
+              title: t('auth.duplicateEmail'),
+              description: t('auth.duplicateEmailDesc'),
+              variant: 'destructive'
+            });
+          } else {
+            toast({
+              title: t('common.error'),
+              description: error.message,
+              variant: 'destructive'
+            });
+          }
         } else {
           setPendingEmail(email);
           setMode('verify-otp');

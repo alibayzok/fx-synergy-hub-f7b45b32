@@ -389,7 +389,11 @@
     "requestNewLink": "Request new link",
     "backToHome": "Back to home",
     "signInWithGoogle": "Sign in with Google",
-    "googleSignInError": "An error occurred while signing in with Google"
+    "googleSignInError": "An error occurred while signing in with Google",
+    "duplicateEmail": "Email already registered",
+    "duplicateEmailDesc": "This email is already registered. Try logging in or resetting your password.",
+    "duplicatePhone": "Phone number already registered",
+    "duplicatePhoneDesc": "This phone number is already in use. Try logging in or resetting your password."
   },
   "notifications": {
     "title": "Notifications",
