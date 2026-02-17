@@ -1467,6 +1467,7 @@ export type Database = {
           content: string
           created_at: string | null
           id: string
+          image_url: string | null
           room_id: string
           user_id: string
           views_count: number
@@ -1475,6 +1476,7 @@ export type Database = {
           content: string
           created_at?: string | null
           id?: string
+          image_url?: string | null
           room_id: string
           user_id: string
           views_count?: number
@@ -1483,6 +1485,7 @@ export type Database = {
           content?: string
           created_at?: string | null
           id?: string
+          image_url?: string | null
           room_id?: string
           user_id?: string
           views_count?: number

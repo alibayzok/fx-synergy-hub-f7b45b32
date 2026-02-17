@@ -457,11 +457,8 @@ Deno.serve(async (req) => {
 
     // ─── Insert room message (default: publish to community channel) ───
     if (destination === "room_message" && targetRoomId) {
-      // Build message content with photo if present
+      // Use clean text content (no embedded img tags)
       let messageContent = cleanFormattedContent || cleanText;
-      if (photoUrl) {
-        messageContent = `<img src="${photoUrl}" alt="" style="max-width:100%;border-radius:8px;margin-bottom:8px;" /><br>${messageContent}`;
-      }
 
       // Get an admin user to post as (the bot posts on behalf of an admin)
       const { data: adminRole } = await supabase
@@ -480,13 +477,18 @@ Deno.serve(async (req) => {
         });
       }
 
+      const roomInsertData: Record<string, unknown> = {
+        room_id: targetRoomId,
+        user_id: botUserId,
+        content: messageContent,
+      };
+      if (photoUrl) {
+        roomInsertData.image_url = photoUrl;
+      }
+
       const { data: newMessage, error: msgError } = await supabase
         .from("room_messages")
-        .insert({
-          room_id: targetRoomId,
-          user_id: botUserId,
-          content: messageContent,
-        })
+        .insert(roomInsertData)
         .select("id")
         .single();
 

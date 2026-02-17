@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Send, ArrowRight, ArrowLeft, Pencil, Trash2, X, Check, Shield, Crown, Settings, Lock, UserPlus, Megaphone, Eye, SmilePlus } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { Send, ArrowRight, ArrowLeft, Pencil, Trash2, X, Check, Shield, Crown, Settings, Lock, UserPlus, Megaphone, Eye, SmilePlus, ImagePlus } from 'lucide-react';
 import { useRoomChat, RoomMessage, MessageReaction } from '@/hooks/useCommunity';
 import { useAuth } from '@/hooks/useAuth';
 import { useRoomModeration } from '@/hooks/useRoomManagement';
@@ -16,6 +17,8 @@ import { cn } from '@/lib/utils';
 import { VerifiedBadge } from '@/components/ui/verified-badge';
 import { formatTimeAgo } from '@/lib/date-utils';
 import { RoomJoinDialog } from './RoomJoinDialog';
+import { supabase } from '@/integrations/supabase/client';
+import { PremiumImageViewer } from '@/components/ui/premium-image-viewer';
 
 interface RoomChatPanelProps {
   roomId: string;
@@ -28,12 +31,16 @@ interface RoomChatPanelProps {
 export const RoomChatPanel = ({ roomId, roomName, onBack, onManage, isBroadcast = false }: RoomChatPanelProps) => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { user, isAdmin } = useAuth();
   const { messages, loading, sendMessage, updateMessage, deleteMessage, toggleReaction } = useRoomChat(roomId, isBroadcast);
   const { members, isModerator, currentUserRole } = useRoomModeration(roomId);
   const { getMembershipStatus, getPendingRequest, requestJoin } = useRoomManagement();
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [fabPosition, setFabPosition] = useState({ x: 0, y: 0 });
   const [membershipStatus, setMembershipStatus] = useState<'approved' | 'pending' | 'banned' | 'none'>('none');
   const [membershipLoading, setMembershipLoading] = useState(true);
@@ -99,17 +106,63 @@ export const RoomChatPanel = ({ roomId, roomName, onBack, onManage, isBroadcast 
     }
   }, [messages]);
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: isArabic ? 'حجم الصورة كبير جداً (الحد 5MB)' : 'Image too large (max 5MB)', variant: 'destructive' });
+      return;
+    }
+    setSelectedImage(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const clearImage = () => {
+    setSelectedImage(null);
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    setImagePreview(null);
+  };
+
+  const uploadImage = async (file: File): Promise<string | null> => {
+    const ext = file.name.split('.').pop();
+    const fileName = `${roomId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
+    const { error } = await supabase.storage.from('room-images').upload(fileName, file);
+    if (error) {
+      console.error('Upload error:', error);
+      return null;
+    }
+    const { data: urlData } = supabase.storage.from('room-images').getPublicUrl(fileName);
+    return urlData.publicUrl;
+  };
+
   const handleSend = async () => {
-    if (!newMessage.trim() || sending) return;
+    if ((!newMessage.trim() && !selectedImage) || sending) return;
 
     setSending(true);
-    const result = await sendMessage(newMessage, isModerator || isAdmin);
+    setUploading(!!selectedImage);
+
+    let imageUrl: string | undefined;
+    if (selectedImage) {
+      const url = await uploadImage(selectedImage);
+      if (url) imageUrl = url;
+      else {
+        toast({ title: isArabic ? 'فشل رفع الصورة' : 'Image upload failed', variant: 'destructive' });
+        setSending(false);
+        setUploading(false);
+        return;
+      }
+    }
+
+    const content = newMessage.trim() || (imageUrl ? '📷' : '');
+    const result = await sendMessage(content, isModerator || isAdmin, imageUrl);
     
-    // Only clear if message was sent successfully (not blocked)
     if (result && !('blocked' in result)) {
       setNewMessage('');
+      clearImage();
     }
     setSending(false);
+    setUploading(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -298,23 +351,57 @@ export const RoomChatPanel = ({ roomId, roomName, onBack, onManage, isBroadcast 
                 <span>{isArabic ? 'هذه قناة إعلانات - للقراءة فقط' : 'This is an announcements channel - read only'}</span>
               </div>
             ) : (
-              <div className="flex items-center gap-2">
-                <Button
-                  onClick={handleSend}
-                  disabled={!newMessage.trim() || !user || sending}
-                  size="icon"
-                  className="shrink-0 rounded-full w-10 h-10"
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
-                <Input
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder={t('community.typeMessage')}
-                  className="flex-1 rounded-full bg-muted/50 border-border/30 focus-visible:ring-primary/30"
-                  disabled={!user || sending}
-                />
+              <div className="flex flex-col gap-2">
+                {/* Image Preview */}
+                {imagePreview && (
+                  <div className="relative inline-block">
+                    <img src={imagePreview} alt="Preview" className="h-20 rounded-lg object-cover border border-border/40" />
+                    <button
+                      onClick={clearImage}
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-xs"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={handleSend}
+                    disabled={(!newMessage.trim() && !selectedImage) || !user || sending}
+                    size="icon"
+                    className="shrink-0 rounded-full w-10 h-10"
+                  >
+                    <Send className="w-4 h-4" />
+                  </Button>
+                  <Input
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder={t('community.typeMessage')}
+                    className="flex-1 rounded-full bg-muted/50 border-border/30 focus-visible:ring-primary/30"
+                    disabled={!user || sending}
+                  />
+                  {isBroadcast && canPost && (
+                    <label className="shrink-0 cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleImageSelect}
+                        disabled={sending}
+                      />
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center bg-muted/50 hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
+                        <ImagePlus className="w-4 h-4" />
+                      </div>
+                    </label>
+                  )}
+                </div>
+                {uploading && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary" />
+                    <span>{isArabic ? 'جاري رفع الصورة...' : 'Uploading image...'}</span>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -342,18 +429,8 @@ interface MessageBubbleProps {
 const REACTION_EMOJIS = ['👍', '❤️', '🔥', '👏', '😂', '😮'];
 
 const MessageBubble = ({ 
-  message, 
-  isOwn, 
-  isAdmin, 
-  isModerator,
-  isBroadcast,
-  userRole,
-  onEdit, 
-  onDelete, 
-  onUserClick, 
-  onToggleReaction,
-  formatTime, 
-  showAvatar 
+  message, isOwn, isAdmin, isModerator, isBroadcast, userRole,
+  onEdit, onDelete, onUserClick, onToggleReaction, formatTime, showAvatar 
 }: MessageBubbleProps) => {
   const { t, i18n } = useTranslation();
   const isArabic = i18n.language === 'ar';
@@ -361,6 +438,7 @@ const MessageBubble = ({
   const [editContent, setEditContent] = useState(message.content);
   const [saving, setSaving] = useState(false);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
+  const [viewingImage, setViewingImage] = useState(false);
   
   const authorName = message.author?.display_name || message.author?.username || 'مستخدم';
   
@@ -472,7 +550,8 @@ const MessageBubble = ({
             <div className="flex flex-col">
               <div
                 className={cn(
-                  "px-4 py-2 shadow-sm",
+                  "shadow-sm overflow-hidden",
+                  message.image_url ? "rounded-2xl" : "px-4 py-2",
                   isOwn
                     ? "bg-primary text-primary-foreground rounded-2xl rounded-br-md"
                     : "bg-card border border-border/40 text-foreground rounded-2xl rounded-bl-md",
@@ -480,8 +559,31 @@ const MessageBubble = ({
                   !showAvatar && !isOwn && "rounded-2xl rounded-bl-md"
                 )}
               >
-                <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">{message.content}</p>
+                {message.image_url && (
+                  <img
+                    src={message.image_url}
+                    alt=""
+                    className="max-w-[280px] w-full cursor-pointer rounded-t-2xl"
+                    onClick={() => setViewingImage(true)}
+                  />
+                )}
+                {message.content && message.content !== '📷' && (
+                  <p className={cn("text-sm whitespace-pre-wrap break-words leading-relaxed", message.image_url && "px-4 py-2")}>{message.content}</p>
+                )}
+                {message.content === '📷' && !message.image_url && (
+                  <p className="text-sm px-4 py-2">📷</p>
+                )}
               </div>
+
+              {/* Image Viewer */}
+              {viewingImage && message.image_url && (
+                <PremiumImageViewer
+                  open={viewingImage}
+                  src={message.image_url}
+                  alt=""
+                  onClose={() => setViewingImage(false)}
+                />
+              )}
 
               {/* Reactions display */}
               {isBroadcast && message.reactions && message.reactions.length > 0 && (

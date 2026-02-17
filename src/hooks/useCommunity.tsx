@@ -51,6 +51,7 @@ export interface RoomMessage {
   room_id: string;
   user_id: string;
   content: string;
+  image_url?: string | null;
   created_at: string;
   views_count?: number;
   author?: ThreadAuthor;
@@ -506,7 +507,7 @@ export const useRoomChat = (roomId: string, isBroadcast: boolean = false) => {
     ));
   };
 
-  const sendMessage = async (content: string, isModerator: boolean = false) => {
+  const sendMessage = async (content: string, isModerator: boolean = false, imageUrl?: string) => {
     if (!user || !content.trim()) return null;
 
     // Check if user is muted in this room
@@ -557,13 +558,16 @@ export const useRoomChat = (roomId: string, isBroadcast: boolean = false) => {
     }
 
     try {
-      const { data: message, error } = await supabase
-        .from('room_messages')
-        .insert({
+      const insertData: any = {
           room_id: roomId,
           user_id: user.id,
           content: sanitizedContent
-        })
+        };
+      if (imageUrl) insertData.image_url = imageUrl;
+
+      const { data: message, error } = await supabase
+        .from('room_messages')
+        .insert(insertData)
         .select()
         .single();
 
