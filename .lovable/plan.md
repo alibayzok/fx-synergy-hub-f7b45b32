@@ -1,41 +1,42 @@
 
 
-# ملف مرجعي شامل لجميع أكواد Edge Functions
+# Fix: Email Confirmation Redirect Issue
 
-## الهدف
-إنشاء ملف واحد `scripts/all-edge-functions-code.md` يحتوي على كود كل الـ 10 Edge Functions جاهز للنسخ واللصق في داشبورد Supabase.
+## Problem
+When a new user signs up and clicks "Confirm your mail" in the email, they get redirected to `http://localhost:3000` which shows an `access_denied` / `otp_expired` error. The link should redirect to the actual published app URL.
 
-## ما سيتم إنشاؤه
+## Root Cause
+Two things need to be fixed:
 
-ملف واحد: `scripts/all-edge-functions-code.md`
+1. **Supabase Auth Site URL** is currently set to `http://localhost:3000`. This controls where confirmation emails redirect users.
+2. **signUp code** in `src/hooks/useAuth.tsx` uses `window.location.origin` for `emailRedirectTo`, which sends the preview URL instead of the production URL.
 
-### المحتوى
-الملف سيحتوي على أقسام واضحة لكل function مع:
-- اسم الوظيفة كعنوان
-- الأسرار المطلوبة لكل وظيفة
-- الكود الكامل جاهز للنسخ
+## Solution
 
-### الوظائف العشرة بالترتيب:
+### Step 1: Update Supabase Auth Site URL
+Use the configure-auth tool to set the Site URL to `https://fx-synergy-hub.lovable.app` and add redirect URLs for both the published URL and the Vercel deployment (`https://assassinfx.vercel.app`).
 
-1. **chat** - مساعد AI ذكي (يحتاج: LOVABLE_API_KEY او GOOGLE_AI_API_KEY)
-2. **market-data** - بيانات السوق (يحتاج: FINNHUB_API_KEY)
-3. **moderate-image** - فحص الصور (يحتاج: LOVABLE_API_KEY)
-4. **send-push-notification** - إشعارات (يحتاج: FCM_SERVER_KEY)
-5. **fetch-news** - جلب الأخبار (يحتاج: LOVABLE_API_KEY)
-6. **fetch-article** - جلب المقالات (يحتاج: LOVABLE_API_KEY)
-7. **fetch-calendar** - التقويم الاقتصادي (يحتاج: LOVABLE_API_KEY)
-8. **marqeta-cards** - البطاقات الافتراضية (يحتاج: MARQETA_APP_TOKEN, MARQETA_ADMIN_TOKEN)
-9. **telegram-webhook** - ويب هوك تلغرام (يحتاج: TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET)
-10. **setup-telegram-webhook** - إعداد ويب هوك تلغرام (يحتاج: TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET)
+### Step 2: Update signUp redirect in useAuth.tsx
+Change line 151 in `src/hooks/useAuth.tsx`:
 
-### ملاحظة مهمة
-- الأكواد ستكون نسخة طبق الأصل من الملفات الموجودة في المشروع
-- كل كود داخل بلوك ```typescript جاهز للنسخ
-- تذكير بإيقاف "Verify JWT" لكل function في الداشبورد
+**Before:**
+```typescript
+emailRedirectTo: window.location.origin,
+```
 
-### التفاصيل التقنية
-- الملف بصيغة Markdown لسهولة القراءة والنسخ
-- كل قسم يبدأ بعنوان h2 (##) باسم الوظيفة
-- قائمة الأسرار المطلوبة قبل كل كود
-- تعليمات واضحة في البداية عن كيفية الاستخدام
+**After:**
+```typescript
+emailRedirectTo: APP_URLS.production,
+```
+
+This uses the centralized production URL (`https://assassinfx.vercel.app`) from the environment config, ensuring the confirmation email always points to the correct URL regardless of where the user signed up from.
+
+## Technical Details
+
+### Files to modify:
+- `src/hooks/useAuth.tsx` - Change `emailRedirectTo` from `window.location.origin` to `APP_URLS.production` (import already exists for `AUTH_CONFIG`, just need to also import `APP_URLS`)
+
+### Auth configuration changes:
+- Site URL: `https://fx-synergy-hub.lovable.app`
+- Additional redirect URLs: `https://assassinfx.vercel.app`, `https://fx-synergy-hub.lovable.app`
 
