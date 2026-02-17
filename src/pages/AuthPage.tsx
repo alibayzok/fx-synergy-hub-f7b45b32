@@ -75,7 +75,7 @@ const AuthPage = () => {
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (otpCode.length !== 6) return;
+    if (otpCode.length !== 8) return;
     setLoading(true);
     try {
       const { error } = await verifyOtp(pendingEmail, otpCode);
@@ -233,8 +233,8 @@ const AuthPage = () => {
               </div>
 
               <div className="flex justify-center" dir="ltr">
-                <InputOTP
-                  maxLength={6}
+                 <InputOTP
+                  maxLength={8}
                   value={otpCode}
                   onChange={setOtpCode}
                 >
@@ -245,6 +245,8 @@ const AuthPage = () => {
                     <InputOTPSlot index={3} />
                     <InputOTPSlot index={4} />
                     <InputOTPSlot index={5} />
+                    <InputOTPSlot index={6} />
+                    <InputOTPSlot index={7} />
                   </InputOTPGroup>
                 </InputOTP>
               </div>
@@ -252,7 +254,7 @@ const AuthPage = () => {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={loading || otpCode.length !== 6}
+                disabled={loading || otpCode.length !== 8}
               >
                 {loading ? t('common.loading') : t('auth.verifyCode')}
               </Button>
