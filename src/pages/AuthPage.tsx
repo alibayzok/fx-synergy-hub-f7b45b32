@@ -76,11 +76,13 @@ const AuthPage = () => {
           navigate('/');
         }
       } else if (mode === 'register') {
+        const selectedCountry = countries.find(c => c.code === country);
+        const fullPhone = selectedCountry ? `${selectedCountry.dialCode}${phone}` : phone;
         if (phone) {
           const { data: existingPhone } = await supabase
             .from('profiles')
             .select('id')
-            .eq('phone', phone)
+            .eq('phone', fullPhone)
             .maybeSingle();
           if (existingPhone) {
             toast({ title: t('auth.duplicatePhone'), description: t('auth.duplicatePhoneDesc'), variant: 'destructive' });
@@ -88,7 +90,7 @@ const AuthPage = () => {
             return;
           }
         }
-        const { error } = await signUp(email, password, { firstName, lastName, country, phone });
+        const { error } = await signUp(email, password, { firstName, lastName, country, phone: fullPhone });
         if (error) {
           const msg = error.message?.toLowerCase() || '';
           if (msg.includes('already registered') || msg.includes('already been registered') || msg.includes('user already registered')) {
@@ -339,11 +341,16 @@ const AuthPage = () => {
 
                         <div className="space-y-2">
                           <Label htmlFor="phone" className="text-white/60 text-xs">{t('auth.phone')}</Label>
-                          <div className="relative">
-                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 rtl:left-auto rtl:right-3" />
-                            <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
-                              className="pl-10 rtl:pl-3 rtl:pr-10 bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25 rounded-xl h-11 focus:border-primary/50 focus:ring-primary/20"
-                              placeholder={t('auth.phonePlaceholder')} required />
+                          <div className="relative flex gap-2" dir="ltr">
+                            <div className="flex items-center justify-center h-11 px-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white/60 text-sm font-mono min-w-[70px] shrink-0">
+                              {countries.find(c => c.code === country)?.dialCode || '+---'}
+                            </div>
+                            <div className="relative flex-1">
+                              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                              <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
+                                className="pl-10 bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25 rounded-xl h-11 focus:border-primary/50 focus:ring-primary/20"
+                                placeholder="5XXXXXXXX" required />
+                            </div>
                           </div>
                         </div>
                       </div>
