@@ -228,7 +228,7 @@ const AuthPage = () => {
                   </h1>
                   <p className="text-sm text-white/40 mt-1 flex items-center justify-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5" />
-                    {mode === 'login' ? t('auth.login') : mode === 'register' ? t('auth.register') : mode === 'verify-otp' ? (t('auth.verifyOtp') || 'تحقق من الرمز') : t('auth.forgotPassword')}
+                    {mode === 'login' ? t('auth.login') : mode === 'register' ? t('auth.register') : mode === 'verify-otp' ? t('auth.verifyOtp') : t('auth.forgotPassword')}
                   </p>
                 </div>
               </div>
@@ -248,9 +248,9 @@ const AuthPage = () => {
                         <ShieldCheck className="relative w-16 h-16 mx-auto text-primary" />
                       </div>
                     </motion.div>
-                    <h2 className="text-xl font-semibold text-white">{t('auth.verifyOtp') || 'تحقق من الرمز'}</h2>
+                    <h2 className="text-xl font-semibold text-white">{t('auth.verifyOtp')}</h2>
                     <p className="text-sm text-white/50">
-                      {t('auth.otpSentTo') || 'أرسلنا رمز من 8 أرقام إلى'}{' '}
+                      {t('auth.otpSentTo')}{' '}
                       <span className="font-medium text-primary">{pendingEmail}</span>
                     </p>
                   </div>
@@ -285,7 +285,7 @@ const AuthPage = () => {
                       } finally { setLoading(false); }
                     }}
                   >
-                    {loading ? t('common.loading') : (t('auth.verify') || 'تحقق')}
+                    {loading ? t('common.loading') : t('auth.verify')}
                   </Button>
 
                   <div className="text-center">
