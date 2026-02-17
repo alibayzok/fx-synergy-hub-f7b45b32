@@ -1,33 +1,50 @@
 
 
-## خطة نظام OTP - جاهز للربط مع Supabase
+# خطة بناء نظام ربط تلغرام بالتطبيق (Telegram Webhook)
 
-### الوضع الحالي
-الكود جاهز لنظام OTP بـ **8 أرقام**. يحتاج فقط تعديل email template في Supabase Dashboard.
+## ملخص
+بناء وظيفة سحابية (Edge Function) كاملة لاستقبال الرسائل من قنوات تلغرام وتوزيعها تلقائيا على الأقسام المناسبة في التطبيق مع الحفاظ على تنسيق النصوص والصور.
 
-### التعديلات المنجزة ✅
-- `src/pages/AuthPage.tsx` - نظام OTP بـ 8 خانات
-- `src/hooks/useAuth.tsx` - دالة `verifyOtp` جاهزة
-- `src/components/ui/input-otp.tsx` - مكون الإدخال جاهز
+## آلية التوزيع
 
-### عند ربط Supabase الخاص بك:
+| قناة تلغرام | Chat ID Secret | الوجهة في التطبيق |
+|---|---|---|
+| القناة العامة | `TELEGRAM_PUBLIC_CHAT_ID` | جدول `signals` بصلاحية `free` |
+| قناة VIP | `TELEGRAM_VIP_CHAT_ID` | جدول `signals` بصلاحية `vip` |
+| قناة الأخبار | `TELEGRAM_NEWS_CHAT_ID` | جدول `articles` كمقال منشور |
 
-#### 1. تعديل Email Template
-في Supabase Dashboard → Authentication → Email Templates → **Confirm signup**:
+## كيف يعمل النظام
 
-```html
-<h2>رمز التحقق الخاص بك</h2>
-<p>مرحباً،</p>
-<p>رمز التحقق الخاص بك هو:</p>
-<h1 style="text-align:center; font-size:32px; letter-spacing:8px; color:#4F46E5;">{{ .Token }}</h1>
-<p>هذا الرمز صالح لمدة ساعة واحدة.</p>
-```
+1. عند النشر في قناة تلغرام، يرسل تلغرام تحديثا (channel_post) للـ webhook
+2. الـ webhook يتعرف على مصدر الرسالة عبر مقارنة `chat.id` مع الـ Chat IDs المخزنة
+3. بناء على المصدر، يتم إدخال البيانات في الجدول المناسب
+4. اذا كانت الرسالة رد (reply) على رسالة سابقة، يتم اضافتها كـ "تحديث" في جدول `signal_updates`
 
-#### 2. ضبط إعدادات OTP
-في Supabase Dashboard → Authentication → Settings:
-- **Email OTP Length**: `8`
-- **Email OTP Expiry**: `3600` (ساعة واحدة)
+## تفاصيل التنسيق
 
-#### 3. ملاحظات
-- الكود يستخدم `supabase.auth.verifyOtp({ email, token, type: 'signup' })`
-- طول OTP مضبوط على 8 أرقام في الفرونت
+- تحويل HTML من تلغرام (bold, italic, links, code) للحفاظ على التنسيق
+- تحميل الصور المرفقة من تلغرام API وتخزينها في Storage ثم ربطها بالسجل
+- دعم شبكات الصور المتعددة (Media Groups)
+- استخراج العنوان من السطر الاول للرسالة تلقائيا
+
+## التفاصيل التقنية
+
+### 1. كتابة Edge Function: `telegram-webhook/index.ts`
+
+الوظيفة ستتضمن:
+
+- **التحقق الأمني**: مطابقة `X-Telegram-Bot-Api-Secret-Token` مع `TELEGRAM_WEBHOOK_SECRET`
+- **تحديد مصدر القناة**: مقارنة `chat.id` مع الأسرار الثلاثة
+- **معالجة الصور**: تحميل الصور عبر Telegram Bot API (`getFile`) ورفعها لـ Storage bucket
+- **معالجة Media Groups**: تجميع صور الألبوم الواحد وربطها برسالة واحدة عبر cache مؤقت بـ `media_group_id`
+- **معالجة الردود (التحديثات)**: اذا الرسالة reply، يتم البحث عن الإشارة الأصلية عبر `telegram_message_id` وإضافة التحديث في `signal_updates`
+- **تحويل التنسيق**: الحفاظ على HTML entities من تلغرام (bold, italic, links, code blocks)
+
+### 2. اضافة عمود `telegram_message_id` لجدول `signals`
+
+هذا العمود مطلوب لربط الردود بالإشارات الأصلية (migration جديد).
+
+### 3. تحديث ملف التوثيق
+
+تحديث `scripts/all-edge-functions-code.md` بالكود الجديد.
+
