@@ -16,7 +16,7 @@ const allNavItems = [
   { key: 'messages', path: '/messages', icon: MessageSquare, labelAr: 'الرسائل', labelEn: 'Messages', settingKey: null },
   { key: 'gamification', path: '/gamification', icon: Crown, labelAr: 'النقاط', labelEn: 'Points', settingKey: 'enable_gamification' },
   { key: 'vip', path: '/vip', icon: Crown, labelAr: 'VIP', labelEn: 'VIP', settingKey: null },
-  { key: 'rewards', path: '/rewards', icon: Gift, labelAr: 'المكافآت', labelEn: 'Rewards', settingKey: 'enable_gamification' },
+  { key: 'rewards', path: '/rewards', icon: Gift, labelAr: 'المكافآت', labelEn: 'Rewards', settingKey: 'enable_rewards' },
 ];
 
 const bottomNavItems = [
