@@ -3,12 +3,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Lock, User, Eye, EyeOff, ArrowLeft, Phone } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, ArrowLeft, Phone, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { countries } from '@/data/countries';
@@ -16,7 +17,7 @@ import { signInWithGoogle } from '@/lib/auth-helpers';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import appLogo from '@/assets/logo-dark.png';
 
-type AuthMode = 'login' | 'register' | 'forgot' | 'check-email';
+type AuthMode = 'login' | 'register' | 'forgot' | 'verify-otp';
 
 const AuthPage = () => {
   const { t, i18n } = useTranslation();
@@ -46,6 +47,7 @@ const AuthPage = () => {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [pendingEmail, setPendingEmail] = useState('');
+  const [otpCode, setOtpCode] = useState('');
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
@@ -125,10 +127,10 @@ const AuthPage = () => {
           }
         } else {
           setPendingEmail(email);
-          setMode('check-email');
+          setMode('verify-otp');
           toast({
             title: t('auth.checkEmail'),
-            description: t('auth.confirmEmailSent') || 'تم إرسال رابط التأكيد إلى بريدك الإلكتروني'
+            description: t('auth.otpSent') || 'تم إرسال رمز التحقق إلى بريدك الإلكتروني'
           });
         }
       } else if (mode === 'forgot') {
@@ -163,8 +165,9 @@ const AuthPage = () => {
           variant="ghost"
           size="sm"
           onClick={() => {
-            if (mode === 'check-email') {
+            if (mode === 'verify-otp') {
               setMode('register');
+              setOtpCode('');
             } else {
               navigate('/');
             }
@@ -192,36 +195,69 @@ const AuthPage = () => {
               {t('app.name')}
             </h1>
             <p className="text-muted-foreground">
-              {mode === 'login' ? t('auth.login') : mode === 'register' ? t('auth.register') : mode === 'check-email' ? (t('auth.checkEmail') || 'تحقق من بريدك') : t('auth.forgotPassword')}
+              {mode === 'login' ? t('auth.login') : mode === 'register' ? t('auth.register') : mode === 'verify-otp' ? (t('auth.verifyOtp') || 'تحقق من الرمز') : t('auth.forgotPassword')}
             </p>
           </div>
 
-          {/* Check Email Mode */}
-          {mode === 'check-email' ? (
+          {/* OTP Verification Mode */}
+          {mode === 'verify-otp' ? (
             <div className="space-y-6">
               <div className="text-center space-y-4">
-                <Mail className="w-16 h-16 mx-auto text-primary" />
-                <h2 className="text-xl font-semibold">{t('auth.checkEmail') || 'تحقق من بريدك الإلكتروني'}</h2>
+                <ShieldCheck className="w-16 h-16 mx-auto text-primary" />
+                <h2 className="text-xl font-semibold">{t('auth.verifyOtp') || 'تحقق من الرمز'}</h2>
                 <p className="text-sm text-muted-foreground">
-                  {t('auth.confirmEmailSentTo') || 'تم إرسال رابط التأكيد إلى'}{' '}
+                  {t('auth.otpSentTo') || 'تم إرسال رمز التحقق إلى'}{' '}
                   <span className="font-medium text-foreground">{pendingEmail}</span>
                 </p>
-                <p className="text-sm text-muted-foreground">
-                  {t('auth.clickLinkToConfirm') || 'اضغط على الرابط في البريد لتأكيد حسابك، ثم عد هنا لتسجيل الدخول'}
-                </p>
+              </div>
+
+              <div className="flex justify-center" dir="ltr">
+                <InputOTP maxLength={8} value={otpCode} onChange={setOtpCode}>
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} />
+                    <InputOTPSlot index={1} />
+                    <InputOTPSlot index={2} />
+                    <InputOTPSlot index={3} />
+                    <InputOTPSlot index={4} />
+                    <InputOTPSlot index={5} />
+                    <InputOTPSlot index={6} />
+                    <InputOTPSlot index={7} />
+                  </InputOTPGroup>
+                </InputOTP>
               </div>
 
               <Button
                 className="w-full"
-                onClick={() => setMode('login')}
+                disabled={loading || otpCode.length !== 8}
+                onClick={async () => {
+                  setLoading(true);
+                  try {
+                    const { error } = await verifyOtp(pendingEmail, otpCode);
+                    if (error) {
+                      toast({
+                        title: t('common.error'),
+                        description: error.message,
+                        variant: 'destructive'
+                      });
+                    } else {
+                      toast({
+                        title: t('auth.verificationSuccess') || 'تم التحقق بنجاح',
+                        description: t('auth.accountVerified') || 'تم تأكيد حسابك بنجاح'
+                      });
+                      navigate('/');
+                    }
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
               >
-                {t('auth.backToLogin') || 'العودة لتسجيل الدخول'}
+                {loading ? t('common.loading') : (t('auth.verify') || 'تأكيد')}
               </Button>
 
               <div className="text-center">
                 <button
                   type="button"
-                  onClick={() => setMode('register')}
+                  onClick={() => { setMode('register'); setOtpCode(''); }}
                   className="text-sm text-primary hover:underline"
                 >
                   {t('auth.backToRegister') || 'العودة للتسجيل'}

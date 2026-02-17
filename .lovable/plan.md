@@ -1,26 +1,33 @@
 
 
-## خطة تعديل نظام OTP
+## خطة نظام OTP - جاهز للربط مع Supabase
 
-### المشكلة
-الباك إند مضبوط على OTP بطول **8 أرقام**، لكن الكود يتوقع **6 أرقام**.
+### الوضع الحالي
+الكود جاهز لنظام OTP بـ **8 أرقام**. يحتاج فقط تعديل email template في Supabase Dashboard.
 
-### الحل المقترح
-تعديل الكود ليتوافق مع إعداد الباك إند (8 أرقام)، لأن 8 أرقام أكثر أماناً.
+### التعديلات المنجزة ✅
+- `src/pages/AuthPage.tsx` - نظام OTP بـ 8 خانات
+- `src/hooks/useAuth.tsx` - دالة `verifyOtp` جاهزة
+- `src/components/ui/input-otp.tsx` - مكون الإدخال جاهز
 
-### التعديلات المطلوبة
+### عند ربط Supabase الخاص بك:
 
-#### 1. تعديل `src/pages/AuthPage.tsx`
-- تغيير `maxLength={6}` إلى `maxLength={8}`
-- تغيير شرط التحقق `otpCode.length !== 6` إلى `otpCode.length !== 8`
-- تحديث عدد خانات الإدخال من 6 إلى 8 (InputOTPSlot)
+#### 1. تعديل Email Template
+في Supabase Dashboard → Authentication → Email Templates → **Confirm signup**:
 
-#### 2. إعداد الباك إند (يدوي)
-المستخدم يحتاج يعدّل قالب البريد الإلكتروني:
-- الدخول على **Email Templates** في صفحة الـ Cloud
-- اختيار **Confirm signup**
-- استبدال المحتوى بقالب يستخدم `{{ .Token }}`
+```html
+<h2>رمز التحقق الخاص بك</h2>
+<p>مرحباً،</p>
+<p>رمز التحقق الخاص بك هو:</p>
+<h1 style="text-align:center; font-size:32px; letter-spacing:8px; color:#4F46E5;">{{ .Token }}</h1>
+<p>هذا الرمز صالح لمدة ساعة واحدة.</p>
+```
 
-### ملاحظة تقنية
-الـ `InputOTP` component يدعم أي عدد خانات، فقط نحتاج تحديث `maxLength` وعدد `InputOTPSlot` components وشروط التحقق.
+#### 2. ضبط إعدادات OTP
+في Supabase Dashboard → Authentication → Settings:
+- **Email OTP Length**: `8`
+- **Email OTP Expiry**: `3600` (ساعة واحدة)
 
+#### 3. ملاحظات
+- الكود يستخدم `supabase.auth.verifyOtp({ email, token, type: 'signup' })`
+- طول OTP مضبوط على 8 أرقام في الفرونت
