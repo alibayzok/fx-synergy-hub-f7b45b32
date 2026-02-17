@@ -153,24 +153,34 @@ export const useNotifications = () => {
           setNotifications(prev => [newNotification, ...prev]);
           setUnreadCount(prev => prev + 1);
 
-          // Play notification sound based on notification type
-          await playNotificationSound(newNotification.type);
+          // Types handled by dedicated icons - skip toast/sound here
+          const dedicatedTypes = [
+            'message',           // → Message icon
+            'friend_request',    // → Friend Requests icon
+            'friend_accepted',   // → Friend Requests icon
+            'support_ticket',    // → Support Headset icon
+          ];
 
-          // Show toast notification inside the app
-          toast(newNotification.title, {
-            description: newNotification.message,
-            duration: 5000,
-          });
+          if (!dedicatedTypes.includes(newNotification.type)) {
+            // Play notification sound based on notification type
+            await playNotificationSound(newNotification.type);
 
-          // Show push notification if app is in background
-          await showBackgroundNotification({
-            title: newNotification.title,
-            body: newNotification.message,
-            data: {
-              ...newNotification.data,
-              notificationId: newNotification.id,
-            },
-          });
+            // Show toast notification inside the app
+            toast(newNotification.title, {
+              description: newNotification.message,
+              duration: 5000,
+            });
+
+            // Show push notification if app is in background
+            await showBackgroundNotification({
+              title: newNotification.title,
+              body: newNotification.message,
+              data: {
+                ...newNotification.data,
+                notificationId: newNotification.id,
+              },
+            });
+          }
         }
       )
       .subscribe();
