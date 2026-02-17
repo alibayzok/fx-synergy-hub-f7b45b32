@@ -3,13 +3,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Lock, User, Eye, EyeOff, ArrowLeft, Phone, ShieldCheck } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, ArrowLeft, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { countries } from '@/data/countries';
@@ -17,7 +16,7 @@ import { signInWithGoogle } from '@/lib/auth-helpers';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import appLogo from '@/assets/logo-dark.png';
 
-type AuthMode = 'login' | 'register' | 'forgot' | 'verify-otp';
+type AuthMode = 'login' | 'register' | 'forgot' | 'check-email';
 
 const AuthPage = () => {
   const { t, i18n } = useTranslation();
@@ -46,7 +45,6 @@ const AuthPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
   const [pendingEmail, setPendingEmail] = useState('');
 
   const handleGoogleSignIn = async () => {
@@ -73,29 +71,6 @@ const AuthPage = () => {
     }
   };
 
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (otpCode.length !== 8) return;
-    setLoading(true);
-    try {
-      const { error } = await verifyOtp(pendingEmail, otpCode);
-      if (error) {
-        toast({
-          title: t('common.error'),
-          description: error.message,
-          variant: 'destructive'
-        });
-      } else {
-        toast({
-          title: t('auth.otpVerified'),
-          description: t('auth.otpVerifiedDesc')
-        });
-        navigate('/');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,10 +125,10 @@ const AuthPage = () => {
           }
         } else {
           setPendingEmail(email);
-          setMode('verify-otp');
+          setMode('check-email');
           toast({
             title: t('auth.checkEmail'),
-            description: t('auth.otpSent')
+            description: t('auth.confirmEmailSent') || 'تم إرسال رابط التأكيد إلى بريدك الإلكتروني'
           });
         }
       } else if (mode === 'forgot') {
@@ -188,9 +163,8 @@ const AuthPage = () => {
           variant="ghost"
           size="sm"
           onClick={() => {
-            if (mode === 'verify-otp') {
+            if (mode === 'check-email') {
               setMode('register');
-              setOtpCode('');
             } else {
               navigate('/');
             }
@@ -218,60 +192,42 @@ const AuthPage = () => {
               {t('app.name')}
             </h1>
             <p className="text-muted-foreground">
-              {mode === 'login' ? t('auth.login') : mode === 'register' ? t('auth.register') : mode === 'verify-otp' ? t('auth.enterOtp') : t('auth.forgotPassword')}
+              {mode === 'login' ? t('auth.login') : mode === 'register' ? t('auth.register') : mode === 'check-email' ? (t('auth.checkEmail') || 'تحقق من بريدك') : t('auth.forgotPassword')}
             </p>
           </div>
 
-          {/* OTP Verification Mode */}
-          {mode === 'verify-otp' ? (
-            <form onSubmit={handleVerifyOtp} className="space-y-6">
-              <div className="text-center space-y-2">
-                <ShieldCheck className="w-12 h-12 mx-auto text-primary" />
+          {/* Check Email Mode */}
+          {mode === 'check-email' ? (
+            <div className="space-y-6">
+              <div className="text-center space-y-4">
+                <Mail className="w-16 h-16 mx-auto text-primary" />
+                <h2 className="text-xl font-semibold">{t('auth.checkEmail') || 'تحقق من بريدك الإلكتروني'}</h2>
                 <p className="text-sm text-muted-foreground">
-                  {t('auth.otpSentTo')} <span className="font-medium text-foreground">{pendingEmail}</span>
+                  {t('auth.confirmEmailSentTo') || 'تم إرسال رابط التأكيد إلى'}{' '}
+                  <span className="font-medium text-foreground">{pendingEmail}</span>
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {t('auth.clickLinkToConfirm') || 'اضغط على الرابط في البريد لتأكيد حسابك، ثم عد هنا لتسجيل الدخول'}
                 </p>
               </div>
 
-              <div className="flex justify-center" dir="ltr">
-                 <InputOTP
-                  maxLength={8}
-                  value={otpCode}
-                  onChange={setOtpCode}
-                >
-                  <InputOTPGroup>
-                    <InputOTPSlot index={0} />
-                    <InputOTPSlot index={1} />
-                    <InputOTPSlot index={2} />
-                    <InputOTPSlot index={3} />
-                    <InputOTPSlot index={4} />
-                    <InputOTPSlot index={5} />
-                    <InputOTPSlot index={6} />
-                    <InputOTPSlot index={7} />
-                  </InputOTPGroup>
-                </InputOTP>
-              </div>
-
               <Button
-                type="submit"
                 className="w-full"
-                disabled={loading || otpCode.length !== 8}
+                onClick={() => setMode('login')}
               >
-                {loading ? t('common.loading') : t('auth.verifyCode')}
+                {t('auth.backToLogin') || 'العودة لتسجيل الدخول'}
               </Button>
 
               <div className="text-center">
                 <button
                   type="button"
-                  onClick={() => {
-                    setMode('register');
-                    setOtpCode('');
-                  }}
+                  onClick={() => setMode('register')}
                   className="text-sm text-primary hover:underline"
                 >
-                  {t('auth.backToRegister')}
+                  {t('auth.backToRegister') || 'العودة للتسجيل'}
                 </button>
               </div>
-            </form>
+            </div>
           ) : (
             <>
               {/* Form */}
