@@ -37,7 +37,7 @@ export const VerificationSection = () => {
 
   const emailVerified = !!user?.email_confirmed_at;
   const kycStatus = profile.kyc_status || 'none';
-  const isFullyVerified = profile.is_verified && kycStatus === 'approved' && emailVerified;
+  const isFullyVerified = profile.is_verified;
 
   // If fully verified, show a simple success card
   if (isFullyVerified) {
