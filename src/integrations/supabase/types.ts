@@ -175,6 +175,7 @@ export type Database = {
           is_published: boolean
           summary_ar: string | null
           summary_en: string | null
+          telegram_message_id: number | null
           title_ar: string
           title_en: string
           updated_at: string
@@ -190,6 +191,7 @@ export type Database = {
           is_published?: boolean
           summary_ar?: string | null
           summary_en?: string | null
+          telegram_message_id?: number | null
           title_ar: string
           title_en?: string
           updated_at?: string
@@ -205,6 +207,7 @@ export type Database = {
           is_published?: boolean
           summary_ar?: string | null
           summary_en?: string | null
+          telegram_message_id?: number | null
           title_ar?: string
           title_en?: string
           updated_at?: string
@@ -1669,6 +1672,7 @@ export type Database = {
           id: string
           likes_count: number | null
           symbol: string | null
+          telegram_message_id: number | null
           timeframe: Database["public"]["Enums"]["timeframe"] | null
           title: string
           updated_at: string
@@ -1684,6 +1688,7 @@ export type Database = {
           id?: string
           likes_count?: number | null
           symbol?: string | null
+          telegram_message_id?: number | null
           timeframe?: Database["public"]["Enums"]["timeframe"] | null
           title: string
           updated_at?: string
@@ -1699,6 +1704,7 @@ export type Database = {
           id?: string
           likes_count?: number | null
           symbol?: string | null
+          telegram_message_id?: number | null
           timeframe?: Database["public"]["Enums"]["timeframe"] | null
           title?: string
           updated_at?: string
