@@ -37,6 +37,33 @@ export const VerificationSection = () => {
 
   const emailVerified = !!user?.email_confirmed_at;
   const kycStatus = profile.kyc_status || 'none';
+  const isFullyVerified = profile.is_verified && kycStatus === 'approved' && emailVerified;
+
+  // If fully verified, show a simple success card
+  if (isFullyVerified) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="glass-card rounded-2xl p-5 border border-emerald-500/30 bg-emerald-500/5"
+      >
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/20">
+            <ShieldCheck className="w-5 h-5 text-emerald-500" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-bold text-foreground flex items-center gap-2">
+              {isRTL ? 'الحساب موثق' : 'Account Verified'}
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+            </h3>
+            <p className="text-xs text-emerald-500/80">
+              {isRTL ? 'تم توثيق حسابك بنجاح ✅' : 'Your account has been successfully verified ✅'}
+            </p>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
 
   const steps = [
     {
@@ -84,12 +111,6 @@ export const VerificationSection = () => {
               {isRTL ? `${completedCount}/${steps.length} خطوات مكتملة` : `${completedCount}/${steps.length} steps completed`}
             </p>
           </div>
-          {profile.is_verified && (
-            <Badge className="bg-blue-500/15 text-blue-500 border border-blue-500/30 gap-1">
-              <CheckCircle2 className="w-3 h-3" />
-              {isRTL ? 'موثق' : 'Verified'}
-            </Badge>
-          )}
         </div>
 
         {/* Progress */}
@@ -131,7 +152,6 @@ export const VerificationSection = () => {
 
         {/* Actions */}
         <div className="space-y-2 pt-1">
-          {/* KYC */}
           {kycStatus !== 'approved' && kycStatus !== 'pending' && (
             <Button
               onClick={() => setShowKYC(true)}
