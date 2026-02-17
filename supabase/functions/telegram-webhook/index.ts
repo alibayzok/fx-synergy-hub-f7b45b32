@@ -198,6 +198,28 @@ Deno.serve(async (req) => {
     const replyToMessage = post.reply_to_message;
     const mediaGroupId = post.media_group_id;
 
+    // ─── Check for publish hashtag (#نشر or #publish) ───
+    const hashtags = entities
+      .filter((e: any) => e.type === "hashtag")
+      .map((e: any) => {
+        const codePoints = [...text];
+        return codePoints.slice(e.offset, e.offset + e.length).join("").toLowerCase();
+      });
+
+    const hasPublishTag = hashtags.some((tag: string) =>
+      tag === "#نشر" || tag === "#publish"
+    );
+
+    // Replies (updates) don't need the hashtag - they link to existing signals
+    const isReply = !!replyToMessage;
+
+    if (!hasPublishTag && !isReply) {
+      console.log("Skipped: no #نشر or #publish hashtag found");
+      return new Response(JSON.stringify({ ok: true, skipped: "no_publish_hashtag" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // ─── Determine destination ───
     let destination: "signal_free" | "signal_vip" | "article" | null = null;
 
@@ -216,7 +238,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    console.log(`Processing: destination=${destination}, messageId=${messageId}, hasReply=${!!replyToMessage}, mediaGroup=${mediaGroupId || "none"}`);
+    // ─── Remove publish hashtag from text before processing ───
+    const cleanText = text.replace(/#نشر|#publish/gi, "").trim();
+
+    console.log(`Processing: destination=${destination}, messageId=${messageId}, hasReply=${isReply}, mediaGroup=${mediaGroupId || "none"}`);
 
     // ─── Process photo if present ───
     let photoUrl: string | null = null;
@@ -227,10 +252,10 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ─── Format text with entities ───
-    const formattedText = applyEntities(text, entities);
-    const { title, content: bodyContent } = extractTitle(text);
-    const fullFormattedContent = applyEntities(text, entities);
+    // ─── Format text with entities (use cleanText) ───
+    const formattedText = applyEntities(cleanText, entities);
+    const { title, content: bodyContent } = extractTitle(cleanText);
+    const fullFormattedContent = applyEntities(cleanText, entities);
 
     // ─── Handle replies (signal updates) ───
     if (replyToMessage && (destination === "signal_free" || destination === "signal_vip")) {
@@ -358,11 +383,9 @@ Deno.serve(async (req) => {
         articleContent = `<img src="${photoUrl}" alt="صورة المقال" style="max-width:100%;border-radius:8px;margin-bottom:16px;" /><br>${articleContent}`;
       }
 
-      // Detect category from hashtags
+      // Detect category from hashtags (already extracted above)
       let category = "general";
-      const hashtags = entities.filter((e: any) => e.type === "hashtag");
-      for (const ht of hashtags) {
-        const tag = text.substring(ht.offset, ht.offset + ht.length).toLowerCase();
+      for (const tag of hashtags) {
         if (tag === "#تعليم" || tag === "#education") category = "education";
         else if (tag === "#تحليل" || tag === "#analysis") category = "analysis";
         else if (tag === "#أخبار" || tag === "#news") category = "news";
