@@ -2,8 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Send, ArrowRight, ArrowLeft, Pencil, Trash2, X, Check, Shield, Crown, Settings, Lock, UserPlus, Megaphone } from 'lucide-react';
-import { useRoomChat, RoomMessage } from '@/hooks/useCommunity';
+import { Send, ArrowRight, ArrowLeft, Pencil, Trash2, X, Check, Shield, Crown, Settings, Lock, UserPlus, Megaphone, Eye, SmilePlus } from 'lucide-react';
+import { useRoomChat, RoomMessage, MessageReaction } from '@/hooks/useCommunity';
 import { useAuth } from '@/hooks/useAuth';
 import { useRoomModeration } from '@/hooks/useRoomManagement';
 import { useRoomManagement } from '@/hooks/useRoomManagement';
@@ -29,7 +29,7 @@ export const RoomChatPanel = ({ roomId, roomName, onBack, onManage, isBroadcast 
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
-  const { messages, loading, sendMessage, updateMessage, deleteMessage } = useRoomChat(roomId);
+  const { messages, loading, sendMessage, updateMessage, deleteMessage, toggleReaction } = useRoomChat(roomId, isBroadcast);
   const { members, isModerator, currentUserRole } = useRoomModeration(roomId);
   const { getMembershipStatus, getPendingRequest, requestJoin } = useRoomManagement();
   const [newMessage, setNewMessage] = useState('');
@@ -274,10 +274,12 @@ export const RoomChatPanel = ({ roomId, roomName, onBack, onManage, isBroadcast 
                         isOwn={message.user_id === user?.id}
                         isAdmin={isAdmin}
                         isModerator={isModerator}
+                        isBroadcast={isBroadcast}
                         userRole={memberRolesMap.get(message.user_id)}
                         onEdit={(content) => updateMessage(message.id, content)}
                         onDelete={() => deleteMessage(message.id)}
                         onUserClick={handleUserClick}
+                        onToggleReaction={isBroadcast ? (emoji) => toggleReaction(message.id, emoji) : undefined}
                         formatTime={formatTime}
                         showAvatar={index === 0 || messages[index - 1].user_id !== message.user_id}
                       />
@@ -327,23 +329,29 @@ interface MessageBubbleProps {
   isOwn: boolean;
   isAdmin: boolean;
   isModerator: boolean;
+  isBroadcast?: boolean;
   userRole?: 'member' | 'moderator' | 'owner';
   onEdit: (content: string) => Promise<boolean>;
   onDelete: () => Promise<boolean>;
   onUserClick: (userId: string) => void;
+  onToggleReaction?: (emoji: string) => void;
   formatTime: (date: string) => string;
   showAvatar: boolean;
 }
+
+const REACTION_EMOJIS = ['👍', '❤️', '🔥', '👏', '😂', '😮'];
 
 const MessageBubble = ({ 
   message, 
   isOwn, 
   isAdmin, 
   isModerator,
+  isBroadcast,
   userRole,
   onEdit, 
   onDelete, 
   onUserClick, 
+  onToggleReaction,
   formatTime, 
   showAvatar 
 }: MessageBubbleProps) => {
@@ -352,6 +360,7 @@ const MessageBubble = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
   const [saving, setSaving] = useState(false);
+  const [showReactionPicker, setShowReactionPicker] = useState(false);
   
   const authorName = message.author?.display_name || message.author?.username || 'مستخدم';
   
@@ -460,39 +469,93 @@ const MessageBubble = ({
           </div>
         ) : (
           <div className={cn("flex items-end gap-1", isOwn ? "flex-row-reverse" : "flex-row")}>
-            <div
-              className={cn(
-                "px-4 py-2 shadow-sm",
-                isOwn
-                  ? "bg-primary text-primary-foreground rounded-2xl rounded-br-md"
-                  : "bg-card border border-border/40 text-foreground rounded-2xl rounded-bl-md",
-                !showAvatar && isOwn && "rounded-2xl rounded-br-md",
-                !showAvatar && !isOwn && "rounded-2xl rounded-bl-md"
+            <div className="flex flex-col">
+              <div
+                className={cn(
+                  "px-4 py-2 shadow-sm",
+                  isOwn
+                    ? "bg-primary text-primary-foreground rounded-2xl rounded-br-md"
+                    : "bg-card border border-border/40 text-foreground rounded-2xl rounded-bl-md",
+                  !showAvatar && isOwn && "rounded-2xl rounded-br-md",
+                  !showAvatar && !isOwn && "rounded-2xl rounded-bl-md"
+                )}
+              >
+                <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">{message.content}</p>
+              </div>
+
+              {/* Reactions display */}
+              {isBroadcast && message.reactions && message.reactions.length > 0 && (
+                <div className={cn("flex flex-wrap gap-1 mt-1 px-1", isOwn ? "justify-end" : "justify-start")}>
+                  {message.reactions.map((reaction) => (
+                    <button
+                      key={reaction.emoji}
+                      onClick={() => onToggleReaction?.(reaction.emoji)}
+                      className={cn(
+                        "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs transition-all",
+                        reaction.user_reacted
+                          ? "bg-primary/20 border border-primary/40 text-foreground"
+                          : "bg-muted/60 border border-border/30 text-muted-foreground hover:bg-muted"
+                      )}
+                    >
+                      <span>{reaction.emoji}</span>
+                      <span className="font-medium">{reaction.count}</span>
+                    </button>
+                  ))}
+                </div>
               )}
-            >
-              <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">{message.content}</p>
             </div>
             
-            {(canEdit || canDelete) && (
-              <div className="flex items-center gap-0 opacity-0 group-hover:opacity-100 transition-opacity mb-1">
-                {canEdit && (
-                  <Button size="icon" variant="ghost" className="h-6 w-6 rounded-full" onClick={() => setIsEditing(true)}>
-                    <Pencil className="w-3 h-3 text-muted-foreground" />
+            {/* Action buttons */}
+            <div className="flex items-center gap-0 opacity-0 group-hover:opacity-100 transition-opacity mb-1">
+              {isBroadcast && onToggleReaction && (
+                <div className="relative">
+                  <Button size="icon" variant="ghost" className="h-6 w-6 rounded-full" onClick={() => setShowReactionPicker(!showReactionPicker)}>
+                    <SmilePlus className="w-3 h-3 text-muted-foreground" />
                   </Button>
-                )}
-                {canDelete && (
-                  <Button size="icon" variant="ghost" className="h-6 w-6 rounded-full" onClick={handleDelete}>
-                    <Trash2 className="w-3 h-3 text-muted-foreground" />
-                  </Button>
-                )}
-              </div>
-            )}
+                  {showReactionPicker && (
+                    <div className={cn(
+                      "absolute bottom-8 z-50 flex items-center gap-0.5 bg-card border border-border rounded-xl shadow-lg p-1",
+                      isOwn ? "right-0" : "left-0"
+                    )}>
+                      {REACTION_EMOJIS.map(emoji => (
+                        <button
+                          key={emoji}
+                          onClick={() => { onToggleReaction(emoji); setShowReactionPicker(false); }}
+                          className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-muted transition-colors text-base"
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              {canEdit && (
+                <Button size="icon" variant="ghost" className="h-6 w-6 rounded-full" onClick={() => setIsEditing(true)}>
+                  <Pencil className="w-3 h-3 text-muted-foreground" />
+                </Button>
+              )}
+              {canDelete && (
+                <Button size="icon" variant="ghost" className="h-6 w-6 rounded-full" onClick={handleDelete}>
+                  <Trash2 className="w-3 h-3 text-muted-foreground" />
+                </Button>
+              )}
+            </div>
           </div>
         )}
         
-        <span className={cn("text-[10px] text-muted-foreground/60 mt-0.5 px-1", isOwn ? "text-end" : "text-start")}>
-          {formatTime(message.created_at)}
-        </span>
+        {/* Time + Views */}
+        <div className={cn("flex items-center gap-2 mt-0.5 px-1", isOwn ? "justify-end" : "justify-start")}>
+          <span className="text-[10px] text-muted-foreground/60">
+            {formatTime(message.created_at)}
+          </span>
+          {isBroadcast && message.views_count !== undefined && message.views_count > 0 && (
+            <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground/50">
+              <Eye className="w-3 h-3" />
+              {message.views_count}
+            </span>
+          )}
+        </div>
       </div>
     </motion.div>
   );
