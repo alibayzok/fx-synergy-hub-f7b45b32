@@ -265,8 +265,13 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ─── Remove control hashtags from text before processing ───
-    const cleanText = text.replace(/#نشر|#publish|#إشارة|#اشارة|#signal|#مقال|#article/gi, "").trim();
+    // ─── Format text WITH entities FIRST (before cleaning) to preserve offsets ───
+    const fullFormattedContent = applyEntities(text, entities);
+
+    // ─── Then clean control hashtags from both raw and formatted text ───
+    const controlHashtagRegex = /#نشر|#publish|#إشارة|#اشارة|#signal|#مقال|#article|#تعليم|#education|#تحليل|#analysis|#أخبار|#news|#crypto|#كريبتو/gi;
+    const cleanText = text.replace(controlHashtagRegex, "").replace(/\s{2,}/g, " ").trim();
+    const cleanFormattedContent = fullFormattedContent.replace(controlHashtagRegex, "").replace(/\s{2,}/g, " ").trim();
 
     console.log(`Processing: destination=${destination}, messageId=${messageId}, hasReply=${isReply}, mediaGroup=${mediaGroupId || "none"}`);
 
@@ -279,10 +284,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ─── Format text with entities (use cleanText) ───
-    const formattedText = applyEntities(cleanText, entities);
+    // ─── Extract title from clean text ───
     const { title, content: bodyContent } = extractTitle(cleanText);
-    const fullFormattedContent = applyEntities(cleanText, entities);
 
     // ─── Handle replies (signal updates) ───
     if (replyToMessage && (destination === "signal_free" || destination === "signal_vip")) {
@@ -300,7 +303,7 @@ Deno.serve(async (req) => {
         const updateData: any = {
           parent_id: originalSignal.id,
           parent_type: "signal",
-          content: fullFormattedContent || "تحديث",
+          content: cleanFormattedContent || "تحديث",
           telegram_message_id: messageId,
         };
 
@@ -363,7 +366,7 @@ Deno.serve(async (req) => {
     if (destination === "signal_free" || destination === "signal_vip") {
       const signalData: any = {
         title: title,
-        content: fullFormattedContent || title,
+        content: cleanFormattedContent || title,
         visibility: destination === "signal_free" ? "free" : "vip",
         telegram_message_id: messageId,
       };
@@ -403,7 +406,7 @@ Deno.serve(async (req) => {
     if (destination === "article") {
       // For articles: first line is title, rest is content
       const articleTitle = title || "مقال جديد";
-      let articleContent = fullFormattedContent;
+      let articleContent = cleanFormattedContent;
 
       // If there's a photo, prepend it as an image tag in the content
       if (photoUrl) {
@@ -455,7 +458,7 @@ Deno.serve(async (req) => {
     // ─── Insert room message (default: publish to community channel) ───
     if (destination === "room_message" && targetRoomId) {
       // Build message content with photo if present
-      let messageContent = fullFormattedContent || cleanText;
+      let messageContent = cleanFormattedContent || cleanText;
       if (photoUrl) {
         messageContent = `<img src="${photoUrl}" alt="" style="max-width:100%;border-radius:8px;margin-bottom:8px;" /><br>${messageContent}`;
       }
