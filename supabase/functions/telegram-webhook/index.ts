@@ -229,22 +229,33 @@ Deno.serve(async (req) => {
     }
 
     // ─── Determine destination based on hashtag + channel ───
-    let destination: "signal_free" | "signal_vip" | "article" | null = null;
+    // Room ID mapping for each Telegram channel
+    const channelToRoomMap: Record<string, string> = {};
+    if (publicChatId) channelToRoomMap[publicChatId] = "announcements";
+    if (vipChatId) channelToRoomMap[vipChatId] = "vip-channel";
+    if (newsChatId) channelToRoomMap[newsChatId] = "news";
 
-    // #إشارة → signal (channel determines free/vip)
-    // #مقال or default (no type tag) → article
+    let destination: "signal_free" | "signal_vip" | "article" | "room_message" | null = null;
+    let targetRoomId: string | null = null;
+
     if (hasSignalTag) {
+      // #إشارة → signal (channel determines free/vip)
       if (publicChatId && chatId === publicChatId) {
         destination = "signal_free";
       } else if (vipChatId && chatId === vipChatId) {
         destination = "signal_vip";
       } else {
-        // Any other channel with #إشارة defaults to free signal
         destination = "signal_free";
       }
-    } else {
-      // Default (no type tag) or #مقال → article
+    } else if (hasArticleTag) {
+      // #مقال → article
       destination = "article";
+    } else {
+      // Default (no type tag) → room message based on source channel
+      targetRoomId = channelToRoomMap[chatId] || null;
+      if (targetRoomId) {
+        destination = "room_message";
+      }
     }
 
     if (!destination) {
@@ -437,6 +448,57 @@ Deno.serve(async (req) => {
 
       return new Response(
         JSON.stringify({ ok: true, action: "article_created", article_id: newArticle?.id }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ─── Insert room message (default: publish to community channel) ───
+    if (destination === "room_message" && targetRoomId) {
+      // Build message content with photo if present
+      let messageContent = fullFormattedContent || cleanText;
+      if (photoUrl) {
+        messageContent = `<img src="${photoUrl}" alt="" style="max-width:100%;border-radius:8px;margin-bottom:8px;" /><br>${messageContent}`;
+      }
+
+      // Get an admin user to post as (the bot posts on behalf of an admin)
+      const { data: adminRole } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "admin")
+        .limit(1)
+        .single();
+
+      const botUserId = adminRole?.user_id;
+      if (!botUserId) {
+        console.error("No admin user found to post room message");
+        return new Response(JSON.stringify({ error: "No admin user" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: newMessage, error: msgError } = await supabase
+        .from("room_messages")
+        .insert({
+          room_id: targetRoomId,
+          user_id: botUserId,
+          content: messageContent,
+        })
+        .select("id")
+        .single();
+
+      if (msgError) {
+        console.error("Error inserting room message:", msgError);
+        return new Response(JSON.stringify({ error: "Failed to insert room message" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      console.log("Room message created:", newMessage?.id, "in room:", targetRoomId);
+
+      return new Response(
+        JSON.stringify({ ok: true, action: "room_message_created", message_id: newMessage?.id, room_id: targetRoomId }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
