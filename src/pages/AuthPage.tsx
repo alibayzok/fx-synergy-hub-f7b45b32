@@ -77,12 +77,40 @@ const AuthPage = () => {
         }
       } else if (mode === 'register') {
         const selectedCountry = countries.find(c => c.code === country);
-        const fullPhone = selectedCountry ? `${selectedCountry.dialCode}${phone}` : phone;
-        if (phone) {
+        // Normalize phone: remove spaces, dashes, parentheses
+        let cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
+        // Remove leading + and country code if user typed it manually
+        if (selectedCountry) {
+          const dialDigits = selectedCountry.dialCode.replace('+', '');
+          if (cleanPhone.startsWith('+')) {
+            cleanPhone = cleanPhone.replace(/^\+/, '');
+            if (cleanPhone.startsWith(dialDigits)) {
+              cleanPhone = cleanPhone.slice(dialDigits.length);
+            }
+          }
+          // Remove leading zero (e.g. 05XXXXXXXX → 5XXXXXXXX)
+          if (cleanPhone.startsWith('0')) {
+            cleanPhone = cleanPhone.slice(1);
+          }
+        }
+        const fullPhone = selectedCountry ? `${selectedCountry.dialCode}${cleanPhone}` : cleanPhone;
+        
+        if (cleanPhone) {
+          // Check all possible formats of the same number
+          const dialDigits = selectedCountry?.dialCode?.replace('+', '') || '';
+          const phoneVariants = [
+            fullPhone,                                    // +9665XXXXXXXX
+            `${selectedCountry?.dialCode}0${cleanPhone}`, // +96605XXXXXXXX (with zero)
+            cleanPhone,                                    // 5XXXXXXXX (raw)
+            `0${cleanPhone}`,                              // 05XXXXXXXX (with leading zero)
+            `${dialDigits}${cleanPhone}`,                  // 9665XXXXXXXX (without +)
+          ].filter(Boolean);
+
           const { data: existingPhone } = await supabase
             .from('profiles')
             .select('id')
-            .eq('phone', fullPhone)
+            .in('phone', phoneVariants)
+            .limit(1)
             .maybeSingle();
           if (existingPhone) {
             toast({ title: t('auth.duplicatePhone'), description: t('auth.duplicatePhoneDesc'), variant: 'destructive' });
