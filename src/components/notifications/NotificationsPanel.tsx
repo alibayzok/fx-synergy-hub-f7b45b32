@@ -59,9 +59,10 @@ export const NotificationsPanel = () => {
     }
   };
 
-  // Filter out friend request and message notifications (they have their own panels)
+  // Filter out notification types that have their own dedicated icons
+  const dedicatedTypes = ['friend_request', 'friend_accepted', 'message', 'support_ticket'];
   const filteredNotifications = notifications.filter(
-    n => n.type !== 'friend_request' && n.type !== 'friend_accepted' && n.type !== 'message'
+    n => !dedicatedTypes.includes(n.type)
   );
   const filteredUnreadCount = filteredNotifications.filter(n => !n.read).length;
 
