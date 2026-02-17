@@ -390,7 +390,11 @@
     "requestNewLink": "طلب رابط جديد",
     "backToHome": "العودة للرئيسية",
     "signInWithGoogle": "تسجيل الدخول بـ Google",
-    "googleSignInError": "حدث خطأ أثناء تسجيل الدخول بـ Google"
+    "googleSignInError": "حدث خطأ أثناء تسجيل الدخول بـ Google",
+    "duplicateEmail": "الإيميل مسجّل مسبقاً",
+    "duplicateEmailDesc": "هذا الإيميل مسجّل بالفعل. جرّب تسجيل الدخول أو استعادة كلمة المرور.",
+    "duplicatePhone": "رقم الهاتف مسجّل مسبقاً",
+    "duplicatePhoneDesc": "هذا الرقم مستخدم بالفعل. جرّب تسجيل الدخول أو استعادة كلمة المرور."
   },
   "notifications": {
     "title": "الإشعارات",
