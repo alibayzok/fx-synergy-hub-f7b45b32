@@ -198,7 +198,7 @@ Deno.serve(async (req) => {
     const replyToMessage = post.reply_to_message;
     const mediaGroupId = post.media_group_id;
 
-    // ─── Check for publish hashtag (#نشر or #publish) ───
+    // ─── Extract hashtags ───
     const hashtags = entities
       .filter((e: any) => e.type === "hashtag")
       .map((e: any) => {
@@ -208,6 +208,14 @@ Deno.serve(async (req) => {
 
     const hasPublishTag = hashtags.some((tag: string) =>
       tag === "#نشر" || tag === "#publish"
+    );
+
+    const hasSignalTag = hashtags.some((tag: string) =>
+      tag === "#إشارة" || tag === "#signal" || tag === "#اشارة"
+    );
+
+    const hasArticleTag = hashtags.some((tag: string) =>
+      tag === "#مقال" || tag === "#article"
     );
 
     // Replies (updates) don't need the hashtag - they link to existing signals
@@ -220,26 +228,34 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ─── Determine destination ───
+    // ─── Determine destination based on hashtag + channel ───
     let destination: "signal_free" | "signal_vip" | "article" | null = null;
 
-    if (publicChatId && chatId === publicChatId) {
-      destination = "signal_free";
-    } else if (vipChatId && chatId === vipChatId) {
-      destination = "signal_vip";
-    } else if (newsChatId && chatId === newsChatId) {
+    // First check content type hashtag
+    if (hasArticleTag) {
+      // #مقال forces article regardless of channel
       destination = "article";
+    } else if (hasSignalTag || !hasArticleTag) {
+      // #إشارة or default (no type tag) → signal, channel determines free/vip
+      if (publicChatId && chatId === publicChatId) {
+        destination = "signal_free";
+      } else if (vipChatId && chatId === vipChatId) {
+        destination = "signal_vip";
+      } else if (newsChatId && chatId === newsChatId) {
+        // News channel defaults to article if no signal tag
+        destination = hasSignalTag ? "signal_free" : "article";
+      }
     }
 
     if (!destination) {
-      console.log("Unknown chat ID:", chatId);
-      return new Response(JSON.stringify({ ok: true, skipped: "unknown_chat" }), {
+      console.log("Unknown chat ID or could not determine destination:", chatId);
+      return new Response(JSON.stringify({ ok: true, skipped: "unknown_destination" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // ─── Remove publish hashtag from text before processing ───
-    const cleanText = text.replace(/#نشر|#publish/gi, "").trim();
+    // ─── Remove control hashtags from text before processing ───
+    const cleanText = text.replace(/#نشر|#publish|#إشارة|#اشارة|#signal|#مقال|#article/gi, "").trim();
 
     console.log(`Processing: destination=${destination}, messageId=${messageId}, hasReply=${isReply}, mediaGroup=${mediaGroupId || "none"}`);
 
