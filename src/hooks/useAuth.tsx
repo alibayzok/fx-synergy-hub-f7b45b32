@@ -18,6 +18,7 @@ interface AuthContextType {
   isVip: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, userData?: { firstName?: string; lastName?: string; country?: string; phone?: string }) => Promise<{ error: Error | null }>;
+  verifyOtp: (email: string, token: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshRoles: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
@@ -198,6 +199,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error: error as Error | null };
   };
 
+  const verifyOtp = async (email: string, token: string) => {
+    const { error } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: 'signup',
+    });
+    return { error: error as Error | null };
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
     setRoles([]);
@@ -235,6 +245,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       isVip,
       signIn,
       signUp,
+      verifyOtp,
       signOut,
       refreshRoles,
       resetPassword,
