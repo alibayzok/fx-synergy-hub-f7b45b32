@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { AUTH_CONFIG } from '@/config/environment';
+import { AUTH_CONFIG, APP_URLS } from '@/config/environment';
 import { processReferralAfterSignup } from '@/hooks/useReferrals';
 import { useToast } from '@/hooks/use-toast';
 
@@ -185,7 +185,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       email,
       password,
       options: {
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: APP_URLS.production,
         data: {
           display_name: displayName,
           first_name: userData?.firstName,
