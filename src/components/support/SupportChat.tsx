@@ -14,6 +14,10 @@ import {
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/lib/date-utils';
 import { useTranslation } from 'react-i18next';
+import SlaIndicator from './SlaIndicator';
+import { cn } from '@/lib/utils';
+import { formatDate } from '@/lib/date-utils';
+import { useTranslation } from 'react-i18next';
 
 interface Ticket {
   id: string;
