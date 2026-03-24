@@ -15,6 +15,31 @@ interface ModerationResult {
   error?: string;
 }
 
+/**
+ * نظام المزود المزدوج — يدعم GOOGLE_AI_API_KEY (مستقل) أو LOVABLE_API_KEY (Lovable Cloud)
+ */
+function getAIConfig(): { apiKey: string; endpoint: string; model: string } | null {
+  const googleKey = Deno.env.get("GOOGLE_AI_API_KEY");
+  if (googleKey) {
+    return {
+      apiKey: googleKey,
+      endpoint: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+      model: "gemini-3-flash-preview",
+    };
+  }
+
+  const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+  if (lovableKey) {
+    return {
+      apiKey: lovableKey,
+      endpoint: "https://ai.gateway.lovable.dev/v1/chat/completions",
+      model: "google/gemini-3-flash-preview",
+    };
+  }
+
+  return null;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -54,14 +79,14 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
+    const ai = getAIConfig();
+    if (!ai) {
       // Allow upload but flag for manual review
       const result: ModerationResult = {
         isAllowed: true,
         isFlagged: true,
         reason: "error",
-        error: "LOVABLE_API_KEY is not configured",
+        error: "No AI API key configured (GOOGLE_AI_API_KEY or LOVABLE_API_KEY)",
         message: "حدث خطأ في فحص الصورة - ستتم مراجعتها يدوياً",
       };
       return new Response(JSON.stringify(result), {
@@ -74,7 +99,7 @@ serve(async (req) => {
       : imageUrl;
 
     const requestBody = {
-      model: "google/gemini-3-flash-preview",
+      model: ai.model,
       messages: [
         {
           role: "user",
@@ -110,12 +135,11 @@ Response format (JSON only):
       temperature: 0.1,
     };
 
-    // Correct Lovable AI Gateway endpoint
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch(ai.endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${ai.apiKey}`,
       },
       body: JSON.stringify(requestBody),
     });
@@ -124,7 +148,6 @@ Response format (JSON only):
       const errorText = await response.text();
       console.error("AI gateway error:", response.status, errorText);
 
-      // IMPORTANT: Return 2xx so the client doesn't throw FunctionsHttpError.
       const result: ModerationResult = {
         isAllowed: true,
         isFlagged: true,
@@ -174,7 +197,6 @@ Response format (JSON only):
   } catch (error) {
     console.error("Moderation error:", error);
 
-    // IMPORTANT: Return 2xx so the client doesn't throw FunctionsHttpError.
     const result: ModerationResult = {
       isAllowed: true,
       isFlagged: true,

@@ -38,21 +38,46 @@ function getImpact(impact: string): 'low' | 'medium' | 'high' {
   }
 }
 
+/**
+ * نظام المزود المزدوج — يدعم GOOGLE_AI_API_KEY (مستقل) أو LOVABLE_API_KEY (Lovable Cloud)
+ */
+function getAIConfig(): { apiKey: string; endpoint: string; model: string } | null {
+  const googleKey = Deno.env.get('GOOGLE_AI_API_KEY');
+  if (googleKey) {
+    return {
+      apiKey: googleKey,
+      endpoint: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+      model: 'gemini-2.5-flash-lite',
+    };
+  }
+
+  const lovableKey = Deno.env.get('LOVABLE_API_KEY');
+  if (lovableKey) {
+    return {
+      apiKey: lovableKey,
+      endpoint: 'https://ai.gateway.lovable.dev/v1/chat/completions',
+      model: 'google/gemini-2.5-flash-lite',
+    };
+  }
+
+  return null;
+}
+
 async function translateEvents(events: CalendarEvent[]): Promise<CalendarEvent[]> {
   try {
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY || events.length === 0) return events;
+    const ai = getAIConfig();
+    if (!ai || events.length === 0) return events;
 
     const eventNames = events.map(e => e.event).join('\n');
     
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const response = await fetch(ai.endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Authorization': `Bearer ${ai.apiKey}`,
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash-lite',
+        model: ai.model,
         messages: [
           {
             role: 'system',
@@ -86,7 +111,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Get requested date from body or query params
     let requestedDate = new Date().toISOString().split('T')[0];
     try {
       const body = await req.json();
@@ -96,7 +120,6 @@ Deno.serve(async (req) => {
       if (url.searchParams.get('date')) requestedDate = url.searchParams.get('date')!;
     }
 
-    // Fetch real data from Forex Factory JSON feed
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
 
@@ -114,15 +137,12 @@ Deno.serve(async (req) => {
     if (response.ok) {
       const ffEvents: FFEvent[] = await response.json();
       
-      // Filter events for the requested date
       let eventId = 0;
       for (const ev of ffEvents) {
-        // FF date format: "2026-02-15T13:30:00-05:00" or similar
         const eventDate = ev.date ? ev.date.split('T')[0] : '';
         
         if (eventDate !== requestedDate) continue;
 
-        // Extract time from date string
         let time = '--:--';
         try {
           const d = new Date(ev.date);
@@ -146,16 +166,12 @@ Deno.serve(async (req) => {
       }
     }
 
-    // If no events found for the requested date (could be outside this week's range),
-    // return empty array - do NOT generate fake data
     if (events.length > 0) {
-      // Translate event names to Arabic
       const translated = await translateEvents(events);
       events.length = 0;
       events.push(...translated);
     }
 
-    // Sort by time
     events.sort((a, b) => a.time.localeCompare(b.time));
 
     console.log(`Calendar: ${events.length} events for ${requestedDate}`);

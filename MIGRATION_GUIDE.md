@@ -204,24 +204,37 @@ supabase functions deploy setup-telegram-webhook
 
 ### 4.5 جدول الوظائف والأسرار
 
+> 💡 جميع وظائف الذكاء الاصطناعي تدعم **نظام المزود المزدوج**: تبحث عن `GOOGLE_AI_API_KEY` أولاً (للبيئة المستقلة) ثم `LOVABLE_API_KEY` كاحتياطي.
+
 | الوظيفة | الوصف | الأسرار المطلوبة |
 |---------|-------|-----------------|
 | `chat` | المساعد الذكي | `GOOGLE_AI_API_KEY` |
 | `market-data` | بيانات الأسواق اللحظية | `FINNHUB_API_KEY` |
-| `moderate-image` | فحص الصور المرفوعة | `LOVABLE_API_KEY` |
+| `moderate-image` | فحص الصور المرفوعة | `GOOGLE_AI_API_KEY` |
 | `send-push-notification` | إشعارات FCM | `SUPABASE_SERVICE_ROLE_KEY` (تلقائي) |
-| `fetch-news` | جلب أخبار الأسواق | — |
-| `fetch-article` | جلب تفاصيل المقالات | — |
-| `fetch-calendar` | التقويم الاقتصادي | — |
+| `fetch-news` | جلب + ترجمة أخبار الأسواق | `GOOGLE_AI_API_KEY` |
+| `fetch-article` | جلب + ترجمة تفاصيل المقالات | `GOOGLE_AI_API_KEY` |
+| `fetch-calendar` | التقويم الاقتصادي + ترجمة | `GOOGLE_AI_API_KEY` |
 | `marqeta-cards` | البطاقات الافتراضية | `MARQETA_APP_TOKEN`, `MARQETA_ADMIN_TOKEN`, `MARQETA_BASE_URL` |
 | `telegram-webhook` | استقبال رسائل تلغرام | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_VIP_CHAT_ID`, `TELEGRAM_PUBLIC_CHAT_ID`, `TELEGRAM_NEWS_CHAT_ID`, `TELEGRAM_WEBHOOK_SECRET` |
 | `setup-telegram-webhook` | تسجيل Webhook مع تلغرام | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET` |
 
 ---
 
-## 🔧 المرحلة 5: تعديلات الكود (4 ملفات)
+## 🧹 المرحلة 5: تنظيف اعتمادات Lovable (تلقائي)
 
-### 5.1 ملف `.env`
+### 5.1 السكريبت التلقائي (مُستحسن)
+```bash
+bash scripts/prepare-production.sh
+```
+
+هذا السكريبت يقوم تلقائياً بـ:
+- ✅ إزالة `lovable-tagger` من `vite.config.ts` و `package.json`
+- ✅ حذف مجلد `src/integrations/lovable/`
+- ✅ تعيين `USE_LOVABLE_AUTH = false` في `auth-helpers.ts`
+- ✅ حذف قسم `server` من `capacitor.config.ts`
+
+### 5.2 ملف `.env`
 ```env
 VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=your_anon_key
@@ -411,11 +424,113 @@ npx cap open android
 
 ---
 
+---
+
+## 📱 المرحلة 11: نشر على Google Play
+
+### 11.1 إعداد مفتاح التوقيع
+```bash
+keytool -genkey -v -keystore assassinfx-release.keystore \
+  -alias assassinfx -keyalg RSA -keysize 2048 -validity 10000
+```
+> ⚠️ **احفظ هذا الملف + كلمة المرور بأمان — إذا ضاع لن تستطيع تحديث التطبيق أبداً!**
+
+### 11.2 بناء App Bundle
+1. افتح Android Studio: `npx cap open android`
+2. **Build → Generate Signed Bundle / APK**
+3. اختر **Android App Bundle (.aab)**
+4. اختر ملف keystore → أدخل كلمة المرور
+5. اختر **release** → Finish
+6. الملف: `android/app/release/app-release.aab`
+
+### 11.3 رفع على Google Play Console
+1. اذهب إلى [play.google.com/console](https://play.google.com/console) ($25 مرة واحدة)
+2. **Create App** → فئة: Finance
+3. أكمل **Store Listing**: أيقونة 512x512، لقطات شاشة (min 2)
+4. **App Content**: سياسة الخصوصية → `/privacy-policy`
+5. **Release → Production → Create Release** → ارفع `.aab`
+6. **Submit** — المراجعة 1-7 أيام
+
+---
+
+## 🍎 المرحلة 12: نشر على App Store (iOS)
+
+### المتطلبات
+- Mac + Xcode 15+
+- حساب Apple Developer ($99/سنة)
+
+### 12.1 إضافة iOS
+```bash
+npx cap add ios
+npx cap sync ios
+npx cap open ios
+```
+
+### 12.2 إعداد Xcode
+1. اختر **App target → Signing & Capabilities**
+2. اختر **Team** (حساب Apple Developer)
+3. **Bundle Identifier**: `com.assassinfx.app`
+
+### 12.3 بناء ورفع
+1. اختر **Any iOS Device** كهدف
+2. **Product → Archive**
+3. **Distribute App → App Store Connect → Upload**
+4. في [appstoreconnect.apple.com](https://appstoreconnect.apple.com):
+   - أنشئ تطبيق جديد
+   - أضف لقطات شاشة (iPhone 6.7" + 5.5")
+   - اختر Build المرفوع → **Submit for Review**
+   - المراجعة 1-3 أيام
+
+---
+
+## ✅ قائمة التحقق النهائية (Final Checklist)
+
+### الكود
+- [ ] شغّلت `bash scripts/prepare-production.sh`
+- [ ] عدّلت `.env` بقيم Supabase الجديد
+- [ ] عدّلت `src/config/environment.ts` بالدومين الجديد
+
+### قاعدة البيانات
+- [ ] نفّذت `export-schema.sql` في SQL Editor
+- [ ] أنشأت 9 Storage Buckets
+- [ ] فعّلت Realtime على الجداول المطلوبة
+
+### Edge Functions
+- [ ] أضفت `GOOGLE_AI_API_KEY` كـ Secret
+- [ ] أضفت `FINNHUB_API_KEY` كـ Secret
+- [ ] شغّلت `bash scripts/deploy-all.sh`
+- [ ] اختبرت كل وظيفة
+
+### المصادقة
+- [ ] أعددت Google OAuth في Supabase + Google Cloud Console
+- [ ] اختبرت تسجيل الدخول بـ Google
+
+### التطبيق
+- [ ] بنيت APK/AAB بنجاح
+- [ ] اختبرت APK على جهاز أندرويد حقيقي
+- [ ] رفعت على Google Play Console
+
+---
+
+## 💰 ملخص التكاليف
+
+| البند | التكلفة |
+|-------|---------|
+| حساب Google Play Developer | $25 (مرة واحدة) |
+| حساب Apple Developer | $99/سنة |
+| Supabase (Free Tier) | مجاناً (حتى 50,000 مستخدم) |
+| Google AI API (Free Tier) | مجاناً (حتى 15 RPM) |
+| Vercel (Free Tier) | مجاناً |
+| Firebase (Free Tier) | مجاناً |
+| دومين خاص (اختياري) | ~$10/سنة |
+
+---
+
 ## 📞 الدعم
 
 إذا واجهت مشاكل:
 1. تحقق من Console في المتصفح
-2. تحقق من Logs في Supabase Dashboard
+2. تحقق من Logs في Supabase Dashboard → Edge Functions
 3. راجع [وثائق Supabase](https://supabase.com/docs)
 4. راجع [وثائق Capacitor](https://capacitorjs.com/docs)
 5. راجع [وثائق Firebase](https://firebase.google.com/docs)
