@@ -142,6 +142,13 @@ const SupportTicketList = ({
                 <Badge className={cn("text-[10px] px-1.5 py-0", priorityColors[ticket.priority])}>
                   {priorityLabels[ticket.priority]}
                 </Badge>
+                <SlaIndicator
+                  slaDeadline={ticket.sla_deadline}
+                  slaBreached={ticket.sla_breached}
+                  firstResponseAt={ticket.first_response_at}
+                  status={ticket.status}
+                  compact
+                />
                 {ticket.escalated_to && (
                   <Badge className="text-[10px] px-1.5 py-0 bg-orange-500/20 text-orange-500">مصعّدة</Badge>
                 )}
