@@ -288,6 +288,8 @@ const SupportDashboardPage = () => {
               agentCount={agents.filter(a => a.is_active).length}
               closedCount={closedCount}
               escalatedCount={escalatedCount}
+              slaBreachedCount={slaBreachedCount}
+              avgResponseTime={avgResponseTime}
             />
           </div>
 
