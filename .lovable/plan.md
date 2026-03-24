@@ -1,285 +1,71 @@
 
 
-# توثيق شامل لتطبيق ASSASSIN FX
+# خطة تسهيل عملية النقل الكامل
+
+## الوضع الحالي
+
+لديك بالفعل أصول هجرة جيدة:
+- `MIGRATION_GUIDE.md` — دليل شامل بـ 421 سطر
+- `scripts/export-schema.sql` — سكريبت قاعدة البيانات (2025 سطر)
+- `scripts/deploy-all.sh` — نشر Edge Functions + الأسرار
+- `scripts/all-edge-functions-code.md` — كود الوظائف للنسخ اليدوي
+
+## ما ينقص ويجب عمله
+
+### 1. تحويل الـ 4 وظائف التي تعتمد على Lovable Gateway
+**المشكلة**: `fetch-news`, `fetch-article`, `fetch-calendar`, `moderate-image` تستخدم `ai.gateway.lovable.dev` + `LOVABLE_API_KEY` بشكل ثابت (بدون خيار تبديل مثل `chat`).
+
+**الحل**: تحديث كل وظيفة لتدعم نظام المزود المزدوج — تحاول `GOOGLE_AI_API_KEY` أولاً (للبيئة المستقلة) ثم `LOVABLE_API_KEY` كاحتياطي (للبيئة الحالية). نفس النمط الموجود في `chat/index.ts`.
+
+### 2. سكريبت تنظيف الكود للإنتاج (`scripts/prepare-production.sh`)
+سكريبت يعمل محلياً بعد `git clone` ويقوم تلقائياً بـ:
+- حذف `lovable-tagger` من `vite.config.ts`
+- حذف `src/integrations/lovable/`
+- تعيين `USE_LOVABLE_AUTH = false` في `auth-helpers.ts`
+- حذف قسم `server` من `capacitor.config.ts`
+- طباعة تعليمات تحديث `.env`
+
+### 3. تحديث `MIGRATION_GUIDE.md`
+- إضافة قسم **Google Play + App Store** بالتفصيل
+- إضافة قسم **تنظيف اعتمادات Lovable**
+- إضافة قائمة التحقق النهائية (Final Checklist)
+- تحديث عدد الجداول والوظائف
+
+### 4. تحديث `scripts/all-edge-functions-code.md`
+تحديث كود الوظائف الأربعة بعد تعديلها ليعكس النسخة المستقلة.
 
 ---
 
-## 1. نظرة عامة على التطبيق
+## التفاصيل التقنية
 
-تطبيق **ASSASSIN FX** هو منصة مجتمع تداول احترافية مبنية بـ React + TypeScript + Vite + Tailwind CSS، مع خلفية Lovable Cloud (Supabase). يعمل كتطبيق ويب متجاوب + تطبيق أندرويد (APK عبر Capacitor).
+### تعديل Edge Functions (النمط الموحد)
+كل وظيفة ستستخدم هذا المنطق:
+```text
+1. ابحث عن GOOGLE_AI_API_KEY
+2. إذا وُجد → استخدم generativelanguage.googleapis.com مباشرة
+3. إذا لم يوجد → ابحث عن LOVABLE_API_KEY → استخدم ai.gateway.lovable.dev
+4. إذا لم يوجد أي منهما → أرجع خطأ واضح
+```
 
-### الواجهة المزدوجة
-- **شاشات كبيرة (>1024px)**: واجهة ويب احترافية مع Sidebar جانبي + Header + Footer
-- **شاشات صغيرة / APK**: واجهة موبايل مع Bottom Navigation
-- **كشف تلقائي**: يتعرف على منصة أندرويد عبر Capacitor ويفرض واجهة الموبايل
+### الملفات المتأثرة
+| ملف | التغيير |
+|-----|---------|
+| `supabase/functions/fetch-news/index.ts` | إضافة نظام المزود المزدوج |
+| `supabase/functions/fetch-article/index.ts` | إضافة نظام المزود المزدوج |
+| `supabase/functions/fetch-calendar/index.ts` | إضافة نظام المزود المزدوج |
+| `supabase/functions/moderate-image/index.ts` | إضافة نظام المزود المزدوج |
+| `scripts/prepare-production.sh` | ملف جديد — سكريبت التنظيف |
+| `MIGRATION_GUIDE.md` | تحديث شامل |
+| `scripts/all-edge-functions-code.md` | تحديث الكود |
 
-### البنية التقنية
-- **Frontend**: React 18, TypeScript, Tailwind CSS, Framer Motion, shadcn/ui
-- **Backend**: Lovable Cloud (Supabase) — قاعدة بيانات PostgreSQL + Auth + Storage + Edge Functions + Realtime
-- **التدويل**: i18next (عربي/إنجليزي) مع دعم RTL
-- **الثيمات**: وضع فاتح/داكن
-
----
-
-## 2. الصفحات والأقسام
-
-### 2.1 الصفحة الرئيسية (`/`)
-- عرض ملخص لأحدث الإشارات والتحليلات والمقالات
-- إجراءات سريعة (Quick Actions) للوصول السريع للأقسام
-- إعلان الأدمن (نص + لون قابل للتخصيص من لوحة التحكم)
-- شاشة Splash عند أول زيارة بالجلسة
-- بانر تثبيت PWA
-
-### 2.2 الإشارات (`/trades`)
-- بث مباشر بأسلوب تلغرام من جدول `signals`
-- تبويبان: **عام (Free)** و **VIP**
-- دعم النصوص الحرة + شبكات الصور المتعددة
-- عدادات مشاهدة + تفاعلات (إعجاب)
-- تنبيهات صوتية لحظية عند إشارة جديدة (Realtime)
-- شاشة قفل VIP للمستخدمين العاديين مع CTA للترقية
-- نظام تحديثات مترابط (Threaded Updates) عبر جدول `signal_updates`
-
-### 2.3 التحليلات (`/analyses`)
-- قسم منفصل تماماً عن الإشارات
-- محتوى تحليلي ينشره المسؤولون
-- يدعم التحديثات المترابطة أيضاً
-
-### 2.4 المجتمع (`/community`)
-- **غرف نقاش متعددة**: عامة، VIP، تعليمية، أخبار، USDT
-- **القناة العامة + VIP**: نظام بث (Broadcast) — النشر مقتصر على المشرفين/المسؤولين
-- دعم رفع الصور من التطبيق مباشرة (Storage bucket: `room-images`)
-- تتبع مشاهدات فريدة + تفاعلات إيموجي
-- عرض الصور عبر PremiumImageViewer
-- فقاعات رسائل بتصميم Glassmorphism
-- شارات هوية: Crown (مالك)، Shield (مشرف)، Verified (موثق)
-- فواصل زمنية تلقائية بين الأيام
-- **نظام المواضيع (Threads)**: أسئلة، تحليلات، تنبيهات، مساعدة
-- **غرفة التعلم**: ربط بالكورسات
-- **غرفة USDT**: قوائم بيع/شراء
-
-### 2.5 الأخبار والمقالات (`/news`)
-ثلاثة تبويبات:
-- **الأخبار**: خلاصات RSS مع ترجمة فورية عبر Edge Function (Gemini)
-- **التقويم الاقتصادي**: جلب آلي من Investing.com مع تصنيف أهمية
-- **المقالات**: محتوى حصري يكتبه المسؤولون أو يُنشر من تلغرام
-- قراءة المحتوى داخل التطبيق (In-app reading)
-- روابط وصول مباشر: `/news/article/:id`
-
-### 2.6 الخدمات (`/services`)
-- بطاقات خدمات ديناميكية من جدول `services`
-- طلبات خدمات: فتح حساب وسيط، شراء/بيع USDT، إيداع/سحب
-- قسم وسطاء مع روابط خارجية
-- قسم USDT مع قوائم وأسعار
-- متابعة حالة الطلبات
-
-### 2.7 الرسائل الخاصة (`/messages`)
-- محادثات مباشرة بين المستخدمين
-- تتبع حالة التواجد (متصل/غير متصل) لحظياً
-- مؤشرات القراءة (Read Receipts) بالوقت الفعلي
-- إشعارات الرسائل معزولة كـ Badge على أيقونة الرسائل فقط
-- حظر المستخدمين + حذف الرسائل
-
-### 2.8 الملف الشخصي (`/profile`)
-- عرض/تعديل المعلومات الشخصية
-- رفع صورة شخصية
-- قسم المنشورات الشخصية (User Posts) مع تعليقات
-- إدارة الأصدقاء + قائمة المحظورين
-- إعدادات الخصوصية (من يراسلني، إظهار حالة التواجد، رؤية الأصدقاء)
-- توثيق الحساب (KYC) مع رفع وثائق
-- عرض ملفات المستخدمين الآخرين: `/user/:userId`
-
-### 2.9 نقاط التلعيب (`/gamification`)
-- نظام نقاط ومستويات
-- شارات (Badges) قابلة للفتح
-- لوحة المتصدرين (Leaderboard)
-- سجل النقاط
-- مهام يومية (Daily Quests)
-- رابط إحالة
-
-### 2.10 المكافآت (`/rewards`)
-- نظام إحالات مع كود خاص لكل مستخدم
-- مكافآت قابلة للاستبدال بالنقاط
-- سجل الاستبدالات
-- **زر إخفاء/إظهار** من لوحة التحكم عبر إعداد `enable_rewards`
-
-### 2.11 VIP (`/vip`)
-- صفحة طلب ترقية VIP
-- خطط اشتراك (شهري/سنوي)
-- آلية تواصل داخل الطلب (In-request Chat)
-- إدارة يدوية بالكامل من الأدمن
-
-### 2.12 الدعم الفني (`/support`)
-- نظام تذاكر دعم كامل
-- دردشة مباشرة داخل التذكرة
-- أولويات (عادي/عاجل)
-- تصعيد التذاكر
-- لوحة إدارة الدعم (`/support-dashboard`) لوكلاء الدعم
-
-### 2.13 الدردشة الذكية (`/ai-chat`)
-- محادثة مع نموذج ذكاء اصطناعي
-- تعمل عبر Edge Function (`chat`) مع نماذج Gemini/GPT
-
-### 2.14 صفحات إضافية
-- **التسجيل/الدخول** (`/auth`): نموذج تسجيل + دخول + تأكيد بريد
-- **إعادة تعيين كلمة المرور** (`/reset-password`)
-- **الإعداد الأولي** (`/onboarding`): اختيار اللغة + التفضيلات + كود الإحالة
-- **التثبيت** (`/install`): تعليمات تثبيت PWA
-- **سياسة الخصوصية** (`/privacy-policy`)
-- **التوثيق الفني** (`/project-docs`): توثيق شامل قابل للتحميل كـ PDF
-
----
-
-## 3. لوحة تحكم الأدمن (`/admin`)
-
-تشمل الأقسام التالية:
-- **إحصائيات عامة** (DashboardStats): عدد المستخدمين، الإشارات، المقالات
-- **إدارة المستخدمين** (UserManagement): بحث، ترقية VIP، تعيين أدوار
-- **إدارة الإشارات** (SignalsManagement): إضافة/تعديل/حذف
-- **إدارة التحليلات** (AnalysesManagement)
-- **إدارة المقالات** (ArticlesManagement)
-- **إدارة الخدمات والوسطاء** (ServicesAndBrokersManagement)
-- **إدارة طلبات الخدمات** (ServiceRequestsManagement)
-- **إدارة الاشتراكات** (`/admin/subscriptions`)
-- **إدارة الإحالات** (ReferralManagement)
-- **إدارة المحتوى المُبلَّغ عنه** (FlaggedContentManagement)
-- **إدارة التحقق** (VerificationManagement): KYC
-- **إدارة الكورسات** (CoursesManagement): LMS
-- **إدارة CMS** (CMSManagement): إعدادات التطبيق الديناميكية
-- **إشعارات الأدمن** (AdminNotifications)
-- **تصدير قاعدة البيانات** (DatabaseExport): JSON/SQL
-- **إدارة وكلاء الدعم** (SupportAgentManager)
-- **النشاط الأخير** (RecentActivity)
-
-### إعدادات التطبيق الديناميكية (`app_settings`)
-كل شيء قابل للتخصيص من لوحة التحكم بدون كود:
-- اسم التطبيق
-- إظهار/إخفاء الصفحات (الإشارات، التحليلات، المجتمع، الأخبار، الخدمات، التلعيب، المكافآت)
-- إعلان الصفحة الرئيسية (نص + لون + تفعيل/تعطيل)
-
----
-
-## 4. نظام ربط تلغرام (Telegram Webhook)
-
-### آلية العمل
-Edge Function (`telegram-webhook`) تستقبل الرسائل من قنوات تلغرام وتوزعها تلقائياً.
-
-### شروط التفعيل
-يجب وجود هاشتاغ **`#نشر`** أو **`#publish`** في الرسالة.
-
-### التوجيه بالهاشتاغات
-
-| الهاشتاغات | الوجهة |
-|---|---|
-| `#نشر #إشارة` من القناة العامة | إشارة عامة (free) في جدول `signals` |
-| `#نشر #إشارة` من قناة VIP | إشارة VIP في جدول `signals` |
-| `#نشر #مقال` | مقال في جدول `articles` |
-| `#نشر` فقط (بدون نوع) | رسالة في غرفة المجتمع حسب المصدر |
-
-### توجيه الغرف الافتراضي
-- القناة العامة بتلغرام → غرفة `announcements`
-- قناة VIP بتلغرام → غرفة `vip-channel`
-- قناة الأخبار بتلغرام → غرفة `news`
-
-### تصنيف المقالات التلقائي
-- `#تعليم` / `#education` → education
-- `#تحليل` / `#analysis` → analysis
-- `#أخبار` / `#news` → news
-- `#crypto` / `#كريبتو` → crypto
-- بدون تصنيف → general
-
-### معالجة المحتوى
-- **التنسيق**: تحويل HTML entities من تلغرام (bold, italic, links, code) مع الحفاظ على الأوفست الصحيح
-- **الصور**: تحميل من Telegram API → رفع إلى Storage (`telegram-images`) → ربط بالسجل
-- **Media Groups**: تجميع صور الألبوم الواحد وربطها برسالة واحدة
-- **الردود (التحديثات)**: رد على رسالة سابقة = تحديث مرتبط بالإشارة الأصلية عبر `telegram_message_id`
-- **تنظيف**: إزالة جميع هاشتاغات التحكم والتصنيف من المحتوى النهائي
-
-### الأسرار المطلوبة
-- `TELEGRAM_BOT_TOKEN`
-- `TELEGRAM_WEBHOOK_SECRET`
-- `TELEGRAM_PUBLIC_CHAT_ID`
-- `TELEGRAM_VIP_CHAT_ID`
-- `TELEGRAM_NEWS_CHAT_ID`
-
----
-
-## 5. الوظائف السحابية (Edge Functions)
-
-| الوظيفة | الغرض |
-|---|---|
-| `telegram-webhook` | استقبال رسائل تلغرام وتوزيعها |
-| `setup-telegram-webhook` | إعداد webhook تلغرام |
-| `chat` | دردشة AI (Gemini/GPT) |
-| `fetch-news` | جلب أخبار RSS مع ترجمة |
-| `fetch-article` | جلب محتوى مقال كامل |
-| `fetch-calendar` | جلب التقويم الاقتصادي |
-| `market-data` | بيانات السوق (Finnhub) |
-| `marqeta-cards` | خدمات البطاقات الافتراضية |
-| `moderate-image` | فحص الصور المرفوعة |
-| `send-push-notification` | إرسال إشعارات FCM |
-
----
-
-## 6. قاعدة البيانات (35+ جدول)
-
-### جداول رئيسية
-- `profiles`: بيانات المستخدمين
-- `user_roles`: أدوار المستخدمين (admin, moderator, support, vip, user)
-- `signals`: الإشارات (عامة/VIP)
-- `signal_updates`: تحديثات الإشارات
-- `signal_likes`: إعجابات الإشارات
-- `articles`: المقالات
-- `room_messages`: رسائل غرف المجتمع (مع عمود `image_url`)
-- `threads` + `reply_likes`: المواضيع والردود
-- `direct_messages` + `conversations`: الرسائل الخاصة
-- `service_requests`: طلبات الخدمات
-- `services`: بطاقات الخدمات
-- `vip_subscriptions`: اشتراكات VIP
-- `support_tickets`: تذاكر الدعم
-- `support_agents`: وكلاء الدعم
-- `user_posts` + `post_comments`: منشورات المستخدمين
-- `user_points` + `point_transactions`: نظام النقاط
-- `badges` + `daily_quests`: الشارات والمهام
-- `referrals` + `referral_rewards`: الإحالات والمكافآت
-- `friend_requests` + `follows`: الأصدقاء والمتابعات
-- `user_blocks`: الحظر
-- `user_privacy_settings`: إعدادات الخصوصية
-- `user_notifications`: الإشعارات
-- `fcm_tokens`: رموز الإشعارات
-- `flagged_content`: المحتوى المُبلَّغ عنه
-- `app_settings`: إعدادات التطبيق الديناميكية
-- `learning_categories` + `learning_courses`: نظام التعلم
-- `virtual_cards`: البطاقات الافتراضية
-
-### الأمان (RLS)
-كل الجداول محمية بسياسات Row Level Security مناسبة. الأدوار تُخزَّن في جدول منفصل `user_roles` مع دوال `SECURITY DEFINER` مثل `is_admin()` و `has_role()`.
-
----
-
-## 7. ميزات تقنية أخرى
-
-- **Realtime**: اشتراكات لحظية للإشارات والرسائل والتحديثات
-- **PWA**: قابل للتثبيت كتطبيق ويب + بانر تثبيت
-- **Capacitor**: بناء APK لأندرويد
-- **إشعارات Push**: عبر Firebase Cloud Messaging (FCM)
-- **فحص المحتوى**: Image Moderation + Content Moderation
-- **Lazy Loading**: تحميل كسول لجميع الصفحات غير الرئيسية
-- **React Query**: تخزين مؤقت ذكي (2 دقيقة stale, 10 دقائق cache)
-- **تصدير البيانات**: نسخ احتياطي JSON/SQL يكتشف الجداول ديناميكياً
-
----
-
-## 8. التخزين (Storage Buckets)
-
-- `telegram-images`: صور من تلغرام
-- `room-images`: صور غرف المجتمع
-- مجلدات إضافية للصور الشخصية والمرفقات
-
----
-
-## 9. النشر
-
-- **الويب**: Vercel (`vercel.json` موجود)
-- **URL المنشور**: https://fx-synergy-hub.lovable.app
-- **APK**: Capacitor لأندرويد
+### النتيجة
+بعد التنفيذ، عملية النقل تصبح:
+```text
+1. git clone + npm install
+2. bash scripts/prepare-production.sh     ← تنظيف تلقائي
+3. عدّل .env بقيم Supabase الجديد
+4. نفّذ export-schema.sql في SQL Editor
+5. bash scripts/deploy-all.sh             ← نشر الوظائف + الأسرار
+6. npm run build → npx cap sync          ← بناء APK
+```
 
