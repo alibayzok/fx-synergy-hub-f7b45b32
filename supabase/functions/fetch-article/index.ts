@@ -23,7 +23,6 @@ function stripHtml(html: string): string {
 }
 
 function extractArticleContent(html: string): string {
-  // Try to find article body with common selectors
   const patterns = [
     /<article[^>]*>([\s\S]*?)<\/article>/i,
     /<div[^>]*class="[^"]*article[_-]?body[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
@@ -42,7 +41,6 @@ function extractArticleContent(html: string): string {
     }
   }
 
-  // Fallback: extract all paragraph text
   const paragraphs: string[] = [];
   const pRegex = /<p[^>]*>([\s\S]*?)<\/p>/gi;
   let m;
@@ -58,23 +56,48 @@ function extractArticleContent(html: string): string {
   return '';
 }
 
+/**
+ * نظام المزود المزدوج — يدعم GOOGLE_AI_API_KEY (مستقل) أو LOVABLE_API_KEY (Lovable Cloud)
+ */
+function getAIConfig(): { apiKey: string; endpoint: string; model: string } | null {
+  const googleKey = Deno.env.get('GOOGLE_AI_API_KEY');
+  if (googleKey) {
+    return {
+      apiKey: googleKey,
+      endpoint: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+      model: 'gemini-2.5-flash-lite',
+    };
+  }
+
+  const lovableKey = Deno.env.get('LOVABLE_API_KEY');
+  if (lovableKey) {
+    return {
+      apiKey: lovableKey,
+      endpoint: 'https://ai.gateway.lovable.dev/v1/chat/completions',
+      model: 'google/gemini-2.5-flash-lite',
+    };
+  }
+
+  return null;
+}
+
 async function translateContent(text: string, language: string): Promise<string> {
   if (language !== 'ar' || !text) return text;
   
   try {
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) return text;
+    const ai = getAIConfig();
+    if (!ai) return text;
 
     const truncated = text.substring(0, 3000);
     
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const response = await fetch(ai.endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Authorization': `Bearer ${ai.apiKey}`,
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash-lite',
+        model: ai.model,
         messages: [
           {
             role: 'system',
@@ -134,7 +157,6 @@ Deno.serve(async (req) => {
       content = '';
     }
 
-    // Translate if Arabic
     const translatedContent = await translateContent(content, language || 'en');
 
     return new Response(
