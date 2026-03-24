@@ -31,6 +31,7 @@ interface Ticket {
   sla_deadline: string | null;
   sla_breached: boolean;
   first_response_at: string | null;
+  sla_notified: boolean;
 }
 
 interface Message {
