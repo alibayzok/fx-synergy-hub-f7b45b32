@@ -1818,8 +1818,12 @@ export type Database = {
           escalated_by: string | null
           escalated_to: string | null
           escalation_reason: string | null
+          first_response_at: string | null
           id: string
           priority: string
+          sla_breached: boolean | null
+          sla_deadline: string | null
+          sla_notified: boolean | null
           status: string
           subject: string
           updated_at: string
@@ -1832,8 +1836,12 @@ export type Database = {
           escalated_by?: string | null
           escalated_to?: string | null
           escalation_reason?: string | null
+          first_response_at?: string | null
           id?: string
           priority?: string
+          sla_breached?: boolean | null
+          sla_deadline?: string | null
+          sla_notified?: boolean | null
           status?: string
           subject: string
           updated_at?: string
@@ -1846,8 +1854,12 @@ export type Database = {
           escalated_by?: string | null
           escalated_to?: string | null
           escalation_reason?: string | null
+          first_response_at?: string | null
           id?: string
           priority?: string
+          sla_breached?: boolean | null
+          sla_deadline?: string | null
+          sla_notified?: boolean | null
           status?: string
           subject?: string
           updated_at?: string

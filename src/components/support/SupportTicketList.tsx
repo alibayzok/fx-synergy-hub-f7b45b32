@@ -1,5 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import SlaIndicator from './SlaIndicator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Filter, MessageCircle, Loader2, UserCheck } from 'lucide-react';
@@ -26,6 +27,10 @@ interface Ticket {
   escalated_by: string | null;
   created_at: string;
   updated_at: string;
+  sla_deadline: string | null;
+  sla_breached: boolean;
+  first_response_at: string | null;
+  sla_notified: boolean;
 }
 
 interface Agent {
@@ -138,6 +143,13 @@ const SupportTicketList = ({
                 <Badge className={cn("text-[10px] px-1.5 py-0", priorityColors[ticket.priority])}>
                   {priorityLabels[ticket.priority]}
                 </Badge>
+                <SlaIndicator
+                  slaDeadline={ticket.sla_deadline}
+                  slaBreached={ticket.sla_breached}
+                  firstResponseAt={ticket.first_response_at}
+                  status={ticket.status}
+                  compact
+                />
                 {ticket.escalated_to && (
                   <Badge className="text-[10px] px-1.5 py-0 bg-orange-500/20 text-orange-500">مصعّدة</Badge>
                 )}

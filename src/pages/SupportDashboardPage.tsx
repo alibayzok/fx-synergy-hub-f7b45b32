@@ -27,6 +27,10 @@ interface Ticket {
   escalated_by: string | null;
   created_at: string;
   updated_at: string;
+  sla_deadline: string | null;
+  sla_breached: boolean;
+  first_response_at: string | null;
+  sla_notified: boolean;
 }
 
 interface Message {
@@ -209,6 +213,21 @@ const SupportDashboardPage = () => {
   const closedCount = allTickets.filter(t => t.status === 'closed').length;
   const urgentCount = allTickets.filter(t => (t.priority === 'urgent' || t.priority === 'high') && t.status === 'open').length;
   const escalatedCount = allTickets.filter(t => t.escalated_to && t.status === 'open').length;
+  const slaBreachedCount = allTickets.filter(t => t.status === 'open' && (t.sla_breached || (t.sla_deadline && new Date(t.sla_deadline) < new Date()))).length;
+
+  // Average response time
+  const respondedTickets = allTickets.filter(t => t.first_response_at && t.sla_deadline);
+  const avgResponseTime = respondedTickets.length > 0
+    ? (() => {
+        const totalMins = respondedTickets.reduce((sum, t) => {
+          const created = new Date(t.created_at).getTime();
+          const responded = new Date(t.first_response_at!).getTime();
+          return sum + (responded - created) / 60000;
+        }, 0) / respondedTickets.length;
+        if (totalMins < 60) return `${Math.round(totalMins)} دقيقة`;
+        return `${Math.floor(totalMins / 60)} ساعة ${Math.round(totalMins % 60)} دقيقة`;
+      })()
+    : undefined;
 
   if (authLoading) {
     return (
@@ -269,6 +288,8 @@ const SupportDashboardPage = () => {
               agentCount={agents.filter(a => a.is_active).length}
               closedCount={closedCount}
               escalatedCount={escalatedCount}
+              slaBreachedCount={slaBreachedCount}
+              avgResponseTime={avgResponseTime}
             />
           </div>
 

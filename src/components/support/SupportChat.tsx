@@ -14,6 +14,7 @@ import {
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/lib/date-utils';
 import { useTranslation } from 'react-i18next';
+import SlaIndicator from './SlaIndicator';
 
 interface Ticket {
   id: string;
@@ -28,6 +29,10 @@ interface Ticket {
   escalated_by: string | null;
   created_at: string;
   updated_at: string;
+  sla_deadline: string | null;
+  sla_breached: boolean;
+  first_response_at: string | null;
+  sla_notified: boolean;
 }
 
 interface Message {
@@ -190,6 +195,12 @@ const SupportChat = ({
           </div>
 
           <div className="flex items-center gap-1.5 flex-wrap">
+            <SlaIndicator
+              slaDeadline={ticket.sla_deadline}
+              slaBreached={ticket.sla_breached}
+              firstResponseAt={ticket.first_response_at}
+              status={ticket.status}
+            />
             <Badge className={cn("text-xs", priorityColors[ticket.priority])}>
               {priorityLabels[ticket.priority]}
             </Badge>
