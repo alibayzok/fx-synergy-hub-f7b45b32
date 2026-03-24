@@ -219,9 +219,20 @@ supabase functions deploy setup-telegram-webhook
 
 ---
 
-## 🔧 المرحلة 5: تعديلات الكود (4 ملفات)
+## 🧹 المرحلة 5: تنظيف اعتمادات Lovable (تلقائي)
 
-### 5.1 ملف `.env`
+### 5.1 السكريبت التلقائي (مُستحسن)
+```bash
+bash scripts/prepare-production.sh
+```
+
+هذا السكريبت يقوم تلقائياً بـ:
+- ✅ إزالة `lovable-tagger` من `vite.config.ts` و `package.json`
+- ✅ حذف مجلد `src/integrations/lovable/`
+- ✅ تعيين `USE_LOVABLE_AUTH = false` في `auth-helpers.ts`
+- ✅ حذف قسم `server` من `capacitor.config.ts`
+
+### 5.2 ملف `.env`
 ```env
 VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=your_anon_key
