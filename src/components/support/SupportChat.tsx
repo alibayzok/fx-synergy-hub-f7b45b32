@@ -195,6 +195,12 @@ const SupportChat = ({
           </div>
 
           <div className="flex items-center gap-1.5 flex-wrap">
+            <SlaIndicator
+              slaDeadline={ticket.sla_deadline}
+              slaBreached={ticket.sla_breached}
+              firstResponseAt={ticket.first_response_at}
+              status={ticket.status}
+            />
             <Badge className={cn("text-xs", priorityColors[ticket.priority])}>
               {priorityLabels[ticket.priority]}
             </Badge>
