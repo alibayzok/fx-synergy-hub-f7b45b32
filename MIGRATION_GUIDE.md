@@ -204,15 +204,17 @@ supabase functions deploy setup-telegram-webhook
 
 ### 4.5 جدول الوظائف والأسرار
 
+> 💡 جميع وظائف الذكاء الاصطناعي تدعم **نظام المزود المزدوج**: تبحث عن `GOOGLE_AI_API_KEY` أولاً (للبيئة المستقلة) ثم `LOVABLE_API_KEY` كاحتياطي.
+
 | الوظيفة | الوصف | الأسرار المطلوبة |
 |---------|-------|-----------------|
 | `chat` | المساعد الذكي | `GOOGLE_AI_API_KEY` |
 | `market-data` | بيانات الأسواق اللحظية | `FINNHUB_API_KEY` |
-| `moderate-image` | فحص الصور المرفوعة | `LOVABLE_API_KEY` |
+| `moderate-image` | فحص الصور المرفوعة | `GOOGLE_AI_API_KEY` |
 | `send-push-notification` | إشعارات FCM | `SUPABASE_SERVICE_ROLE_KEY` (تلقائي) |
-| `fetch-news` | جلب أخبار الأسواق | — |
-| `fetch-article` | جلب تفاصيل المقالات | — |
-| `fetch-calendar` | التقويم الاقتصادي | — |
+| `fetch-news` | جلب + ترجمة أخبار الأسواق | `GOOGLE_AI_API_KEY` |
+| `fetch-article` | جلب + ترجمة تفاصيل المقالات | `GOOGLE_AI_API_KEY` |
+| `fetch-calendar` | التقويم الاقتصادي + ترجمة | `GOOGLE_AI_API_KEY` |
 | `marqeta-cards` | البطاقات الافتراضية | `MARQETA_APP_TOKEN`, `MARQETA_ADMIN_TOKEN`, `MARQETA_BASE_URL` |
 | `telegram-webhook` | استقبال رسائل تلغرام | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_VIP_CHAT_ID`, `TELEGRAM_PUBLIC_CHAT_ID`, `TELEGRAM_NEWS_CHAT_ID`, `TELEGRAM_WEBHOOK_SECRET` |
 | `setup-telegram-webhook` | تسجيل Webhook مع تلغرام | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET` |
