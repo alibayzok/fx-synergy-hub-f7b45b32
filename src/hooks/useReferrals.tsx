@@ -233,13 +233,64 @@ export const useReferrals = () => {
     },
   });
 
+  // Referral leaderboard (top referrers)
+  const leaderboard = useQuery({
+    queryKey: ['referral-leaderboard'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('referrals')
+        .select('referrer_id, points_awarded');
+      if (error) throw error;
+      if (!data?.length) return [];
+
+      // Aggregate by referrer
+      const agg = new Map<string, { count: number; points: number }>();
+      data.forEach(r => {
+        const prev = agg.get(r.referrer_id) || { count: 0, points: 0 };
+        agg.set(r.referrer_id, { count: prev.count + 1, points: prev.points + r.points_awarded });
+      });
+
+      const userIds = [...agg.keys()];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, display_name, avatar_url, username')
+        .in('user_id', userIds);
+      const pMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+
+      return [...agg.entries()]
+        .map(([uid, stats]) => ({
+          user_id: uid,
+          referral_count: stats.count,
+          total_points: stats.points,
+          profile: pMap.get(uid) || null,
+        }))
+        .sort((a, b) => b.referral_count - a.referral_count)
+        .slice(0, 20);
+    },
+  });
+
+  // Tier system
+  const getReferralTier = (count: number) => {
+    if (count >= 50) return { key: 'diamond', name_ar: 'ماسي', name_en: 'Diamond', color: 'from-cyan-400 to-blue-500', icon: '💎', min: 50, next: null, bonus: 100 };
+    if (count >= 20) return { key: 'gold', name_ar: 'ذهبي', name_en: 'Gold', color: 'from-yellow-400 to-amber-500', icon: '🥇', min: 20, next: 50, bonus: 75 };
+    if (count >= 10) return { key: 'silver', name_ar: 'فضي', name_en: 'Silver', color: 'from-gray-300 to-gray-400', icon: '🥈', min: 10, next: 20, bonus: 60 };
+    return { key: 'bronze', name_ar: 'برونزي', name_en: 'Bronze', color: 'from-orange-400 to-amber-600', icon: '🥉', min: 0, next: 10, bonus: 50 };
+  };
+
+  const referralCount = (myReferrals.data || []).length;
+  const currentTier = getReferralTier(referralCount);
+
   return {
     myReferrals: myReferrals.data || [],
     totalReferralPoints,
     rewards: rewards.data || [],
     myRedemptions: myRedemptions.data || [],
+    leaderboard: leaderboard.data || [],
     redeemReward,
     requestWithdrawal,
     isLoading: myReferrals.isLoading,
+    referralCount,
+    currentTier,
+    getReferralTier,
   };
 };
