@@ -1890,6 +1890,15 @@ CREATE POLICY "Users can insert own views" ON public.content_views FOR INSERT WI
 CREATE POLICY "Anyone authenticated can view updates" ON public.signal_updates FOR SELECT USING (auth.uid() IS NOT NULL);
 CREATE POLICY "Admins can manage updates" ON public.signal_updates FOR ALL USING (is_admin());
 
+-- === room_message_reactions ===
+CREATE POLICY "Anyone authenticated can view reactions" ON public.room_message_reactions FOR SELECT USING (auth.uid() IS NOT NULL);
+CREATE POLICY "Users can add reactions" ON public.room_message_reactions FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can remove own reactions" ON public.room_message_reactions FOR DELETE USING (auth.uid() = user_id);
+
+-- === room_message_views ===
+CREATE POLICY "Anyone authenticated can read views" ON public.room_message_views FOR SELECT USING (auth.uid() IS NOT NULL);
+CREATE POLICY "Users can insert own views" ON public.room_message_views FOR INSERT WITH CHECK (auth.uid() = user_id);
+
 
 -- ============================================================
 -- 7. INDEXES (الفهارس)
