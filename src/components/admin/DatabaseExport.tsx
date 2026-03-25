@@ -29,7 +29,10 @@ import SCHEMA_SQL from '../../../scripts/export-schema.sql?raw';
 type PublicTables = DatabaseTypes['public']['Tables'];
 type AutoDiscoveredTable = keyof PublicTables & string;
 
-const getTablesFromTypes = (): AutoDiscoveredTable[] => {
+// Tables that exist in DB but not yet in auto-generated types
+const EXTRA_DB_TABLES = ['vip_subscriptions', 'virtual_cards'] as const;
+
+const getTablesFromTypes = (): string[] => {
   const knownTables: AutoDiscoveredTable[] = [
     'admin_notifications',
     'analyses',
@@ -89,11 +92,11 @@ const getTablesFromTypes = (): AutoDiscoveredTable[] => {
     'user_streaks',
     'verification_requests',
   ];
-  return knownTables.sort();
+  return [...knownTables, ...EXTRA_DB_TABLES].sort();
 };
 
 const TABLES = getTablesFromTypes();
-type TableName = AutoDiscoveredTable;
+type TableName = string;
 
 const ENV_TEMPLATE = `# ============================================================
 # ASSASSIN FX - Environment Variables
