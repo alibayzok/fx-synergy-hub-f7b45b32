@@ -16,25 +16,74 @@ interface ModerationResult {
 }
 
 /**
- * نظام المزود المزدوج — يدعم GOOGLE_AI_API_KEY (مستقل) أو LOVABLE_API_KEY (Lovable Cloud)
+ * نظام المزود الموحد — يقرأ من CMS أولاً ثم يستخدم env vars كاحتياطي
+ * moderate-image يستخدم gemini-3-flash-preview لأنه يحتاج vision
  */
-function getAIConfig(): { apiKey: string; endpoint: string; model: string } | null {
-  const googleKey = Deno.env.get("GOOGLE_AI_API_KEY");
-  if (googleKey) {
-    return {
-      apiKey: googleKey,
-      endpoint: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-      model: "gemini-3-flash-preview",
-    };
-  }
+async function getAIConfig(): Promise<{ apiKey: string; endpoint: string; model: string } | null> {
+  try {
+    const adminClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
 
-  const lovableKey = Deno.env.get("LOVABLE_API_KEY");
-  if (lovableKey) {
-    return {
-      apiKey: lovableKey,
-      endpoint: "https://ai.gateway.lovable.dev/v1/chat/completions",
-      model: "google/gemini-3-flash-preview",
-    };
+    const { data: aiSettings } = await adminClient
+      .from('app_settings')
+      .select('setting_key, setting_value')
+      .in('setting_key', ['ai_provider', 'custom_ai_api_key', 'custom_ai_endpoint']);
+
+    const settings: Record<string, string> = {};
+    aiSettings?.forEach((s: any) => { settings[s.setting_key] = s.setting_value || ''; });
+
+    const provider = settings['ai_provider'] || 'lovable';
+    const customKey = settings['custom_ai_api_key'] || '';
+    const customEndpoint = settings['custom_ai_endpoint'] || '';
+
+    if (provider === 'custom') {
+      const key = customKey || Deno.env.get('GOOGLE_AI_API_KEY') || '';
+      if (key) {
+        return {
+          apiKey: key,
+          endpoint: customEndpoint || 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+          model: 'gemini-3-flash-preview',
+        };
+      }
+    }
+
+    const googleKey = Deno.env.get("GOOGLE_AI_API_KEY");
+    if (googleKey) {
+      return {
+        apiKey: googleKey,
+        endpoint: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+        model: "gemini-3-flash-preview",
+      };
+    }
+
+    const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+    if (lovableKey) {
+      return {
+        apiKey: lovableKey,
+        endpoint: "https://ai.gateway.lovable.dev/v1/chat/completions",
+        model: "google/gemini-3-flash-preview",
+      };
+    }
+  } catch (err) {
+    console.error('Error reading CMS AI settings:', err);
+    const googleKey = Deno.env.get("GOOGLE_AI_API_KEY");
+    if (googleKey) {
+      return {
+        apiKey: googleKey,
+        endpoint: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+        model: "gemini-3-flash-preview",
+      };
+    }
+    const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+    if (lovableKey) {
+      return {
+        apiKey: lovableKey,
+        endpoint: "https://ai.gateway.lovable.dev/v1/chat/completions",
+        model: "google/gemini-3-flash-preview",
+      };
+    }
   }
 
   return null;
@@ -46,7 +95,6 @@ serve(async (req) => {
   }
 
   try {
-    // Authenticate the user
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -79,14 +127,13 @@ serve(async (req) => {
       );
     }
 
-    const ai = getAIConfig();
+    const ai = await getAIConfig();
     if (!ai) {
-      // Allow upload but flag for manual review
       const result: ModerationResult = {
         isAllowed: true,
         isFlagged: true,
         reason: "error",
-        error: "No AI API key configured (GOOGLE_AI_API_KEY or LOVABLE_API_KEY)",
+        error: "No AI API key configured",
         message: "حدث خطأ في فحص الصورة - ستتم مراجعتها يدوياً",
       };
       return new Response(JSON.stringify(result), {
