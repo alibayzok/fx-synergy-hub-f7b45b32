@@ -1473,6 +1473,129 @@ BEGIN
   RETURN NEW;
 END; $$;
 
+-- دالة توليد كود الإحالة
+CREATE OR REPLACE FUNCTION public.generate_referral_code()
+RETURNS TRIGGER LANGUAGE plpgsql SET search_path = public AS $$
+BEGIN
+  IF NEW.referral_code IS NULL THEN
+    NEW.referral_code := UPPER(SUBSTRING(md5(NEW.user_id::text || gen_random_uuid()::text) FROM 1 FOR 8));
+  END IF;
+  RETURN NEW;
+END; $$;
+
+-- دالة معالجة الإحالة
+CREATE OR REPLACE FUNCTION public.process_referral(p_referral_code text, p_referred_user_id uuid)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE v_referrer_id UUID;
+BEGIN
+  SELECT user_id INTO v_referrer_id FROM profiles WHERE referral_code = p_referral_code AND user_id != p_referred_user_id;
+  IF v_referrer_id IS NULL THEN RETURN; END IF;
+  IF EXISTS (SELECT 1 FROM referrals WHERE referred_id = p_referred_user_id) THEN RETURN; END IF;
+  INSERT INTO referrals (referrer_id, referred_id, referral_code, points_awarded, status)
+  VALUES (v_referrer_id, p_referred_user_id, p_referral_code, 0, 'pending');
+END; $$;
+
+-- دالة منح نقاط الإحالة بعد التوثيق
+CREATE OR REPLACE FUNCTION public.award_referral_on_kyc_approval()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE v_referral RECORD;
+BEGIN
+  IF NEW.kyc_status = 'approved' AND (OLD.kyc_status IS DISTINCT FROM 'approved') THEN
+    SELECT * INTO v_referral FROM referrals WHERE referred_id = NEW.user_id AND status = 'pending' LIMIT 1;
+    IF v_referral IS NOT NULL THEN
+      UPDATE referrals SET points_awarded = 50, status = 'completed' WHERE id = v_referral.id;
+      PERFORM add_user_points(v_referral.referrer_id, 50, 'referral', 'نقاط إحالة صديق (بعد التوثيق)', 'Referral bonus (after verification)', NEW.user_id::text);
+    END IF;
+  END IF;
+  RETURN NEW;
+END; $$;
+
+-- دالة زيادة عداد مشاهدات رسائل الغرف
+CREATE OR REPLACE FUNCTION public.increment_room_message_views()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  UPDATE public.room_messages SET views_count = views_count + 1 WHERE id = NEW.message_id;
+  RETURN NEW;
+END; $$;
+
+-- دالة زيادة عداد المشاهدات العامة
+CREATE OR REPLACE FUNCTION public.increment_view_count(p_table_name text, p_id uuid)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE v_user_id uuid;
+BEGIN
+  v_user_id := auth.uid();
+  IF v_user_id IS NULL THEN RETURN; END IF;
+  INSERT INTO public.content_views (user_id, content_type, content_id) VALUES (v_user_id, p_table_name, p_id) ON CONFLICT (user_id, content_type, content_id) DO NOTHING;
+  IF p_table_name = 'signals' THEN UPDATE public.signals SET views_count = views_count + 1 WHERE id = p_id;
+  ELSIF p_table_name = 'analyses' THEN UPDATE public.analyses SET views_count = views_count + 1 WHERE id = p_id;
+  END IF;
+END; $$;
+
+-- دالة تسجيل أول استجابة للدعم
+CREATE OR REPLACE FUNCTION public.record_first_response()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  IF NEW.is_admin = true THEN
+    UPDATE public.support_tickets SET first_response_at = now() WHERE id = NEW.ticket_id AND first_response_at IS NULL;
+  END IF;
+  RETURN NEW;
+END; $$;
+
+-- دالة تعيين موعد SLA
+CREATE OR REPLACE FUNCTION public.set_sla_deadline()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  NEW.sla_deadline := CASE NEW.priority
+    WHEN 'urgent' THEN NEW.created_at + interval '30 minutes'
+    WHEN 'high' THEN NEW.created_at + interval '1 hour'
+    WHEN 'normal' THEN NEW.created_at + interval '4 hours'
+    WHEN 'low' THEN NEW.created_at + interval '24 hours'
+    ELSE NEW.created_at + interval '4 hours'
+  END;
+  RETURN NEW;
+END; $$;
+
+-- دالة تحديث SLA عند تغيير الأولوية
+CREATE OR REPLACE FUNCTION public.update_sla_on_priority_change()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  IF OLD.priority IS DISTINCT FROM NEW.priority AND NEW.status = 'open' AND NOT COALESCE(NEW.sla_breached, false) THEN
+    NEW.sla_deadline := CASE NEW.priority
+      WHEN 'urgent' THEN now() + interval '30 minutes'
+      WHEN 'high' THEN now() + interval '1 hour'
+      WHEN 'normal' THEN now() + interval '4 hours'
+      WHEN 'low' THEN now() + interval '24 hours'
+      ELSE now() + interval '4 hours'
+    END;
+    NEW.sla_notified := false;
+  END IF;
+  RETURN NEW;
+END; $$;
+
+-- دالة تحديث حالة KYC
+CREATE OR REPLACE FUNCTION public.update_kyc_status(p_user_id uuid, p_status text)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  IF NOT public.is_moderator() THEN RAISE EXCEPTION 'Only admins and moderators can update KYC status'; END IF;
+  UPDATE public.profiles SET kyc_status = p_status WHERE user_id = p_user_id;
+END; $$;
+
+-- دالة التحقق من المستخدم
+CREATE OR REPLACE FUNCTION public.toggle_user_verification(p_user_id uuid, p_verified boolean)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  IF NOT public.is_moderator() THEN RAISE EXCEPTION 'Only admins and moderators can toggle verification'; END IF;
+  UPDATE public.profiles SET is_verified = p_verified WHERE user_id = p_user_id;
+END; $$;
+
+-- دالة التحقق من الهاتف
+CREATE OR REPLACE FUNCTION public.verify_user_phone(p_user_id uuid, p_verified boolean)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  IF NOT public.is_moderator() THEN RAISE EXCEPTION 'Only admins and moderators can verify phone'; END IF;
+  UPDATE public.profiles SET phone_verified = p_verified WHERE user_id = p_user_id;
+END; $$;
+
 
 -- ============================================================
 -- 5. TRIGGERS (المشغّلات)
