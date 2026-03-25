@@ -56,7 +56,7 @@
 - [ ] تفعيل **Realtime** على الجداول المطلوبة:
   - `direct_messages`, `room_messages`, `user_notifications`, `support_messages`
   - `signal_updates`, `subscription_messages`, `live_session_messages`
-- [ ] التحقق من جميع الـ **160+ RLS Policy** في **Authentication → Policies**
+- [ ] التحقق من جميع الـ **170+ RLS Policy** في **Authentication → Policies**
 
 ### 2.3 قائمة الجداول (54 جدول)
 
