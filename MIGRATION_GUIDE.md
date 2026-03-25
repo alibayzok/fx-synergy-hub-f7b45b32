@@ -58,7 +58,7 @@
   - `signal_updates`, `subscription_messages`, `live_session_messages`
 - [ ] التحقق من جميع الـ **170+ RLS Policy** في **Authentication → Policies**
 
-### 2.3 قائمة الجداول (54 جدول)
+### 2.3 قائمة الجداول (56 جدول)
 
 | القسم | الجداول |
 |-------|---------|
@@ -66,7 +66,7 @@
 | **الإشارات** | `signals`, `signal_likes`, `signal_updates` |
 | **التحليلات** | `analyses`, `analysis_likes` |
 | **المنشورات** | `user_posts`, `post_likes`, `post_comments` |
-| **المجتمع** | `community_rooms`, `room_members`, `room_join_requests`, `room_messages`, `threads`, `replies`, `reply_likes` |
+| **المجتمع** | `community_rooms`, `room_members`, `room_join_requests`, `room_messages`, `room_message_reactions`, `room_message_views`, `threads`, `replies`, `reply_likes` |
 | **التعلم** | `learning_categories`, `learning_courses`, `learning_lessons` |
 | **الرسائل** | `conversations`, `conversation_participants`, `direct_messages` |
 | **العلاقات** | `follows`, `friend_requests` |
