@@ -217,6 +217,7 @@ supabase functions deploy setup-telegram-webhook
 | `fetch-article` | جلب + ترجمة تفاصيل المقالات | `GOOGLE_AI_API_KEY` |
 | `fetch-calendar` | التقويم الاقتصادي + ترجمة | `GOOGLE_AI_API_KEY` |
 | `marqeta-cards` | البطاقات الافتراضية | `MARQETA_APP_TOKEN`, `MARQETA_ADMIN_TOKEN`, `MARQETA_BASE_URL` |
+| `check-sla` | فحص تجاوز SLA للتذاكر | `SUPABASE_SERVICE_ROLE_KEY` (تلقائي) |
 | `telegram-webhook` | استقبال رسائل تلغرام | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_VIP_CHAT_ID`, `TELEGRAM_PUBLIC_CHAT_ID`, `TELEGRAM_NEWS_CHAT_ID`, `TELEGRAM_WEBHOOK_SECRET` |
 | `setup-telegram-webhook` | تسجيل Webhook مع تلغرام | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET` |
 
