@@ -2386,15 +2386,71 @@ CREATE INDEX IF NOT EXISTS idx_signal_updates_parent_id ON public.signal_updates
 -- 8. REALTIME (البث المباشر)
 -- ============================================================
 
-ALTER PUBLICATION supabase_realtime ADD TABLE public.direct_messages;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.room_messages;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.user_notifications;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.usdt_listings;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.app_settings;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.support_messages;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.subscription_messages;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.live_session_messages;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.signal_updates;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'direct_messages'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.direct_messages;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'room_messages'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.room_messages;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'user_notifications'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.user_notifications;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'usdt_listings'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.usdt_listings;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'app_settings'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.app_settings;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'support_messages'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.support_messages;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'subscription_messages'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.subscription_messages;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'live_session_messages'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.live_session_messages;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'signal_updates'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.signal_updates;
+  END IF;
+END $$;
 
 
 -- ============================================================
@@ -2402,55 +2458,89 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.signal_updates;
 -- ============================================================
 
 -- إنشاء buckets للتخزين
-INSERT INTO storage.buckets (id, name, public) VALUES ('avatars', 'avatars', true);
-INSERT INTO storage.buckets (id, name, public) VALUES ('analysis-attachments', 'analysis-attachments', true);
-INSERT INTO storage.buckets (id, name, public) VALUES ('post-attachments', 'post-attachments', true);
-INSERT INTO storage.buckets (id, name, public) VALUES ('lesson-videos', 'lesson-videos', true);
-INSERT INTO storage.buckets (id, name, public) VALUES ('support-attachments', 'support-attachments', true);
-INSERT INTO storage.buckets (id, name, public) VALUES ('cms-assets', 'cms-assets', true);
-INSERT INTO storage.buckets (id, name, public) VALUES ('article-images', 'article-images', true);
-INSERT INTO storage.buckets (id, name, public) VALUES ('signal-attachments', 'signal-attachments', true);
-INSERT INTO storage.buckets (id, name, public) VALUES ('kyc-documents', 'kyc-documents', false);
+INSERT INTO storage.buckets (id, name, public) VALUES ('avatars', 'avatars', true)
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, public = EXCLUDED.public;
+INSERT INTO storage.buckets (id, name, public) VALUES ('analysis-attachments', 'analysis-attachments', true)
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, public = EXCLUDED.public;
+INSERT INTO storage.buckets (id, name, public) VALUES ('post-attachments', 'post-attachments', true)
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, public = EXCLUDED.public;
+INSERT INTO storage.buckets (id, name, public) VALUES ('lesson-videos', 'lesson-videos', true)
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, public = EXCLUDED.public;
+INSERT INTO storage.buckets (id, name, public) VALUES ('support-attachments', 'support-attachments', true)
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, public = EXCLUDED.public;
+INSERT INTO storage.buckets (id, name, public) VALUES ('cms-assets', 'cms-assets', true)
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, public = EXCLUDED.public;
+INSERT INTO storage.buckets (id, name, public) VALUES ('article-images', 'article-images', true)
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, public = EXCLUDED.public;
+INSERT INTO storage.buckets (id, name, public) VALUES ('signal-attachments', 'signal-attachments', true)
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, public = EXCLUDED.public;
+INSERT INTO storage.buckets (id, name, public) VALUES ('kyc-documents', 'kyc-documents', false)
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, public = EXCLUDED.public;
 
 -- سياسات التخزين للصور الشخصية
+DROP POLICY IF EXISTS "Avatar images are publicly accessible" ON storage.objects;
 CREATE POLICY "Avatar images are publicly accessible" ON storage.objects FOR SELECT USING (bucket_id = 'avatars');
+DROP POLICY IF EXISTS "Users can upload their own avatar" ON storage.objects;
 CREATE POLICY "Users can upload their own avatar" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
+DROP POLICY IF EXISTS "Users can update their own avatar" ON storage.objects;
 CREATE POLICY "Users can update their own avatar" ON storage.objects FOR UPDATE USING (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
 
 -- سياسات تخزين فيديوهات الدروس
+DROP POLICY IF EXISTS "Lesson videos are publicly accessible" ON storage.objects;
 CREATE POLICY "Lesson videos are publicly accessible" ON storage.objects FOR SELECT USING (bucket_id = 'lesson-videos');
+DROP POLICY IF EXISTS "Only admins can upload lesson videos" ON storage.objects;
 CREATE POLICY "Only admins can upload lesson videos" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'lesson-videos' AND public.is_admin());
+DROP POLICY IF EXISTS "Only admins can update lesson videos" ON storage.objects;
 CREATE POLICY "Only admins can update lesson videos" ON storage.objects FOR UPDATE USING (bucket_id = 'lesson-videos' AND public.is_admin());
+DROP POLICY IF EXISTS "Only admins can delete lesson videos" ON storage.objects;
 CREATE POLICY "Only admins can delete lesson videos" ON storage.objects FOR DELETE USING (bucket_id = 'lesson-videos' AND public.is_admin());
 
 -- سياسات تخزين مرفقات الدعم الفني
+DROP POLICY IF EXISTS "Support attachments accessible by ticket participants" ON storage.objects;
 CREATE POLICY "Support attachments accessible by ticket participants" ON storage.objects FOR SELECT USING (bucket_id = 'support-attachments' AND (public.is_support_agent() OR auth.uid()::text = (storage.foldername(name))[1]));
+DROP POLICY IF EXISTS "Users can upload support attachments" ON storage.objects;
 CREATE POLICY "Users can upload support attachments" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'support-attachments' AND auth.uid() IS NOT NULL);
 
 -- سياسات تخزين أصول CMS
+DROP POLICY IF EXISTS "CMS assets are publicly accessible" ON storage.objects;
 CREATE POLICY "CMS assets are publicly accessible" ON storage.objects FOR SELECT USING (bucket_id = 'cms-assets');
+DROP POLICY IF EXISTS "Only admins can upload CMS assets" ON storage.objects;
 CREATE POLICY "Only admins can upload CMS assets" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'cms-assets' AND public.is_admin());
+DROP POLICY IF EXISTS "Only admins can update CMS assets" ON storage.objects;
 CREATE POLICY "Only admins can update CMS assets" ON storage.objects FOR UPDATE USING (bucket_id = 'cms-assets' AND public.is_admin());
+DROP POLICY IF EXISTS "Only admins can delete CMS assets" ON storage.objects;
 CREATE POLICY "Only admins can delete CMS assets" ON storage.objects FOR DELETE USING (bucket_id = 'cms-assets' AND public.is_admin());
 
 -- سياسات تخزين صور المقالات
+DROP POLICY IF EXISTS "Article images are publicly accessible" ON storage.objects;
 CREATE POLICY "Article images are publicly accessible" ON storage.objects FOR SELECT USING (bucket_id = 'article-images');
+DROP POLICY IF EXISTS "Only admins can upload article images" ON storage.objects;
 CREATE POLICY "Only admins can upload article images" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'article-images' AND public.is_admin());
+DROP POLICY IF EXISTS "Only admins can update article images" ON storage.objects;
 CREATE POLICY "Only admins can update article images" ON storage.objects FOR UPDATE USING (bucket_id = 'article-images' AND public.is_admin());
+DROP POLICY IF EXISTS "Only admins can delete article images" ON storage.objects;
 CREATE POLICY "Only admins can delete article images" ON storage.objects FOR DELETE USING (bucket_id = 'article-images' AND public.is_admin());
 
 -- سياسات تخزين مرفقات التحليلات والمنشورات
+DROP POLICY IF EXISTS "Analysis attachments accessible" ON storage.objects;
 CREATE POLICY "Analysis attachments accessible" ON storage.objects FOR SELECT USING (bucket_id = 'analysis-attachments');
+DROP POLICY IF EXISTS "Admins can upload analysis attachments" ON storage.objects;
 CREATE POLICY "Admins can upload analysis attachments" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'analysis-attachments' AND public.is_admin());
+DROP POLICY IF EXISTS "Post attachments accessible" ON storage.objects;
 CREATE POLICY "Post attachments accessible" ON storage.objects FOR SELECT USING (bucket_id = 'post-attachments');
+DROP POLICY IF EXISTS "Users can upload post attachments" ON storage.objects;
 CREATE POLICY "Users can upload post attachments" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'post-attachments' AND auth.uid() IS NOT NULL);
 
 -- سياسات تخزين مرفقات الإشارات
+DROP POLICY IF EXISTS "Signal attachments accessible" ON storage.objects;
 CREATE POLICY "Signal attachments accessible" ON storage.objects FOR SELECT USING (bucket_id = 'signal-attachments');
+DROP POLICY IF EXISTS "Admins can upload signal attachments" ON storage.objects;
 CREATE POLICY "Admins can upload signal attachments" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'signal-attachments' AND public.is_admin());
 
 -- سياسات تخزين وثائق KYC
+DROP POLICY IF EXISTS "KYC documents accessible by owner and admin" ON storage.objects;
 CREATE POLICY "KYC documents accessible by owner and admin" ON storage.objects FOR SELECT USING (bucket_id = 'kyc-documents' AND (auth.uid()::text = (storage.foldername(name))[1] OR public.is_admin()));
+DROP POLICY IF EXISTS "Users can upload KYC documents" ON storage.objects;
 CREATE POLICY "Users can upload KYC documents" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'kyc-documents' AND auth.uid()::text = (storage.foldername(name))[1]);
 
 
@@ -2463,7 +2553,16 @@ INSERT INTO public.community_rooms (id, name, name_ar, description, description_
     ('general', 'General Discussion', 'المناقشات العامة', 'General discussions about trading and markets', 'مناقشات عامة حول التداول والأسواق', 'MessageSquare', 'blue', 'general', true),
     ('learning', 'Learning & Development', 'التعلم والتطوير', 'Lessons and tips for beginners and pros', 'دروس ونصائح للمبتدئين والمحترفين', 'GraduationCap', 'green', 'learning', false),
     ('vip', 'VIP Room', 'غرفة VIP', 'Exclusive discussions for VIP members', 'مناقشات حصرية لأعضاء VIP', 'Crown', 'gold', 'vip', true),
-    ('news', 'News Discussion', 'مناقشة الأخبار', 'Discuss latest market news', 'مناقشة آخر أخبار السوق', 'Newspaper', 'purple', 'general', true);
+    ('news', 'News Discussion', 'مناقشة الأخبار', 'Discuss latest market news', 'مناقشة آخر أخبار السوق', 'Newspaper', 'purple', 'general', true)
+ON CONFLICT (id) DO UPDATE SET
+    name = EXCLUDED.name,
+    name_ar = EXCLUDED.name_ar,
+    description = EXCLUDED.description,
+    description_ar = EXCLUDED.description_ar,
+    icon = EXCLUDED.icon,
+    color = EXCLUDED.color,
+    category = EXCLUDED.category,
+    requires_approval = EXCLUDED.requires_approval;
 
 
 -- ============================================================
