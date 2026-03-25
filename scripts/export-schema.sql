@@ -16,7 +16,7 @@
 -- 8. Realtime (البث المباشر)
 -- 9. Storage (التخزين)
 --
--- آخر تحديث: 2026-02-15
+-- آخر تحديث: 2026-03-25
 -- ============================================================
 
 
@@ -236,7 +236,28 @@ CREATE TABLE public.room_messages (
     room_id TEXT NOT NULL,
     user_id UUID NOT NULL,
     content TEXT NOT NULL,
+    image_url TEXT,
+    views_count INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- جدول تفاعلات رسائل الغرف
+CREATE TABLE public.room_message_reactions (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    message_id UUID NOT NULL REFERENCES public.room_messages(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL,
+    emoji TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    UNIQUE(message_id, user_id, emoji)
+);
+
+-- جدول مشاهدات رسائل الغرف
+CREATE TABLE public.room_message_views (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    message_id UUID NOT NULL REFERENCES public.room_messages(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    UNIQUE(message_id, user_id)
 );
 
 -- جدول المواضيع
@@ -1452,6 +1473,129 @@ BEGIN
   RETURN NEW;
 END; $$;
 
+-- دالة توليد كود الإحالة
+CREATE OR REPLACE FUNCTION public.generate_referral_code()
+RETURNS TRIGGER LANGUAGE plpgsql SET search_path = public AS $$
+BEGIN
+  IF NEW.referral_code IS NULL THEN
+    NEW.referral_code := UPPER(SUBSTRING(md5(NEW.user_id::text || gen_random_uuid()::text) FROM 1 FOR 8));
+  END IF;
+  RETURN NEW;
+END; $$;
+
+-- دالة معالجة الإحالة
+CREATE OR REPLACE FUNCTION public.process_referral(p_referral_code text, p_referred_user_id uuid)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE v_referrer_id UUID;
+BEGIN
+  SELECT user_id INTO v_referrer_id FROM profiles WHERE referral_code = p_referral_code AND user_id != p_referred_user_id;
+  IF v_referrer_id IS NULL THEN RETURN; END IF;
+  IF EXISTS (SELECT 1 FROM referrals WHERE referred_id = p_referred_user_id) THEN RETURN; END IF;
+  INSERT INTO referrals (referrer_id, referred_id, referral_code, points_awarded, status)
+  VALUES (v_referrer_id, p_referred_user_id, p_referral_code, 0, 'pending');
+END; $$;
+
+-- دالة منح نقاط الإحالة بعد التوثيق
+CREATE OR REPLACE FUNCTION public.award_referral_on_kyc_approval()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE v_referral RECORD;
+BEGIN
+  IF NEW.kyc_status = 'approved' AND (OLD.kyc_status IS DISTINCT FROM 'approved') THEN
+    SELECT * INTO v_referral FROM referrals WHERE referred_id = NEW.user_id AND status = 'pending' LIMIT 1;
+    IF v_referral IS NOT NULL THEN
+      UPDATE referrals SET points_awarded = 50, status = 'completed' WHERE id = v_referral.id;
+      PERFORM add_user_points(v_referral.referrer_id, 50, 'referral', 'نقاط إحالة صديق (بعد التوثيق)', 'Referral bonus (after verification)', NEW.user_id::text);
+    END IF;
+  END IF;
+  RETURN NEW;
+END; $$;
+
+-- دالة زيادة عداد مشاهدات رسائل الغرف
+CREATE OR REPLACE FUNCTION public.increment_room_message_views()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  UPDATE public.room_messages SET views_count = views_count + 1 WHERE id = NEW.message_id;
+  RETURN NEW;
+END; $$;
+
+-- دالة زيادة عداد المشاهدات العامة
+CREATE OR REPLACE FUNCTION public.increment_view_count(p_table_name text, p_id uuid)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE v_user_id uuid;
+BEGIN
+  v_user_id := auth.uid();
+  IF v_user_id IS NULL THEN RETURN; END IF;
+  INSERT INTO public.content_views (user_id, content_type, content_id) VALUES (v_user_id, p_table_name, p_id) ON CONFLICT (user_id, content_type, content_id) DO NOTHING;
+  IF p_table_name = 'signals' THEN UPDATE public.signals SET views_count = views_count + 1 WHERE id = p_id;
+  ELSIF p_table_name = 'analyses' THEN UPDATE public.analyses SET views_count = views_count + 1 WHERE id = p_id;
+  END IF;
+END; $$;
+
+-- دالة تسجيل أول استجابة للدعم
+CREATE OR REPLACE FUNCTION public.record_first_response()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  IF NEW.is_admin = true THEN
+    UPDATE public.support_tickets SET first_response_at = now() WHERE id = NEW.ticket_id AND first_response_at IS NULL;
+  END IF;
+  RETURN NEW;
+END; $$;
+
+-- دالة تعيين موعد SLA
+CREATE OR REPLACE FUNCTION public.set_sla_deadline()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  NEW.sla_deadline := CASE NEW.priority
+    WHEN 'urgent' THEN NEW.created_at + interval '30 minutes'
+    WHEN 'high' THEN NEW.created_at + interval '1 hour'
+    WHEN 'normal' THEN NEW.created_at + interval '4 hours'
+    WHEN 'low' THEN NEW.created_at + interval '24 hours'
+    ELSE NEW.created_at + interval '4 hours'
+  END;
+  RETURN NEW;
+END; $$;
+
+-- دالة تحديث SLA عند تغيير الأولوية
+CREATE OR REPLACE FUNCTION public.update_sla_on_priority_change()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  IF OLD.priority IS DISTINCT FROM NEW.priority AND NEW.status = 'open' AND NOT COALESCE(NEW.sla_breached, false) THEN
+    NEW.sla_deadline := CASE NEW.priority
+      WHEN 'urgent' THEN now() + interval '30 minutes'
+      WHEN 'high' THEN now() + interval '1 hour'
+      WHEN 'normal' THEN now() + interval '4 hours'
+      WHEN 'low' THEN now() + interval '24 hours'
+      ELSE now() + interval '4 hours'
+    END;
+    NEW.sla_notified := false;
+  END IF;
+  RETURN NEW;
+END; $$;
+
+-- دالة تحديث حالة KYC
+CREATE OR REPLACE FUNCTION public.update_kyc_status(p_user_id uuid, p_status text)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  IF NOT public.is_moderator() THEN RAISE EXCEPTION 'Only admins and moderators can update KYC status'; END IF;
+  UPDATE public.profiles SET kyc_status = p_status WHERE user_id = p_user_id;
+END; $$;
+
+-- دالة التحقق من المستخدم
+CREATE OR REPLACE FUNCTION public.toggle_user_verification(p_user_id uuid, p_verified boolean)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  IF NOT public.is_moderator() THEN RAISE EXCEPTION 'Only admins and moderators can toggle verification'; END IF;
+  UPDATE public.profiles SET is_verified = p_verified WHERE user_id = p_user_id;
+END; $$;
+
+-- دالة التحقق من الهاتف
+CREATE OR REPLACE FUNCTION public.verify_user_phone(p_user_id uuid, p_verified boolean)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  IF NOT public.is_moderator() THEN RAISE EXCEPTION 'Only admins and moderators can verify phone'; END IF;
+  UPDATE public.profiles SET phone_verified = p_verified WHERE user_id = p_user_id;
+END; $$;
+
 
 -- ============================================================
 -- 5. TRIGGERS (المشغّلات)
@@ -1516,6 +1660,18 @@ CREATE TRIGGER on_room_message_points AFTER INSERT ON public.room_messages FOR E
 CREATE TRIGGER on_post_created_points AFTER INSERT ON public.user_posts FOR EACH ROW EXECUTE FUNCTION public.award_points_on_post();
 CREATE TRIGGER on_post_liked_points AFTER INSERT ON public.post_likes FOR EACH ROW EXECUTE FUNCTION public.award_points_on_post_like();
 
+-- Triggers الإحالات
+CREATE TRIGGER set_referral_code BEFORE INSERT ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.generate_referral_code();
+CREATE TRIGGER trigger_award_referral_on_kyc AFTER UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.award_referral_on_kyc_approval();
+
+-- Triggers مشاهدات رسائل الغرف
+CREATE TRIGGER trg_increment_room_message_views AFTER INSERT ON public.room_message_views FOR EACH ROW EXECUTE FUNCTION public.increment_room_message_views();
+
+-- Triggers SLA الدعم الفني
+CREATE TRIGGER trg_set_sla_deadline BEFORE INSERT ON public.support_tickets FOR EACH ROW EXECUTE FUNCTION public.set_sla_deadline();
+CREATE TRIGGER trg_update_sla_on_priority BEFORE UPDATE ON public.support_tickets FOR EACH ROW EXECUTE FUNCTION public.update_sla_on_priority_change();
+CREATE TRIGGER trg_record_first_response AFTER INSERT ON public.support_messages FOR EACH ROW EXECUTE FUNCTION public.record_first_response();
+
 -- Trigger Push Notification
 CREATE TRIGGER on_user_notification_push AFTER INSERT ON public.user_notifications FOR EACH ROW EXECUTE FUNCTION public.notify_push_on_user_notification();
 
@@ -1539,6 +1695,8 @@ ALTER TABLE public.community_rooms ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.room_members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.room_join_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.room_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.room_message_reactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.room_message_views ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.threads ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.replies ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reply_likes ENABLE ROW LEVEL SECURITY;
@@ -1869,6 +2027,15 @@ CREATE POLICY "Users can insert own views" ON public.content_views FOR INSERT WI
 CREATE POLICY "Anyone authenticated can view updates" ON public.signal_updates FOR SELECT USING (auth.uid() IS NOT NULL);
 CREATE POLICY "Admins can manage updates" ON public.signal_updates FOR ALL USING (is_admin());
 
+-- === room_message_reactions ===
+CREATE POLICY "Anyone authenticated can view reactions" ON public.room_message_reactions FOR SELECT USING (auth.uid() IS NOT NULL);
+CREATE POLICY "Users can add reactions" ON public.room_message_reactions FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can remove own reactions" ON public.room_message_reactions FOR DELETE USING (auth.uid() = user_id);
+
+-- === room_message_views ===
+CREATE POLICY "Anyone authenticated can read views" ON public.room_message_views FOR SELECT USING (auth.uid() IS NOT NULL);
+CREATE POLICY "Users can insert own views" ON public.room_message_views FOR INSERT WITH CHECK (auth.uid() = user_id);
+
 
 -- ============================================================
 -- 7. INDEXES (الفهارس)
@@ -1905,6 +2072,9 @@ CREATE INDEX IF NOT EXISTS idx_threads_user_id ON public.threads(user_id);
 CREATE INDEX IF NOT EXISTS idx_replies_thread_id ON public.replies(thread_id);
 CREATE INDEX IF NOT EXISTS idx_replies_user_id ON public.replies(user_id);
 CREATE INDEX IF NOT EXISTS idx_room_messages_room_id ON public.room_messages(room_id);
+CREATE INDEX IF NOT EXISTS idx_room_message_reactions_message_id ON public.room_message_reactions(message_id);
+CREATE INDEX IF NOT EXISTS idx_room_message_views_message_id ON public.room_message_views(message_id);
+CREATE INDEX IF NOT EXISTS idx_support_tickets_sla ON public.support_tickets(sla_deadline) WHERE status = 'open' AND sla_notified = false;
 CREATE INDEX IF NOT EXISTS idx_user_notifications_user_id ON public.user_notifications(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_notifications_read ON public.user_notifications(read);
 CREATE INDEX IF NOT EXISTS idx_learning_courses_category_id ON public.learning_courses(category_id);
@@ -2018,8 +2188,9 @@ INSERT INTO public.community_rooms (id, name, name_ar, description, description_
 
 -- ============================================================
 -- انتهى التنفيذ بنجاح! ✅
--- عدد الجداول: 54
--- عدد الدوال: 50+
--- عدد سياسات RLS: 160+
+-- عدد الجداول: 56 (شامل room_message_reactions و room_message_views)
+-- عدد الدوال: 65+
+-- عدد سياسات RLS: 170+
 -- عدد حاويات التخزين: 9
+-- آخر تحديث: 2026-03-25
 -- ============================================================

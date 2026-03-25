@@ -101,6 +101,7 @@ FUNCTIONS=(
   "fetch-news"
   "fetch-article"
   "fetch-calendar"
+  "check-sla"
   "marqeta-cards"
   "telegram-webhook"
   "setup-telegram-webhook"

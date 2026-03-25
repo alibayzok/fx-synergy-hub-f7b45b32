@@ -2,16 +2,16 @@
 
 دليل شامل ومحدّث لنقل التطبيق من Lovable Cloud إلى بيئة مستقلة تماماً.
 
-**آخر تحديث**: 2026-02-16
+**آخر تحديث**: 2026-03-25
 
 ---
 
 ## 📋 جدول المحتويات
 
 1. [المرحلة 1: التحضير](#-المرحلة-1-التحضير)
-2. [المرحلة 2: قاعدة البيانات](#-المرحلة-2-قاعدة-البيانات-48-جدول)
+2. [المرحلة 2: قاعدة البيانات](#-المرحلة-2-قاعدة-البيانات-56-جدول)
 3. [المرحلة 3: حاويات التخزين](#-المرحلة-3-storage-buckets-8-حاويات)
-4. [المرحلة 4: Edge Functions](#-المرحلة-4-edge-functions-10-وظائف)
+4. [المرحلة 4: Edge Functions](#-المرحلة-4-edge-functions-11-وظيفة)
 5. [المرحلة 5: تعديلات الكود](#-المرحلة-5-تعديلات-الكود-4-ملفات)
 6. [المرحلة 6: Google OAuth](#-المرحلة-6-google-oauth)
 7. [المرحلة 7: Firebase Push Notifications](#-المرحلة-7-firebase-push-notifications)
@@ -41,7 +41,7 @@
 
 ---
 
-## 🗄️ المرحلة 2: قاعدة البيانات (54 جدول)
+## 🗄️ المرحلة 2: قاعدة البيانات (56 جدول)
 
 ### 2.1 تنفيذ السكريبت
 1. اذهب إلى **SQL Editor** في Supabase Dashboard
@@ -56,9 +56,9 @@
 - [ ] تفعيل **Realtime** على الجداول المطلوبة:
   - `direct_messages`, `room_messages`, `user_notifications`, `support_messages`
   - `signal_updates`, `subscription_messages`, `live_session_messages`
-- [ ] التحقق من جميع الـ **160+ RLS Policy** في **Authentication → Policies**
+- [ ] التحقق من جميع الـ **170+ RLS Policy** في **Authentication → Policies**
 
-### 2.3 قائمة الجداول (54 جدول)
+### 2.3 قائمة الجداول (56 جدول)
 
 | القسم | الجداول |
 |-------|---------|
@@ -66,7 +66,7 @@
 | **الإشارات** | `signals`, `signal_likes`, `signal_updates` |
 | **التحليلات** | `analyses`, `analysis_likes` |
 | **المنشورات** | `user_posts`, `post_likes`, `post_comments` |
-| **المجتمع** | `community_rooms`, `room_members`, `room_join_requests`, `room_messages`, `threads`, `replies`, `reply_likes` |
+| **المجتمع** | `community_rooms`, `room_members`, `room_join_requests`, `room_messages`, `room_message_reactions`, `room_message_views`, `threads`, `replies`, `reply_likes` |
 | **التعلم** | `learning_categories`, `learning_courses`, `learning_lessons` |
 | **الرسائل** | `conversations`, `conversation_participants`, `direct_messages` |
 | **العلاقات** | `follows`, `friend_requests` |
@@ -101,7 +101,7 @@
 
 ---
 
-## ⚡ المرحلة 4: Edge Functions (10 وظائف)
+## ⚡ المرحلة 4: Edge Functions (11 وظيفة)
 
 ### 4.1 تثبيت Supabase CLI
 
@@ -197,6 +197,7 @@ supabase functions deploy send-push-notification
 supabase functions deploy fetch-news
 supabase functions deploy fetch-article
 supabase functions deploy fetch-calendar
+supabase functions deploy check-sla
 supabase functions deploy marqeta-cards
 supabase functions deploy telegram-webhook
 supabase functions deploy setup-telegram-webhook
@@ -204,7 +205,7 @@ supabase functions deploy setup-telegram-webhook
 
 ### 4.5 جدول الوظائف والأسرار
 
-> 💡 جميع وظائف الذكاء الاصطناعي تدعم **نظام المزود المزدوج**: تبحث عن `GOOGLE_AI_API_KEY` أولاً (للبيئة المستقلة) ثم `LOVABLE_API_KEY` كاحتياطي.
+> 💡 جميع وظائف الذكاء الاصطناعي تدعم **نظام المزود الموحد**: تقرأ إعدادات AI من جدول `app_settings` (CMS) أولاً، ثم تبحث عن `GOOGLE_AI_API_KEY` كاحتياطي، ثم `LOVABLE_API_KEY`.
 
 | الوظيفة | الوصف | الأسرار المطلوبة |
 |---------|-------|-----------------|
@@ -216,6 +217,7 @@ supabase functions deploy setup-telegram-webhook
 | `fetch-article` | جلب + ترجمة تفاصيل المقالات | `GOOGLE_AI_API_KEY` |
 | `fetch-calendar` | التقويم الاقتصادي + ترجمة | `GOOGLE_AI_API_KEY` |
 | `marqeta-cards` | البطاقات الافتراضية | `MARQETA_APP_TOKEN`, `MARQETA_ADMIN_TOKEN`, `MARQETA_BASE_URL` |
+| `check-sla` | فحص تجاوز SLA للتذاكر | `SUPABASE_SERVICE_ROLE_KEY` (تلقائي) |
 | `telegram-webhook` | استقبال رسائل تلغرام | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_VIP_CHAT_ID`, `TELEGRAM_PUBLIC_CHAT_ID`, `TELEGRAM_NEWS_CHAT_ID`, `TELEGRAM_WEBHOOK_SECRET` |
 | `setup-telegram-webhook` | تسجيل Webhook مع تلغرام | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET` |
 
