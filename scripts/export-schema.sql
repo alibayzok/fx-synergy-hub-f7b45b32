@@ -2349,6 +2349,11 @@ CREATE INDEX IF NOT EXISTS idx_replies_user_id ON public.replies(user_id);
 CREATE INDEX IF NOT EXISTS idx_room_messages_room_id ON public.room_messages(room_id);
 CREATE INDEX IF NOT EXISTS idx_room_message_reactions_message_id ON public.room_message_reactions(message_id);
 CREATE INDEX IF NOT EXISTS idx_room_message_views_message_id ON public.room_message_views(message_id);
+-- Ensure SLA columns exist (for existing tables)
+ALTER TABLE public.support_tickets ADD COLUMN IF NOT EXISTS sla_deadline TIMESTAMP WITH TIME ZONE;
+ALTER TABLE public.support_tickets ADD COLUMN IF NOT EXISTS sla_breached BOOLEAN DEFAULT false;
+ALTER TABLE public.support_tickets ADD COLUMN IF NOT EXISTS sla_notified BOOLEAN DEFAULT false;
+ALTER TABLE public.support_tickets ADD COLUMN IF NOT EXISTS first_response_at TIMESTAMP WITH TIME ZONE;
 CREATE INDEX IF NOT EXISTS idx_support_tickets_sla ON public.support_tickets(sla_deadline) WHERE status = 'open' AND sla_notified = false;
 CREATE INDEX IF NOT EXISTS idx_user_notifications_user_id ON public.user_notifications(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_notifications_read ON public.user_notifications(read);
