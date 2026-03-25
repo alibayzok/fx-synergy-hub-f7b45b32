@@ -1,71 +1,36 @@
 
 
-# خطة تسهيل عملية النقل الكامل
+# ربط إعدادات CMS بجميع وظائف الذكاء الاصطناعي
 
 ## الوضع الحالي
 
-لديك بالفعل أصول هجرة جيدة:
-- `MIGRATION_GUIDE.md` — دليل شامل بـ 421 سطر
-- `scripts/export-schema.sql` — سكريبت قاعدة البيانات (2025 سطر)
-- `scripts/deploy-all.sh` — نشر Edge Functions + الأسرار
-- `scripts/all-edge-functions-code.md` — كود الوظائف للنسخ اليدوي
+| الوظيفة | تقرأ من CMS؟ | المزود |
+|---------|-------------|--------|
+| `chat` | ✅ نعم | يتبع إعدادات `ai_provider` + `custom_api_key` + `custom_endpoint` |
+| `fetch-news` | ❌ لا | منطق ثابت: `GOOGLE_AI_API_KEY` → `LOVABLE_API_KEY` |
+| `fetch-article` | ❌ لا | نفس المنطق الثابت |
+| `fetch-calendar` | ❌ لا | نفس المنطق الثابت |
+| `moderate-image` | ❌ لا | نفس المنطق الثابت |
 
-## ما ينقص ويجب عمله
+**يعني**: لما تغيّر المزود أو مفتاح API من لوحة CMS، فقط الدردشة الذكية بتتأثر. باقي الوظائف لا تتغير.
 
-### 1. تحويل الـ 4 وظائف التي تعتمد على Lovable Gateway
-**المشكلة**: `fetch-news`, `fetch-article`, `fetch-calendar`, `moderate-image` تستخدم `ai.gateway.lovable.dev` + `LOVABLE_API_KEY` بشكل ثابت (بدون خيار تبديل مثل `chat`).
+## الحل المقترح
 
-**الحل**: تحديث كل وظيفة لتدعم نظام المزود المزدوج — تحاول `GOOGLE_AI_API_KEY` أولاً (للبيئة المستقلة) ثم `LOVABLE_API_KEY` كاحتياطي (للبيئة الحالية). نفس النمط الموجود في `chat/index.ts`.
+تحديث الوظائف الأربع لتقرأ إعدادات CMS (`ai_provider`, `custom_ai_api_key`, `custom_ai_endpoint`) من جدول `app_settings` — بنفس المنطق الموجود في `chat/index.ts`.
 
-### 2. سكريبت تنظيف الكود للإنتاج (`scripts/prepare-production.sh`)
-سكريبت يعمل محلياً بعد `git clone` ويقوم تلقائياً بـ:
-- حذف `lovable-tagger` من `vite.config.ts`
-- حذف `src/integrations/lovable/`
-- تعيين `USE_LOVABLE_AUTH = false` في `auth-helpers.ts`
-- حذف قسم `server` من `capacitor.config.ts`
-- طباعة تعليمات تحديث `.env`
-
-### 3. تحديث `MIGRATION_GUIDE.md`
-- إضافة قسم **Google Play + App Store** بالتفصيل
-- إضافة قسم **تنظيف اعتمادات Lovable**
-- إضافة قائمة التحقق النهائية (Final Checklist)
-- تحديث عدد الجداول والوظائف
-
-### 4. تحديث `scripts/all-edge-functions-code.md`
-تحديث كود الوظائف الأربعة بعد تعديلها ليعكس النسخة المستقلة.
-
----
-
-## التفاصيل التقنية
-
-### تعديل Edge Functions (النمط الموحد)
-كل وظيفة ستستخدم هذا المنطق:
+### المنطق الموحد لكل وظيفة:
 ```text
-1. ابحث عن GOOGLE_AI_API_KEY
-2. إذا وُجد → استخدم generativelanguage.googleapis.com مباشرة
-3. إذا لم يوجد → ابحث عن LOVABLE_API_KEY → استخدم ai.gateway.lovable.dev
-4. إذا لم يوجد أي منهما → أرجع خطأ واضح
+1. اقرأ ai_provider + custom_ai_api_key + custom_ai_endpoint من app_settings
+2. إذا المزود = "custom" واللمفتاح موجود → استخدم الـ endpoint المخصص
+3. إذا المزود = "lovable" أو لا يوجد إعداد → ابحث عن GOOGLE_AI_API_KEY أولاً ثم LOVABLE_API_KEY
 ```
 
 ### الملفات المتأثرة
-| ملف | التغيير |
-|-----|---------|
-| `supabase/functions/fetch-news/index.ts` | إضافة نظام المزود المزدوج |
-| `supabase/functions/fetch-article/index.ts` | إضافة نظام المزود المزدوج |
-| `supabase/functions/fetch-calendar/index.ts` | إضافة نظام المزود المزدوج |
-| `supabase/functions/moderate-image/index.ts` | إضافة نظام المزود المزدوج |
-| `scripts/prepare-production.sh` | ملف جديد — سكريبت التنظيف |
-| `MIGRATION_GUIDE.md` | تحديث شامل |
-| `scripts/all-edge-functions-code.md` | تحديث الكود |
+- `supabase/functions/fetch-news/index.ts` — تعديل `getAIConfig()` لتقرأ من CMS
+- `supabase/functions/fetch-article/index.ts` — نفس التعديل
+- `supabase/functions/fetch-calendar/index.ts` — نفس التعديل
+- `supabase/functions/moderate-image/index.ts` — نفس التعديل
 
 ### النتيجة
-بعد التنفيذ، عملية النقل تصبح:
-```text
-1. git clone + npm install
-2. bash scripts/prepare-production.sh     ← تنظيف تلقائي
-3. عدّل .env بقيم Supabase الجديد
-4. نفّذ export-schema.sql في SQL Editor
-5. bash scripts/deploy-all.sh             ← نشر الوظائف + الأسرار
-6. npm run build → npx cap sync          ← بناء APK
-```
+بعد التعديل، لما تغيّر أي إعداد AI من لوحة CMS → **كل الوظائف بتتأثر تلقائياً** — الدردشة، الأخبار، المقالات، التقويم، وفحص الصور.
 
