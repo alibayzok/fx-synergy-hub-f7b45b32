@@ -1638,75 +1638,129 @@ END; $$;
 CREATE OR REPLACE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- Triggers تحديث updated_at
+DROP TRIGGER IF EXISTS update_profiles_updated_at ON public.profiles;
 CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_conversations_updated_at ON public.conversations;
 CREATE TRIGGER update_conversations_updated_at BEFORE UPDATE ON public.conversations FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_direct_messages_updated_at ON public.direct_messages;
 CREATE TRIGGER update_direct_messages_updated_at BEFORE UPDATE ON public.direct_messages FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_friend_requests_updated_at ON public.friend_requests;
 CREATE TRIGGER update_friend_requests_updated_at BEFORE UPDATE ON public.friend_requests FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_user_privacy_settings_updated_at ON public.user_privacy_settings;
 CREATE TRIGGER update_user_privacy_settings_updated_at BEFORE UPDATE ON public.user_privacy_settings FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_service_requests_updated_at ON public.service_requests;
 CREATE TRIGGER update_service_requests_updated_at BEFORE UPDATE ON public.service_requests FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_usdt_listings_updated_at ON public.usdt_listings;
 CREATE TRIGGER update_usdt_listings_updated_at BEFORE UPDATE ON public.usdt_listings FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_threads_updated_at ON public.threads;
 CREATE TRIGGER update_threads_updated_at BEFORE UPDATE ON public.threads FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_replies_updated_at ON public.replies;
 CREATE TRIGGER update_replies_updated_at BEFORE UPDATE ON public.replies FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_analyses_updated_at ON public.analyses;
 CREATE TRIGGER update_analyses_updated_at BEFORE UPDATE ON public.analyses FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_user_posts_updated_at ON public.user_posts;
 CREATE TRIGGER update_user_posts_updated_at BEFORE UPDATE ON public.user_posts FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_post_comments_updated_at ON public.post_comments;
 CREATE TRIGGER update_post_comments_updated_at BEFORE UPDATE ON public.post_comments FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_learning_categories_updated_at ON public.learning_categories;
 CREATE TRIGGER update_learning_categories_updated_at BEFORE UPDATE ON public.learning_categories FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_learning_courses_updated_at ON public.learning_courses;
 CREATE TRIGGER update_learning_courses_updated_at BEFORE UPDATE ON public.learning_courses FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_learning_lessons_updated_at ON public.learning_lessons;
 CREATE TRIGGER update_learning_lessons_updated_at BEFORE UPDATE ON public.learning_lessons FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_support_tickets_updated_at ON public.support_tickets;
 CREATE TRIGGER update_support_tickets_updated_at BEFORE UPDATE ON public.support_tickets FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_app_settings_updated_at ON public.app_settings;
 CREATE TRIGGER update_app_settings_updated_at BEFORE UPDATE ON public.app_settings FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_signals_updated_at ON public.signals;
 CREATE TRIGGER update_signals_updated_at BEFORE UPDATE ON public.signals FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_vip_subscriptions_updated_at ON public.vip_subscriptions;
 CREATE TRIGGER update_vip_subscriptions_updated_at BEFORE UPDATE ON public.vip_subscriptions FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_virtual_cards_updated_at ON public.virtual_cards;
 CREATE TRIGGER update_virtual_cards_updated_at BEFORE UPDATE ON public.virtual_cards FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_live_sessions_updated_at ON public.live_sessions;
 CREATE TRIGGER update_live_sessions_updated_at BEFORE UPDATE ON public.live_sessions FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_brokers_updated_at ON public.brokers;
 CREATE TRIGGER update_brokers_updated_at BEFORE UPDATE ON public.brokers FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_services_updated_at ON public.services;
 CREATE TRIGGER update_services_updated_at BEFORE UPDATE ON public.services FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_articles_updated_at ON public.articles;
 CREATE TRIGGER update_articles_updated_at BEFORE UPDATE ON public.articles FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_fcm_tokens_updated_at ON public.fcm_tokens;
 CREATE TRIGGER update_fcm_tokens_updated_at BEFORE UPDATE ON public.fcm_tokens FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 -- Triggers الإشعارات
+DROP TRIGGER IF EXISTS on_new_profile ON public.profiles;
 CREATE TRIGGER on_new_profile AFTER INSERT ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.notify_admin_new_user();
+DROP TRIGGER IF EXISTS on_new_service_request ON public.service_requests;
 CREATE TRIGGER on_new_service_request AFTER INSERT ON public.service_requests FOR EACH ROW EXECUTE FUNCTION public.notify_admin_new_service_request();
+DROP TRIGGER IF EXISTS on_new_reply ON public.replies;
 CREATE TRIGGER on_new_reply AFTER INSERT ON public.replies FOR EACH ROW EXECUTE FUNCTION public.notify_thread_owner_on_reply();
+DROP TRIGGER IF EXISTS on_new_direct_message ON public.direct_messages;
 CREATE TRIGGER on_new_direct_message AFTER INSERT ON public.direct_messages FOR EACH ROW EXECUTE FUNCTION public.notify_new_message();
+DROP TRIGGER IF EXISTS on_friend_request_change ON public.friend_requests;
 CREATE TRIGGER on_friend_request_change AFTER INSERT OR UPDATE ON public.friend_requests FOR EACH ROW EXECUTE FUNCTION public.notify_friend_request();
+DROP TRIGGER IF EXISTS on_flagged_content ON public.flagged_content;
 CREATE TRIGGER on_flagged_content AFTER INSERT ON public.flagged_content FOR EACH ROW EXECUTE FUNCTION public.notify_admin_flagged_content();
+DROP TRIGGER IF EXISTS on_new_support_ticket ON public.support_tickets;
 CREATE TRIGGER on_new_support_ticket AFTER INSERT ON public.support_tickets FOR EACH ROW EXECUTE FUNCTION public.notify_admin_new_support_ticket();
+DROP TRIGGER IF EXISTS on_support_ticket_transfer ON public.support_tickets;
 CREATE TRIGGER on_support_ticket_transfer AFTER UPDATE ON public.support_tickets FOR EACH ROW EXECUTE FUNCTION public.notify_ticket_transfer();
+DROP TRIGGER IF EXISTS on_room_join_request ON public.room_join_requests;
 CREATE TRIGGER on_room_join_request AFTER INSERT ON public.room_join_requests FOR EACH ROW EXECUTE FUNCTION public.notify_room_join_request();
+DROP TRIGGER IF EXISTS on_room_request_status_change ON public.room_join_requests;
 CREATE TRIGGER on_room_request_status_change AFTER UPDATE ON public.room_join_requests FOR EACH ROW EXECUTE FUNCTION public.notify_room_request_status();
 
 -- Triggers العدادات
+DROP TRIGGER IF EXISTS on_reply_count ON public.replies;
 CREATE TRIGGER on_reply_count AFTER INSERT OR DELETE ON public.replies FOR EACH ROW EXECUTE FUNCTION public.update_thread_replies_count();
+DROP TRIGGER IF EXISTS on_reply_like_count ON public.reply_likes;
 CREATE TRIGGER on_reply_like_count AFTER INSERT OR DELETE ON public.reply_likes FOR EACH ROW EXECUTE FUNCTION public.update_reply_likes_count();
+DROP TRIGGER IF EXISTS on_analysis_like_count ON public.analysis_likes;
 CREATE TRIGGER on_analysis_like_count AFTER INSERT OR DELETE ON public.analysis_likes FOR EACH ROW EXECUTE FUNCTION public.update_analysis_likes_count();
+DROP TRIGGER IF EXISTS on_post_like_count ON public.post_likes;
 CREATE TRIGGER on_post_like_count AFTER INSERT OR DELETE ON public.post_likes FOR EACH ROW EXECUTE FUNCTION public.update_post_likes_count();
+DROP TRIGGER IF EXISTS on_post_comment_count ON public.post_comments;
 CREATE TRIGGER on_post_comment_count AFTER INSERT OR DELETE ON public.post_comments FOR EACH ROW EXECUTE FUNCTION public.update_post_comments_count();
 
 -- Triggers الإشعارات المتقدمة
+DROP TRIGGER IF EXISTS on_post_like_notify ON public.post_likes;
 CREATE TRIGGER on_post_like_notify AFTER INSERT ON public.post_likes FOR EACH ROW EXECUTE FUNCTION public.notify_post_like();
+DROP TRIGGER IF EXISTS on_post_comment_notify ON public.post_comments;
 CREATE TRIGGER on_post_comment_notify AFTER INSERT ON public.post_comments FOR EACH ROW EXECUTE FUNCTION public.notify_post_comment();
+DROP TRIGGER IF EXISTS on_analysis_like_notify ON public.analysis_likes;
 CREATE TRIGGER on_analysis_like_notify AFTER INSERT ON public.analysis_likes FOR EACH ROW EXECUTE FUNCTION public.notify_analysis_like();
+DROP TRIGGER IF EXISTS on_reply_like_notify ON public.reply_likes;
 CREATE TRIGGER on_reply_like_notify AFTER INSERT ON public.reply_likes FOR EACH ROW EXECUTE FUNCTION public.notify_reply_like();
 
 -- Triggers التلعيب
+DROP TRIGGER IF EXISTS on_room_message_points ON public.room_messages;
 CREATE TRIGGER on_room_message_points AFTER INSERT ON public.room_messages FOR EACH ROW EXECUTE FUNCTION public.award_points_on_room_message();
+DROP TRIGGER IF EXISTS on_post_created_points ON public.user_posts;
 CREATE TRIGGER on_post_created_points AFTER INSERT ON public.user_posts FOR EACH ROW EXECUTE FUNCTION public.award_points_on_post();
+DROP TRIGGER IF EXISTS on_post_liked_points ON public.post_likes;
 CREATE TRIGGER on_post_liked_points AFTER INSERT ON public.post_likes FOR EACH ROW EXECUTE FUNCTION public.award_points_on_post_like();
 
 -- Triggers الإحالات
+DROP TRIGGER IF EXISTS set_referral_code ON public.profiles;
 CREATE TRIGGER set_referral_code BEFORE INSERT ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.generate_referral_code();
+DROP TRIGGER IF EXISTS trigger_award_referral_on_kyc ON public.profiles;
 CREATE TRIGGER trigger_award_referral_on_kyc AFTER UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.award_referral_on_kyc_approval();
 
 -- Triggers مشاهدات رسائل الغرف
+DROP TRIGGER IF EXISTS trg_increment_room_message_views ON public.room_message_views;
 CREATE TRIGGER trg_increment_room_message_views AFTER INSERT ON public.room_message_views FOR EACH ROW EXECUTE FUNCTION public.increment_room_message_views();
 
 -- Triggers SLA الدعم الفني
+DROP TRIGGER IF EXISTS trg_set_sla_deadline ON public.support_tickets;
 CREATE TRIGGER trg_set_sla_deadline BEFORE INSERT ON public.support_tickets FOR EACH ROW EXECUTE FUNCTION public.set_sla_deadline();
+DROP TRIGGER IF EXISTS trg_update_sla_on_priority ON public.support_tickets;
 CREATE TRIGGER trg_update_sla_on_priority BEFORE UPDATE ON public.support_tickets FOR EACH ROW EXECUTE FUNCTION public.update_sla_on_priority_change();
+DROP TRIGGER IF EXISTS trg_record_first_response ON public.support_messages;
 CREATE TRIGGER trg_record_first_response AFTER INSERT ON public.support_messages FOR EACH ROW EXECUTE FUNCTION public.record_first_response();
 
 -- Trigger Push Notification
+DROP TRIGGER IF EXISTS on_user_notification_push ON public.user_notifications;
 CREATE TRIGGER on_user_notification_push AFTER INSERT ON public.user_notifications FOR EACH ROW EXECUTE FUNCTION public.notify_push_on_user_notification();
 
 
@@ -1770,304 +1824,487 @@ ALTER TABLE public.daily_quests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_daily_progress ENABLE ROW LEVEL SECURITY;
 
 -- === profiles ===
+DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
 CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Authenticated users can view all profiles" ON public.profiles;
 CREATE POLICY "Authenticated users can view all profiles" ON public.profiles FOR SELECT USING (auth.uid() IS NOT NULL);
+DROP POLICY IF EXISTS "Admins can view all profiles via view" ON public.profiles;
 CREATE POLICY "Admins can view all profiles via view" ON public.profiles FOR SELECT USING (is_admin());
+DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
 CREATE POLICY "Users can insert own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
 CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = user_id OR is_admin());
+DROP POLICY IF EXISTS "Users can delete own profile" ON public.profiles;
 CREATE POLICY "Users can delete own profile" ON public.profiles FOR DELETE USING (auth.uid() = user_id);
 
 -- === user_roles ===
+DROP POLICY IF EXISTS "Users can view own role" ON public.user_roles;
 CREATE POLICY "Users can view own role" ON public.user_roles FOR SELECT USING (auth.uid() = user_id OR is_admin());
+DROP POLICY IF EXISTS "Only admins can insert roles" ON public.user_roles;
 CREATE POLICY "Only admins can insert roles" ON public.user_roles FOR INSERT WITH CHECK (is_admin());
+DROP POLICY IF EXISTS "Only admins can update roles" ON public.user_roles;
 CREATE POLICY "Only admins can update roles" ON public.user_roles FOR UPDATE USING (is_admin());
+DROP POLICY IF EXISTS "Only admins can delete roles" ON public.user_roles;
 CREATE POLICY "Only admins can delete roles" ON public.user_roles FOR DELETE USING (is_admin() AND user_id <> auth.uid());
 
 -- === user_blocks ===
+DROP POLICY IF EXISTS "Users can view own blocks" ON public.user_blocks;
 CREATE POLICY "Users can view own blocks" ON public.user_blocks FOR SELECT USING (auth.uid() = blocker_id OR auth.uid() = blocked_id);
+DROP POLICY IF EXISTS "Users can block others" ON public.user_blocks;
 CREATE POLICY "Users can block others" ON public.user_blocks FOR INSERT WITH CHECK (auth.uid() = blocker_id);
+DROP POLICY IF EXISTS "Users can unblock" ON public.user_blocks;
 CREATE POLICY "Users can unblock" ON public.user_blocks FOR DELETE USING (auth.uid() = blocker_id);
 
 -- === signals ===
+DROP POLICY IF EXISTS "Users can view signals based on visibility" ON public.signals;
 CREATE POLICY "Users can view signals based on visibility" ON public.signals FOR SELECT USING (can_access_content(visibility));
+DROP POLICY IF EXISTS "Only admins can insert signals" ON public.signals;
 CREATE POLICY "Only admins can insert signals" ON public.signals FOR INSERT WITH CHECK (is_admin());
+DROP POLICY IF EXISTS "Only admins can update signals" ON public.signals;
 CREATE POLICY "Only admins can update signals" ON public.signals FOR UPDATE USING (is_admin());
+DROP POLICY IF EXISTS "Only admins can delete signals" ON public.signals;
 CREATE POLICY "Only admins can delete signals" ON public.signals FOR DELETE USING (is_admin());
 
 -- === signal_likes ===
+DROP POLICY IF EXISTS "Users can view signal likes" ON public.signal_likes;
 CREATE POLICY "Users can view signal likes" ON public.signal_likes FOR SELECT USING (auth.uid() IS NOT NULL);
+DROP POLICY IF EXISTS "Users can like signals" ON public.signal_likes;
 CREATE POLICY "Users can like signals" ON public.signal_likes FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can remove own likes" ON public.signal_likes;
 CREATE POLICY "Users can remove own likes" ON public.signal_likes FOR DELETE USING (auth.uid() = user_id);
 
 -- === analyses ===
+DROP POLICY IF EXISTS "Users can view analyses based on visibility" ON public.analyses;
 CREATE POLICY "Users can view analyses based on visibility" ON public.analyses FOR SELECT USING (can_access_content(visibility));
+DROP POLICY IF EXISTS "Only admins can insert analyses" ON public.analyses;
 CREATE POLICY "Only admins can insert analyses" ON public.analyses FOR INSERT WITH CHECK (is_admin());
+DROP POLICY IF EXISTS "Only admins can update analyses" ON public.analyses;
 CREATE POLICY "Only admins can update analyses" ON public.analyses FOR UPDATE USING (is_admin());
+DROP POLICY IF EXISTS "Only admins can delete analyses" ON public.analyses;
 CREATE POLICY "Only admins can delete analyses" ON public.analyses FOR DELETE USING (is_admin());
 
 -- === analysis_likes ===
+DROP POLICY IF EXISTS "Users can view analysis likes" ON public.analysis_likes;
 CREATE POLICY "Users can view analysis likes" ON public.analysis_likes FOR SELECT USING (auth.uid() IS NOT NULL);
+DROP POLICY IF EXISTS "Users can like analyses" ON public.analysis_likes;
 CREATE POLICY "Users can like analyses" ON public.analysis_likes FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can remove own likes" ON public.analysis_likes;
 CREATE POLICY "Users can remove own likes" ON public.analysis_likes FOR DELETE USING (auth.uid() = user_id);
 
 -- === user_posts ===
+DROP POLICY IF EXISTS "Users can view posts based on visibility" ON public.user_posts;
 CREATE POLICY "Users can view posts based on visibility" ON public.user_posts FOR SELECT USING (can_view_post(user_id, visibility));
+DROP POLICY IF EXISTS "Users can create own posts" ON public.user_posts;
 CREATE POLICY "Users can create own posts" ON public.user_posts FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can update own posts" ON public.user_posts;
 CREATE POLICY "Users can update own posts" ON public.user_posts FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can delete own posts" ON public.user_posts;
 CREATE POLICY "Users can delete own posts" ON public.user_posts FOR DELETE USING (auth.uid() = user_id OR is_admin());
 
 -- === post_likes ===
+DROP POLICY IF EXISTS "Users can view post likes" ON public.post_likes;
 CREATE POLICY "Users can view post likes" ON public.post_likes FOR SELECT USING (EXISTS (SELECT 1 FROM user_posts p WHERE p.id = post_likes.post_id AND can_view_post(p.user_id, p.visibility)));
+DROP POLICY IF EXISTS "Users can like posts" ON public.post_likes;
 CREATE POLICY "Users can like posts" ON public.post_likes FOR INSERT WITH CHECK (auth.uid() = user_id AND EXISTS (SELECT 1 FROM user_posts p WHERE p.id = post_likes.post_id AND can_view_post(p.user_id, p.visibility)));
+DROP POLICY IF EXISTS "Users can remove own likes" ON public.post_likes;
 CREATE POLICY "Users can remove own likes" ON public.post_likes FOR DELETE USING (auth.uid() = user_id);
 
 -- === post_comments ===
+DROP POLICY IF EXISTS "Users can view post comments" ON public.post_comments;
 CREATE POLICY "Users can view post comments" ON public.post_comments FOR SELECT USING (EXISTS (SELECT 1 FROM user_posts p WHERE p.id = post_comments.post_id AND can_view_post(p.user_id, p.visibility)));
+DROP POLICY IF EXISTS "Users can comment on posts" ON public.post_comments;
 CREATE POLICY "Users can comment on posts" ON public.post_comments FOR INSERT WITH CHECK (auth.uid() = user_id AND EXISTS (SELECT 1 FROM user_posts p WHERE p.id = post_comments.post_id AND can_view_post(p.user_id, p.visibility)));
+DROP POLICY IF EXISTS "Users can update own comments" ON public.post_comments;
 CREATE POLICY "Users can update own comments" ON public.post_comments FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can delete own comments" ON public.post_comments;
 CREATE POLICY "Users can delete own comments" ON public.post_comments FOR DELETE USING (auth.uid() = user_id OR is_admin());
 
 -- === community_rooms ===
+DROP POLICY IF EXISTS "Everyone can view rooms" ON public.community_rooms;
 CREATE POLICY "Everyone can view rooms" ON public.community_rooms FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Only admins can create rooms" ON public.community_rooms;
 CREATE POLICY "Only admins can create rooms" ON public.community_rooms FOR INSERT WITH CHECK (is_admin());
+DROP POLICY IF EXISTS "Only admins can update rooms" ON public.community_rooms;
 CREATE POLICY "Only admins can update rooms" ON public.community_rooms FOR UPDATE USING (is_admin());
+DROP POLICY IF EXISTS "Only admins can delete rooms" ON public.community_rooms;
 CREATE POLICY "Only admins can delete rooms" ON public.community_rooms FOR DELETE USING (is_admin());
 
 -- === room_members ===
+DROP POLICY IF EXISTS "Users can view room members" ON public.room_members;
 CREATE POLICY "Users can view room members" ON public.room_members FOR SELECT USING (can_access_room(room_id) OR user_id = auth.uid() OR is_room_moderator(room_id));
+DROP POLICY IF EXISTS "Users can join rooms" ON public.room_members;
 CREATE POLICY "Users can join rooms" ON public.room_members FOR INSERT WITH CHECK (user_id = auth.uid() OR is_admin());
+DROP POLICY IF EXISTS "Moderators and admins can update members" ON public.room_members;
 CREATE POLICY "Moderators and admins can update members" ON public.room_members FOR UPDATE USING (is_room_moderator(room_id) OR user_id = auth.uid());
+DROP POLICY IF EXISTS "Admins can delete members" ON public.room_members;
 CREATE POLICY "Admins can delete members" ON public.room_members FOR DELETE USING (is_admin() OR is_room_moderator(room_id));
 
 -- === room_join_requests ===
+DROP POLICY IF EXISTS "Users can view own requests" ON public.room_join_requests;
 CREATE POLICY "Users can view own requests" ON public.room_join_requests FOR SELECT USING (user_id = auth.uid() OR is_room_moderator(room_id) OR is_admin());
+DROP POLICY IF EXISTS "Users can create join requests" ON public.room_join_requests;
 CREATE POLICY "Users can create join requests" ON public.room_join_requests FOR INSERT WITH CHECK (user_id = auth.uid());
+DROP POLICY IF EXISTS "Moderators can update requests" ON public.room_join_requests;
 CREATE POLICY "Moderators can update requests" ON public.room_join_requests FOR UPDATE USING (is_room_moderator(room_id) OR is_admin());
+DROP POLICY IF EXISTS "Users can delete own requests" ON public.room_join_requests;
 CREATE POLICY "Users can delete own requests" ON public.room_join_requests FOR DELETE USING (user_id = auth.uid() OR is_admin());
 
 -- === room_messages ===
+DROP POLICY IF EXISTS "Users can view room messages" ON public.room_messages;
 CREATE POLICY "Users can view room messages" ON public.room_messages FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Users can send messages" ON public.room_messages;
 CREATE POLICY "Users can send messages" ON public.room_messages FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can update own messages" ON public.room_messages;
 CREATE POLICY "Users can update own messages" ON public.room_messages FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users or moderators can delete messages" ON public.room_messages;
 CREATE POLICY "Users or moderators can delete messages" ON public.room_messages FOR DELETE USING (auth.uid() = user_id OR is_admin() OR is_room_moderator(room_id));
 
 -- === threads ===
+DROP POLICY IF EXISTS "Users can view all threads" ON public.threads;
 CREATE POLICY "Users can view all threads" ON public.threads FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Users can create threads" ON public.threads;
 CREATE POLICY "Users can create threads" ON public.threads FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can update own threads" ON public.threads;
 CREATE POLICY "Users can update own threads" ON public.threads FOR UPDATE USING (auth.uid() = user_id OR is_admin());
+DROP POLICY IF EXISTS "Users can delete own threads" ON public.threads;
 CREATE POLICY "Users can delete own threads" ON public.threads FOR DELETE USING (auth.uid() = user_id OR is_admin());
 
 -- === replies ===
+DROP POLICY IF EXISTS "Users can view all replies" ON public.replies;
 CREATE POLICY "Users can view all replies" ON public.replies FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Users can create replies" ON public.replies;
 CREATE POLICY "Users can create replies" ON public.replies FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can update own replies" ON public.replies;
 CREATE POLICY "Users can update own replies" ON public.replies FOR UPDATE USING (auth.uid() = user_id OR is_admin()) WITH CHECK (auth.uid() = user_id OR is_admin());
+DROP POLICY IF EXISTS "Users or moderators can delete replies" ON public.replies;
 CREATE POLICY "Users or moderators can delete replies" ON public.replies FOR DELETE USING (auth.uid() = user_id OR is_admin() OR is_room_moderator(get_thread_room_id(thread_id)));
 
 -- === reply_likes ===
+DROP POLICY IF EXISTS "Users can view all likes" ON public.reply_likes;
 CREATE POLICY "Users can view all likes" ON public.reply_likes FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Users can like replies" ON public.reply_likes;
 CREATE POLICY "Users can like replies" ON public.reply_likes FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can remove own likes" ON public.reply_likes;
 CREATE POLICY "Users can remove own likes" ON public.reply_likes FOR DELETE USING (auth.uid() = user_id);
 
 -- === learning_categories ===
+DROP POLICY IF EXISTS "Admins can manage categories" ON public.learning_categories;
 CREATE POLICY "Admins can manage categories" ON public.learning_categories FOR ALL USING (is_admin());
+DROP POLICY IF EXISTS "Authenticated users can view active categories" ON public.learning_categories;
 CREATE POLICY "Authenticated users can view active categories" ON public.learning_categories FOR SELECT USING (auth.uid() IS NOT NULL AND is_active = true);
 
 -- === learning_courses ===
+DROP POLICY IF EXISTS "Admins can manage courses" ON public.learning_courses;
 CREATE POLICY "Admins can manage courses" ON public.learning_courses FOR ALL USING (is_admin());
+DROP POLICY IF EXISTS "Authenticated users can view published courses" ON public.learning_courses;
 CREATE POLICY "Authenticated users can view published courses" ON public.learning_courses FOR SELECT USING (auth.uid() IS NOT NULL AND is_published = true);
 
 -- === learning_lessons ===
+DROP POLICY IF EXISTS "Admins can manage lessons" ON public.learning_lessons;
 CREATE POLICY "Admins can manage lessons" ON public.learning_lessons FOR ALL USING (is_admin());
+DROP POLICY IF EXISTS "Authenticated users can view published lessons" ON public.learning_lessons;
 CREATE POLICY "Authenticated users can view published lessons" ON public.learning_lessons FOR SELECT USING (auth.uid() IS NOT NULL AND is_published = true);
 
 -- === conversations ===
+DROP POLICY IF EXISTS "Users can view their conversations" ON public.conversations;
 CREATE POLICY "Users can view their conversations" ON public.conversations FOR SELECT USING (is_conversation_participant(id) OR created_by = auth.uid());
+DROP POLICY IF EXISTS "Users can create conversations" ON public.conversations;
 CREATE POLICY "Users can create conversations" ON public.conversations FOR INSERT WITH CHECK (auth.uid() = created_by);
+DROP POLICY IF EXISTS "Conversation admins can update" ON public.conversations;
 CREATE POLICY "Conversation admins can update" ON public.conversations FOR UPDATE USING (is_conversation_admin(id));
 
 -- === conversation_participants ===
+DROP POLICY IF EXISTS "Participants can view their conversations" ON public.conversation_participants;
 CREATE POLICY "Participants can view their conversations" ON public.conversation_participants FOR SELECT USING (is_conversation_participant(conversation_id));
+DROP POLICY IF EXISTS "Conversation creator can add participants" ON public.conversation_participants;
 CREATE POLICY "Conversation creator can add participants" ON public.conversation_participants FOR INSERT WITH CHECK (auth.uid() = user_id OR is_conversation_creator(conversation_id) OR is_conversation_admin(conversation_id));
+DROP POLICY IF EXISTS "Participants can update their own record" ON public.conversation_participants;
 CREATE POLICY "Participants can update their own record" ON public.conversation_participants FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can leave conversations" ON public.conversation_participants;
 CREATE POLICY "Users can leave conversations" ON public.conversation_participants FOR DELETE USING (auth.uid() = user_id);
 
 -- === direct_messages ===
+DROP POLICY IF EXISTS "Participants can view messages" ON public.direct_messages;
 CREATE POLICY "Participants can view messages" ON public.direct_messages FOR SELECT USING (is_conversation_participant(conversation_id));
+DROP POLICY IF EXISTS "Participants can send messages" ON public.direct_messages;
 CREATE POLICY "Participants can send messages" ON public.direct_messages FOR INSERT WITH CHECK (auth.uid() = sender_id AND is_conversation_participant(conversation_id));
+DROP POLICY IF EXISTS "Senders can update own messages" ON public.direct_messages;
 CREATE POLICY "Senders can update own messages" ON public.direct_messages FOR UPDATE USING (auth.uid() = sender_id);
+DROP POLICY IF EXISTS "Senders can delete own messages" ON public.direct_messages;
 CREATE POLICY "Senders can delete own messages" ON public.direct_messages FOR DELETE USING (auth.uid() = sender_id);
 
 -- === follows ===
+DROP POLICY IF EXISTS "Anyone can view follows" ON public.follows;
 CREATE POLICY "Anyone can view follows" ON public.follows FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Users can follow others" ON public.follows;
 CREATE POLICY "Users can follow others" ON public.follows FOR INSERT WITH CHECK (auth.uid() = follower_id);
+DROP POLICY IF EXISTS "Users can unfollow" ON public.follows;
 CREATE POLICY "Users can unfollow" ON public.follows FOR DELETE USING (auth.uid() = follower_id);
 
 -- === friend_requests ===
+DROP POLICY IF EXISTS "Users can view own friend requests" ON public.friend_requests;
 CREATE POLICY "Users can view own friend requests" ON public.friend_requests FOR SELECT USING (auth.uid() = sender_id OR auth.uid() = receiver_id);
+DROP POLICY IF EXISTS "Users can send friend requests" ON public.friend_requests;
 CREATE POLICY "Users can send friend requests" ON public.friend_requests FOR INSERT WITH CHECK (auth.uid() = sender_id);
+DROP POLICY IF EXISTS "Users can update received requests" ON public.friend_requests;
 CREATE POLICY "Users can update received requests" ON public.friend_requests FOR UPDATE USING (auth.uid() = receiver_id OR auth.uid() = sender_id);
+DROP POLICY IF EXISTS "Users can delete own requests" ON public.friend_requests;
 CREATE POLICY "Users can delete own requests" ON public.friend_requests FOR DELETE USING (auth.uid() = sender_id OR auth.uid() = receiver_id);
 
 -- === user_privacy_settings ===
+DROP POLICY IF EXISTS "Users can view all privacy settings" ON public.user_privacy_settings;
 CREATE POLICY "Users can view all privacy settings" ON public.user_privacy_settings FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Users can insert own privacy settings" ON public.user_privacy_settings;
 CREATE POLICY "Users can insert own privacy settings" ON public.user_privacy_settings FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can update own privacy settings" ON public.user_privacy_settings;
 CREATE POLICY "Users can update own privacy settings" ON public.user_privacy_settings FOR UPDATE USING (auth.uid() = user_id);
 
 -- === service_requests ===
+DROP POLICY IF EXISTS "Users can view own service requests" ON public.service_requests;
 CREATE POLICY "Users can view own service requests" ON public.service_requests FOR SELECT USING (auth.uid() = user_id OR is_admin());
+DROP POLICY IF EXISTS "Users can create service requests" ON public.service_requests;
 CREATE POLICY "Users can create service requests" ON public.service_requests FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Only admins can update service requests" ON public.service_requests;
 CREATE POLICY "Only admins can update service requests" ON public.service_requests FOR UPDATE USING (is_admin());
+DROP POLICY IF EXISTS "Only admins can delete service requests" ON public.service_requests;
 CREATE POLICY "Only admins can delete service requests" ON public.service_requests FOR DELETE USING (is_admin());
 
 -- === usdt_listings ===
+DROP POLICY IF EXISTS "Authenticated users can view active USDT listings" ON public.usdt_listings;
 CREATE POLICY "Authenticated users can view active USDT listings" ON public.usdt_listings FOR SELECT USING (auth.uid() IS NOT NULL AND (is_active = true OR is_admin()));
+DROP POLICY IF EXISTS "Only admins can insert USDT listings" ON public.usdt_listings;
 CREATE POLICY "Only admins can insert USDT listings" ON public.usdt_listings FOR INSERT WITH CHECK (is_admin());
+DROP POLICY IF EXISTS "Only admins can update USDT listings" ON public.usdt_listings;
 CREATE POLICY "Only admins can update USDT listings" ON public.usdt_listings FOR UPDATE USING (is_admin());
+DROP POLICY IF EXISTS "Only admins can delete USDT listings" ON public.usdt_listings;
 CREATE POLICY "Only admins can delete USDT listings" ON public.usdt_listings FOR DELETE USING (is_admin());
 
 -- === flagged_content ===
+DROP POLICY IF EXISTS "Admins can view flagged content" ON public.flagged_content;
 CREATE POLICY "Admins can view flagged content" ON public.flagged_content FOR SELECT USING (is_admin());
+DROP POLICY IF EXISTS "Users can insert flagged content" ON public.flagged_content;
 CREATE POLICY "Users can insert flagged content" ON public.flagged_content FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Admins can update flagged content" ON public.flagged_content;
 CREATE POLICY "Admins can update flagged content" ON public.flagged_content FOR UPDATE USING (is_admin());
+DROP POLICY IF EXISTS "Admins can delete flagged content" ON public.flagged_content;
 CREATE POLICY "Admins can delete flagged content" ON public.flagged_content FOR DELETE USING (is_admin());
 
 -- === user_notifications ===
+DROP POLICY IF EXISTS "Users can view own notifications" ON public.user_notifications;
 CREATE POLICY "Users can view own notifications" ON public.user_notifications FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can insert own notifications" ON public.user_notifications;
 CREATE POLICY "Users can insert own notifications" ON public.user_notifications FOR INSERT WITH CHECK (auth.uid() = user_id OR is_admin());
+DROP POLICY IF EXISTS "Users can update own notifications" ON public.user_notifications;
 CREATE POLICY "Users can update own notifications" ON public.user_notifications FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can delete own notifications" ON public.user_notifications;
 CREATE POLICY "Users can delete own notifications" ON public.user_notifications FOR DELETE USING (auth.uid() = user_id);
 
 -- === admin_notifications ===
+DROP POLICY IF EXISTS "Only admins can view notifications" ON public.admin_notifications;
 CREATE POLICY "Only admins can view notifications" ON public.admin_notifications FOR SELECT USING (is_admin());
+DROP POLICY IF EXISTS "Only admins can insert notifications" ON public.admin_notifications;
 CREATE POLICY "Only admins can insert notifications" ON public.admin_notifications FOR INSERT WITH CHECK (is_admin());
+DROP POLICY IF EXISTS "Only admins can update notifications" ON public.admin_notifications;
 CREATE POLICY "Only admins can update notifications" ON public.admin_notifications FOR UPDATE USING (is_admin());
+DROP POLICY IF EXISTS "Only admins can delete notifications" ON public.admin_notifications;
 CREATE POLICY "Only admins can delete notifications" ON public.admin_notifications FOR DELETE USING (is_admin());
 
 -- === app_settings ===
+DROP POLICY IF EXISTS "Anyone can view non-secret settings" ON public.app_settings;
 CREATE POLICY "Anyone can view non-secret settings" ON public.app_settings FOR SELECT USING (setting_key !~~ '%api_key%' AND setting_key !~~ '%secret%');
+DROP POLICY IF EXISTS "Admins can view secret settings" ON public.app_settings;
 CREATE POLICY "Admins can view secret settings" ON public.app_settings FOR SELECT USING ((setting_key ~~ '%api_key%' OR setting_key ~~ '%secret%') AND is_admin());
+DROP POLICY IF EXISTS "Admins can insert settings" ON public.app_settings;
 CREATE POLICY "Admins can insert settings" ON public.app_settings FOR INSERT WITH CHECK (is_admin());
+DROP POLICY IF EXISTS "Admins can update settings" ON public.app_settings;
 CREATE POLICY "Admins can update settings" ON public.app_settings FOR UPDATE USING (is_admin());
+DROP POLICY IF EXISTS "Admins can delete settings" ON public.app_settings;
 CREATE POLICY "Admins can delete settings" ON public.app_settings FOR DELETE USING (is_admin());
 
 -- === support_tickets ===
+DROP POLICY IF EXISTS "Users and agents can view tickets" ON public.support_tickets;
 CREATE POLICY "Users and agents can view tickets" ON public.support_tickets FOR SELECT USING (auth.uid() = user_id OR is_support_agent());
+DROP POLICY IF EXISTS "Users can create tickets" ON public.support_tickets;
 CREATE POLICY "Users can create tickets" ON public.support_tickets FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Owners and agents can update tickets" ON public.support_tickets;
 CREATE POLICY "Owners and agents can update tickets" ON public.support_tickets FOR UPDATE USING (is_support_agent() OR auth.uid() = user_id);
+DROP POLICY IF EXISTS "Agents can delete tickets" ON public.support_tickets;
 CREATE POLICY "Agents can delete tickets" ON public.support_tickets FOR DELETE USING (is_support_agent());
 
 -- === support_messages ===
+DROP POLICY IF EXISTS "Users and agents can view messages" ON public.support_messages;
 CREATE POLICY "Users and agents can view messages" ON public.support_messages FOR SELECT USING (EXISTS (SELECT 1 FROM support_tickets t WHERE t.id = support_messages.ticket_id AND (t.user_id = auth.uid() OR is_support_agent())));
+DROP POLICY IF EXISTS "Users and agents can send messages" ON public.support_messages;
 CREATE POLICY "Users and agents can send messages" ON public.support_messages FOR INSERT WITH CHECK (auth.uid() = sender_id AND EXISTS (SELECT 1 FROM support_tickets t WHERE t.id = support_messages.ticket_id AND (t.user_id = auth.uid() OR is_support_agent())));
+DROP POLICY IF EXISTS "Agents can delete messages" ON public.support_messages;
 CREATE POLICY "Agents can delete messages" ON public.support_messages FOR DELETE USING (is_support_agent() OR auth.uid() = sender_id);
 
 -- === support_agents ===
+DROP POLICY IF EXISTS "Admins can manage support agents" ON public.support_agents;
 CREATE POLICY "Admins can manage support agents" ON public.support_agents FOR ALL USING (is_admin());
+DROP POLICY IF EXISTS "Agents can view themselves" ON public.support_agents;
 CREATE POLICY "Agents can view themselves" ON public.support_agents FOR SELECT USING (auth.uid() = user_id);
 
 -- === brokers ===
+DROP POLICY IF EXISTS "Everyone can view active brokers" ON public.brokers;
 CREATE POLICY "Everyone can view active brokers" ON public.brokers FOR SELECT USING (is_active = true OR is_admin());
+DROP POLICY IF EXISTS "Only admins can manage brokers" ON public.brokers;
 CREATE POLICY "Only admins can manage brokers" ON public.brokers FOR ALL USING (is_admin());
 
 -- === services ===
+DROP POLICY IF EXISTS "Everyone can view active services" ON public.services;
 CREATE POLICY "Everyone can view active services" ON public.services FOR SELECT USING (is_active = true OR is_admin());
+DROP POLICY IF EXISTS "Only admins can manage services" ON public.services;
 CREATE POLICY "Only admins can manage services" ON public.services FOR ALL USING (is_admin());
 
 -- === articles ===
+DROP POLICY IF EXISTS "Everyone can view published articles" ON public.articles;
 CREATE POLICY "Everyone can view published articles" ON public.articles FOR SELECT USING (is_published = true OR is_admin());
+DROP POLICY IF EXISTS "Only admins can manage articles" ON public.articles;
 CREATE POLICY "Only admins can manage articles" ON public.articles FOR ALL USING (is_admin());
 
 -- === vip_subscriptions ===
+DROP POLICY IF EXISTS "Users can view own subscriptions" ON public.vip_subscriptions;
 CREATE POLICY "Users can view own subscriptions" ON public.vip_subscriptions FOR SELECT USING (auth.uid() = user_id OR is_admin());
+DROP POLICY IF EXISTS "Users can create subscriptions" ON public.vip_subscriptions;
 CREATE POLICY "Users can create subscriptions" ON public.vip_subscriptions FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Admins can update subscriptions" ON public.vip_subscriptions;
 CREATE POLICY "Admins can update subscriptions" ON public.vip_subscriptions FOR UPDATE USING (is_admin());
 
 -- === subscription_messages ===
+DROP POLICY IF EXISTS "Users and admins can view subscription messages" ON public.subscription_messages;
 CREATE POLICY "Users and admins can view subscription messages" ON public.subscription_messages FOR SELECT USING (EXISTS (SELECT 1 FROM vip_subscriptions s WHERE s.id = subscription_messages.subscription_id AND (s.user_id = auth.uid() OR is_admin())));
+DROP POLICY IF EXISTS "Users and admins can send subscription messages" ON public.subscription_messages;
 CREATE POLICY "Users and admins can send subscription messages" ON public.subscription_messages FOR INSERT WITH CHECK (auth.uid() = sender_id AND EXISTS (SELECT 1 FROM vip_subscriptions s WHERE s.id = subscription_messages.subscription_id AND (s.user_id = auth.uid() OR is_admin())));
 
 -- === virtual_cards ===
+DROP POLICY IF EXISTS "Users can view own cards" ON public.virtual_cards;
 CREATE POLICY "Users can view own cards" ON public.virtual_cards FOR SELECT USING (auth.uid() = user_id OR is_admin());
+DROP POLICY IF EXISTS "Users can create cards" ON public.virtual_cards;
 CREATE POLICY "Users can create cards" ON public.virtual_cards FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Admins can update cards" ON public.virtual_cards;
 CREATE POLICY "Admins can update cards" ON public.virtual_cards FOR UPDATE USING (is_admin());
 
 -- === live_sessions ===
+DROP POLICY IF EXISTS "Everyone can view live sessions" ON public.live_sessions;
 CREATE POLICY "Everyone can view live sessions" ON public.live_sessions FOR SELECT USING (auth.uid() IS NOT NULL);
+DROP POLICY IF EXISTS "Only admins can manage live sessions" ON public.live_sessions;
 CREATE POLICY "Only admins can manage live sessions" ON public.live_sessions FOR ALL USING (is_admin());
 
 -- === live_session_messages ===
+DROP POLICY IF EXISTS "Users can view session messages" ON public.live_session_messages;
 CREATE POLICY "Users can view session messages" ON public.live_session_messages FOR SELECT USING (auth.uid() IS NOT NULL);
+DROP POLICY IF EXISTS "Users can send session messages" ON public.live_session_messages;
 CREATE POLICY "Users can send session messages" ON public.live_session_messages FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- === fcm_tokens ===
+DROP POLICY IF EXISTS "Users can view own tokens" ON public.fcm_tokens;
 CREATE POLICY "Users can view own tokens" ON public.fcm_tokens FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can insert own tokens" ON public.fcm_tokens;
 CREATE POLICY "Users can insert own tokens" ON public.fcm_tokens FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can update own tokens" ON public.fcm_tokens;
 CREATE POLICY "Users can update own tokens" ON public.fcm_tokens FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can delete own tokens" ON public.fcm_tokens;
 CREATE POLICY "Users can delete own tokens" ON public.fcm_tokens FOR DELETE USING (auth.uid() = user_id);
 
 -- === user_points ===
+DROP POLICY IF EXISTS "Users can view own points" ON public.user_points;
 CREATE POLICY "Users can view own points" ON public.user_points FOR SELECT USING (auth.uid() = user_id OR is_admin());
+DROP POLICY IF EXISTS "Users can view all points" ON public.user_points;
 CREATE POLICY "Users can view all points" ON public.user_points FOR SELECT USING (auth.uid() IS NOT NULL);
 
 -- === point_transactions ===
+DROP POLICY IF EXISTS "Users can view own transactions" ON public.point_transactions;
 CREATE POLICY "Users can view own transactions" ON public.point_transactions FOR SELECT USING (auth.uid() = user_id OR is_admin());
 
 -- === badges ===
+DROP POLICY IF EXISTS "Everyone can view badges" ON public.badges;
 CREATE POLICY "Everyone can view badges" ON public.badges FOR SELECT USING (auth.uid() IS NOT NULL);
+DROP POLICY IF EXISTS "Only admins can manage badges" ON public.badges;
 CREATE POLICY "Only admins can manage badges" ON public.badges FOR ALL USING (is_admin());
 
 -- === user_badges ===
+DROP POLICY IF EXISTS "Users can view badges" ON public.user_badges;
 CREATE POLICY "Users can view badges" ON public.user_badges FOR SELECT USING (auth.uid() IS NOT NULL);
 
 -- === user_streaks ===
+DROP POLICY IF EXISTS "Users can view own streaks" ON public.user_streaks;
 CREATE POLICY "Users can view own streaks" ON public.user_streaks FOR SELECT USING (auth.uid() = user_id OR is_admin());
+DROP POLICY IF EXISTS "Users can view all streaks" ON public.user_streaks;
 CREATE POLICY "Users can view all streaks" ON public.user_streaks FOR SELECT USING (auth.uid() IS NOT NULL);
 
 -- === daily_quests ===
+DROP POLICY IF EXISTS "Everyone can view active quests" ON public.daily_quests;
 CREATE POLICY "Everyone can view active quests" ON public.daily_quests FOR SELECT USING (is_active = true);
+DROP POLICY IF EXISTS "Only admins can manage quests" ON public.daily_quests;
 CREATE POLICY "Only admins can manage quests" ON public.daily_quests FOR ALL USING (is_admin());
 
 -- === user_daily_progress ===
+DROP POLICY IF EXISTS "Users can view own progress" ON public.user_daily_progress;
 CREATE POLICY "Users can view own progress" ON public.user_daily_progress FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can insert own progress" ON public.user_daily_progress;
 CREATE POLICY "Users can insert own progress" ON public.user_daily_progress FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can update own progress" ON public.user_daily_progress;
 CREATE POLICY "Users can update own progress" ON public.user_daily_progress FOR UPDATE USING (auth.uid() = user_id);
 
 -- === referrals ===
+DROP POLICY IF EXISTS "Users can view own referrals" ON public.referrals;
 CREATE POLICY "Users can view own referrals" ON public.referrals FOR SELECT USING (auth.uid() = referrer_id OR auth.uid() = referred_id);
+DROP POLICY IF EXISTS "Authenticated users can insert referrals" ON public.referrals;
 CREATE POLICY "Authenticated users can insert referrals" ON public.referrals FOR INSERT WITH CHECK (auth.uid() = referred_id);
+DROP POLICY IF EXISTS "Admins can manage referrals" ON public.referrals;
 CREATE POLICY "Admins can manage referrals" ON public.referrals FOR ALL USING (is_admin());
 
 -- === referral_rewards ===
+DROP POLICY IF EXISTS "Anyone can view active rewards" ON public.referral_rewards;
 CREATE POLICY "Anyone can view active rewards" ON public.referral_rewards FOR SELECT USING (is_active = true OR is_admin());
+DROP POLICY IF EXISTS "Admins can manage rewards" ON public.referral_rewards;
 CREATE POLICY "Admins can manage rewards" ON public.referral_rewards FOR ALL USING (is_admin());
 
 -- === reward_redemptions ===
+DROP POLICY IF EXISTS "Users can view own redemptions" ON public.reward_redemptions;
 CREATE POLICY "Users can view own redemptions" ON public.reward_redemptions FOR SELECT USING (auth.uid() = user_id OR is_admin());
+DROP POLICY IF EXISTS "Users can create redemptions" ON public.reward_redemptions;
 CREATE POLICY "Users can create redemptions" ON public.reward_redemptions FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Admins can update redemptions" ON public.reward_redemptions;
 CREATE POLICY "Admins can update redemptions" ON public.reward_redemptions FOR UPDATE USING (is_admin());
+DROP POLICY IF EXISTS "Admins can delete redemptions" ON public.reward_redemptions;
 CREATE POLICY "Admins can delete redemptions" ON public.reward_redemptions FOR DELETE USING (is_admin());
 
 -- === verification_requests ===
+DROP POLICY IF EXISTS "Users can view own verification requests" ON public.verification_requests;
 CREATE POLICY "Users can view own verification requests" ON public.verification_requests FOR SELECT USING (auth.uid() = user_id OR is_admin());
+DROP POLICY IF EXISTS "Users can submit verification requests" ON public.verification_requests;
 CREATE POLICY "Users can submit verification requests" ON public.verification_requests FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Admins can update verification requests" ON public.verification_requests;
 CREATE POLICY "Admins can update verification requests" ON public.verification_requests FOR UPDATE USING (is_admin());
+DROP POLICY IF EXISTS "Admins can delete verification requests" ON public.verification_requests;
 CREATE POLICY "Admins can delete verification requests" ON public.verification_requests FOR DELETE USING (is_admin());
 
 -- === content_views ===
+DROP POLICY IF EXISTS "Users can view own views" ON public.content_views;
 CREATE POLICY "Users can view own views" ON public.content_views FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can insert own views" ON public.content_views;
 CREATE POLICY "Users can insert own views" ON public.content_views FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- === signal_updates ===
+DROP POLICY IF EXISTS "Anyone authenticated can view updates" ON public.signal_updates;
 CREATE POLICY "Anyone authenticated can view updates" ON public.signal_updates FOR SELECT USING (auth.uid() IS NOT NULL);
+DROP POLICY IF EXISTS "Admins can manage updates" ON public.signal_updates;
 CREATE POLICY "Admins can manage updates" ON public.signal_updates FOR ALL USING (is_admin());
 
 -- === room_message_reactions ===
+DROP POLICY IF EXISTS "Anyone authenticated can view reactions" ON public.room_message_reactions;
 CREATE POLICY "Anyone authenticated can view reactions" ON public.room_message_reactions FOR SELECT USING (auth.uid() IS NOT NULL);
+DROP POLICY IF EXISTS "Users can add reactions" ON public.room_message_reactions;
 CREATE POLICY "Users can add reactions" ON public.room_message_reactions FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can remove own reactions" ON public.room_message_reactions;
 CREATE POLICY "Users can remove own reactions" ON public.room_message_reactions FOR DELETE USING (auth.uid() = user_id);
 
 -- === room_message_views ===
+DROP POLICY IF EXISTS "Anyone authenticated can read views" ON public.room_message_views;
 CREATE POLICY "Anyone authenticated can read views" ON public.room_message_views FOR SELECT USING (auth.uid() IS NOT NULL);
+DROP POLICY IF EXISTS "Users can insert own views" ON public.room_message_views;
 CREATE POLICY "Users can insert own views" ON public.room_message_views FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 
