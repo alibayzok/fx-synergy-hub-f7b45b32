@@ -101,7 +101,7 @@
 
 ---
 
-## ⚡ المرحلة 4: Edge Functions (10 وظائف)
+## ⚡ المرحلة 4: Edge Functions (11 وظيفة)
 
 ### 4.1 تثبيت Supabase CLI
 
