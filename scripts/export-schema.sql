@@ -81,7 +81,7 @@ END $$;
 -- ============================================================
 
 -- جدول الملفات الشخصية
-CREATE TABLE public.profiles (
+CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID NOT NULL UNIQUE,
     username TEXT,
@@ -103,7 +103,7 @@ CREATE TABLE public.profiles (
 );
 
 -- جدول أدوار المستخدمين
-CREATE TABLE public.user_roles (
+CREATE TABLE IF NOT EXISTS public.user_roles (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID NOT NULL,
     role public.app_role NOT NULL DEFAULT 'free',
@@ -112,7 +112,7 @@ CREATE TABLE public.user_roles (
 );
 
 -- جدول حظر المستخدمين
-CREATE TABLE public.user_blocks (
+CREATE TABLE IF NOT EXISTS public.user_blocks (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     blocker_id UUID NOT NULL,
     blocked_id UUID NOT NULL,
@@ -122,7 +122,7 @@ CREATE TABLE public.user_blocks (
 );
 
 -- جدول الإشارات
-CREATE TABLE public.signals (
+CREATE TABLE IF NOT EXISTS public.signals (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     created_by UUID,
     title TEXT NOT NULL,
@@ -139,7 +139,7 @@ CREATE TABLE public.signals (
 );
 
 -- جدول إعجابات الإشارات
-CREATE TABLE public.signal_likes (
+CREATE TABLE IF NOT EXISTS public.signal_likes (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     signal_id UUID NOT NULL REFERENCES public.signals(id) ON DELETE CASCADE,
     user_id UUID NOT NULL,
@@ -148,7 +148,7 @@ CREATE TABLE public.signal_likes (
 );
 
 -- جدول التحليلات
-CREATE TABLE public.analyses (
+CREATE TABLE IF NOT EXISTS public.analyses (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     created_by UUID,
     title TEXT NOT NULL,
@@ -165,7 +165,7 @@ CREATE TABLE public.analyses (
 );
 
 -- جدول إعجابات التحليلات
-CREATE TABLE public.analysis_likes (
+CREATE TABLE IF NOT EXISTS public.analysis_likes (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     analysis_id UUID NOT NULL REFERENCES public.analyses(id) ON DELETE CASCADE,
     user_id UUID NOT NULL,
@@ -174,7 +174,7 @@ CREATE TABLE public.analysis_likes (
 );
 
 -- جدول منشورات المستخدمين
-CREATE TABLE public.user_posts (
+CREATE TABLE IF NOT EXISTS public.user_posts (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID NOT NULL,
     content TEXT NOT NULL,
@@ -195,7 +195,7 @@ CREATE TABLE public.user_posts (
 );
 
 -- جدول إعجابات المنشورات
-CREATE TABLE public.post_likes (
+CREATE TABLE IF NOT EXISTS public.post_likes (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     post_id UUID NOT NULL REFERENCES public.user_posts(id) ON DELETE CASCADE,
     user_id UUID NOT NULL,
@@ -204,7 +204,7 @@ CREATE TABLE public.post_likes (
 );
 
 -- جدول تعليقات المنشورات
-CREATE TABLE public.post_comments (
+CREATE TABLE IF NOT EXISTS public.post_comments (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     post_id UUID NOT NULL REFERENCES public.user_posts(id) ON DELETE CASCADE,
     user_id UUID NOT NULL,
@@ -216,7 +216,7 @@ CREATE TABLE public.post_comments (
 );
 
 -- جدول غرف المجتمع
-CREATE TABLE public.community_rooms (
+CREATE TABLE IF NOT EXISTS public.community_rooms (
     id TEXT NOT NULL PRIMARY KEY,
     name TEXT NOT NULL,
     name_ar TEXT NOT NULL,
@@ -234,7 +234,7 @@ CREATE TABLE public.community_rooms (
 );
 
 -- جدول أعضاء الغرف
-CREATE TABLE public.room_members (
+CREATE TABLE IF NOT EXISTS public.room_members (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     room_id TEXT NOT NULL REFERENCES public.community_rooms(id) ON DELETE CASCADE,
     user_id UUID NOT NULL,
@@ -252,7 +252,7 @@ CREATE TABLE public.room_members (
 );
 
 -- جدول طلبات الانضمام للغرف
-CREATE TABLE public.room_join_requests (
+CREATE TABLE IF NOT EXISTS public.room_join_requests (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     room_id TEXT NOT NULL REFERENCES public.community_rooms(id) ON DELETE CASCADE,
     user_id UUID NOT NULL,
@@ -265,7 +265,7 @@ CREATE TABLE public.room_join_requests (
 );
 
 -- جدول رسائل الغرف
-CREATE TABLE public.room_messages (
+CREATE TABLE IF NOT EXISTS public.room_messages (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     room_id TEXT NOT NULL,
     user_id UUID NOT NULL,
@@ -276,7 +276,7 @@ CREATE TABLE public.room_messages (
 );
 
 -- جدول تفاعلات رسائل الغرف
-CREATE TABLE public.room_message_reactions (
+CREATE TABLE IF NOT EXISTS public.room_message_reactions (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     message_id UUID NOT NULL REFERENCES public.room_messages(id) ON DELETE CASCADE,
     user_id UUID NOT NULL,
@@ -286,7 +286,7 @@ CREATE TABLE public.room_message_reactions (
 );
 
 -- جدول مشاهدات رسائل الغرف
-CREATE TABLE public.room_message_views (
+CREATE TABLE IF NOT EXISTS public.room_message_views (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     message_id UUID NOT NULL REFERENCES public.room_messages(id) ON DELETE CASCADE,
     user_id UUID NOT NULL,
@@ -295,7 +295,7 @@ CREATE TABLE public.room_message_views (
 );
 
 -- جدول المواضيع
-CREATE TABLE public.threads (
+CREATE TABLE IF NOT EXISTS public.threads (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID NOT NULL,
     room_id TEXT NOT NULL,
@@ -311,7 +311,7 @@ CREATE TABLE public.threads (
 );
 
 -- جدول الردود
-CREATE TABLE public.replies (
+CREATE TABLE IF NOT EXISTS public.replies (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     thread_id UUID NOT NULL REFERENCES public.threads(id) ON DELETE CASCADE,
     user_id UUID NOT NULL,
@@ -324,7 +324,7 @@ CREATE TABLE public.replies (
 );
 
 -- جدول إعجابات الردود
-CREATE TABLE public.reply_likes (
+CREATE TABLE IF NOT EXISTS public.reply_likes (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     reply_id UUID NOT NULL REFERENCES public.replies(id) ON DELETE CASCADE,
     user_id UUID NOT NULL,
@@ -333,7 +333,7 @@ CREATE TABLE public.reply_likes (
 );
 
 -- جدول فئات التعلم
-CREATE TABLE public.learning_categories (
+CREATE TABLE IF NOT EXISTS public.learning_categories (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     title_ar TEXT NOT NULL,
     title_en TEXT NOT NULL,
@@ -346,7 +346,7 @@ CREATE TABLE public.learning_categories (
 );
 
 -- جدول كورسات التعلم
-CREATE TABLE public.learning_courses (
+CREATE TABLE IF NOT EXISTS public.learning_courses (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     category_id UUID NOT NULL REFERENCES public.learning_categories(id) ON DELETE CASCADE,
     title_ar TEXT NOT NULL,
@@ -365,7 +365,7 @@ CREATE TABLE public.learning_courses (
 );
 
 -- جدول دروس التعلم
-CREATE TABLE public.learning_lessons (
+CREATE TABLE IF NOT EXISTS public.learning_lessons (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     course_id UUID NOT NULL REFERENCES public.learning_courses(id) ON DELETE CASCADE,
     title_ar TEXT NOT NULL,
@@ -383,7 +383,7 @@ CREATE TABLE public.learning_lessons (
 );
 
 -- جدول المحادثات
-CREATE TABLE public.conversations (
+CREATE TABLE IF NOT EXISTS public.conversations (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     created_by UUID NOT NULL,
     name TEXT,
@@ -393,7 +393,7 @@ CREATE TABLE public.conversations (
 );
 
 -- جدول المشاركين في المحادثات
-CREATE TABLE public.conversation_participants (
+CREATE TABLE IF NOT EXISTS public.conversation_participants (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     conversation_id UUID NOT NULL REFERENCES public.conversations(id) ON DELETE CASCADE,
     user_id UUID NOT NULL,
@@ -404,7 +404,7 @@ CREATE TABLE public.conversation_participants (
 );
 
 -- جدول الرسائل المباشرة
-CREATE TABLE public.direct_messages (
+CREATE TABLE IF NOT EXISTS public.direct_messages (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     conversation_id UUID NOT NULL REFERENCES public.conversations(id) ON DELETE CASCADE,
     sender_id UUID NOT NULL,
@@ -415,7 +415,7 @@ CREATE TABLE public.direct_messages (
 );
 
 -- جدول المتابعات
-CREATE TABLE public.follows (
+CREATE TABLE IF NOT EXISTS public.follows (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     follower_id UUID NOT NULL,
     following_id UUID NOT NULL,
@@ -424,7 +424,7 @@ CREATE TABLE public.follows (
 );
 
 -- جدول طلبات الصداقة
-CREATE TABLE public.friend_requests (
+CREATE TABLE IF NOT EXISTS public.friend_requests (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     sender_id UUID NOT NULL,
     receiver_id UUID NOT NULL,
@@ -435,7 +435,7 @@ CREATE TABLE public.friend_requests (
 );
 
 -- جدول إعدادات الخصوصية
-CREATE TABLE public.user_privacy_settings (
+CREATE TABLE IF NOT EXISTS public.user_privacy_settings (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID NOT NULL UNIQUE,
     messaging_privacy public.privacy_setting NOT NULL DEFAULT 'everyone',
@@ -446,7 +446,7 @@ CREATE TABLE public.user_privacy_settings (
 );
 
 -- جدول طلبات الخدمات
-CREATE TABLE public.service_requests (
+CREATE TABLE IF NOT EXISTS public.service_requests (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID NOT NULL,
     type public.service_type NOT NULL,
@@ -462,7 +462,7 @@ CREATE TABLE public.service_requests (
 );
 
 -- جدول إعلانات USDT
-CREATE TABLE public.usdt_listings (
+CREATE TABLE IF NOT EXISTS public.usdt_listings (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     created_by UUID NOT NULL,
     listing_type public.usdt_listing_type NOT NULL,
@@ -479,7 +479,7 @@ CREATE TABLE public.usdt_listings (
 );
 
 -- جدول المحتوى المخالف
-CREATE TABLE public.flagged_content (
+CREATE TABLE IF NOT EXISTS public.flagged_content (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     content_id TEXT NOT NULL,
     content_type TEXT NOT NULL,
@@ -496,7 +496,7 @@ CREATE TABLE public.flagged_content (
 );
 
 -- جدول إشعارات المستخدمين
-CREATE TABLE public.user_notifications (
+CREATE TABLE IF NOT EXISTS public.user_notifications (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID NOT NULL,
     type TEXT NOT NULL,
@@ -508,7 +508,7 @@ CREATE TABLE public.user_notifications (
 );
 
 -- جدول إشعارات الأدمن
-CREATE TABLE public.admin_notifications (
+CREATE TABLE IF NOT EXISTS public.admin_notifications (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     type TEXT NOT NULL,
     title TEXT NOT NULL,
@@ -519,7 +519,7 @@ CREATE TABLE public.admin_notifications (
 );
 
 -- جدول إعدادات التطبيق
-CREATE TABLE public.app_settings (
+CREATE TABLE IF NOT EXISTS public.app_settings (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     category TEXT NOT NULL,
     setting_key TEXT NOT NULL,
@@ -534,7 +534,7 @@ CREATE TABLE public.app_settings (
 );
 
 -- جدول تذاكر الدعم الفني
-CREATE TABLE public.support_tickets (
+CREATE TABLE IF NOT EXISTS public.support_tickets (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID NOT NULL,
     subject TEXT NOT NULL,
@@ -550,7 +550,7 @@ CREATE TABLE public.support_tickets (
 );
 
 -- جدول رسائل الدعم الفني
-CREATE TABLE public.support_messages (
+CREATE TABLE IF NOT EXISTS public.support_messages (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     ticket_id UUID NOT NULL REFERENCES public.support_tickets(id) ON DELETE CASCADE,
     sender_id UUID NOT NULL,
@@ -561,7 +561,7 @@ CREATE TABLE public.support_messages (
 );
 
 -- جدول وكلاء الدعم الفني
-CREATE TABLE public.support_agents (
+CREATE TABLE IF NOT EXISTS public.support_agents (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT true,
@@ -569,7 +569,7 @@ CREATE TABLE public.support_agents (
 );
 
 -- جدول الوسطاء
-CREATE TABLE public.brokers (
+CREATE TABLE IF NOT EXISTS public.brokers (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     name TEXT NOT NULL,
     name_ar TEXT NOT NULL DEFAULT '',
@@ -589,7 +589,7 @@ CREATE TABLE public.brokers (
 );
 
 -- جدول الخدمات
-CREATE TABLE public.services (
+CREATE TABLE IF NOT EXISTS public.services (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     name_ar TEXT NOT NULL,
     name_en TEXT NOT NULL DEFAULT '',
@@ -612,7 +612,7 @@ CREATE TABLE public.services (
 );
 
 -- جدول المقالات
-CREATE TABLE public.articles (
+CREATE TABLE IF NOT EXISTS public.articles (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     title_ar TEXT NOT NULL,
     title_en TEXT NOT NULL DEFAULT '',
@@ -629,7 +629,7 @@ CREATE TABLE public.articles (
 );
 
 -- جدول اشتراكات VIP
-CREATE TABLE public.vip_subscriptions (
+CREATE TABLE IF NOT EXISTS public.vip_subscriptions (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID NOT NULL,
     plan TEXT NOT NULL DEFAULT 'monthly',
@@ -644,7 +644,7 @@ CREATE TABLE public.vip_subscriptions (
 );
 
 -- جدول رسائل الاشتراكات
-CREATE TABLE public.subscription_messages (
+CREATE TABLE IF NOT EXISTS public.subscription_messages (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     subscription_id UUID NOT NULL REFERENCES public.vip_subscriptions(id) ON DELETE CASCADE,
     sender_id UUID NOT NULL,
@@ -654,7 +654,7 @@ CREATE TABLE public.subscription_messages (
 );
 
 -- جدول البطاقات الافتراضية
-CREATE TABLE public.virtual_cards (
+CREATE TABLE IF NOT EXISTS public.virtual_cards (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID NOT NULL,
     card_type TEXT NOT NULL DEFAULT 'virtual',
@@ -670,7 +670,7 @@ CREATE TABLE public.virtual_cards (
 );
 
 -- جدول الجلسات المباشرة
-CREATE TABLE public.live_sessions (
+CREATE TABLE IF NOT EXISTS public.live_sessions (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     host_id UUID NOT NULL,
     title_ar TEXT NOT NULL,
@@ -691,7 +691,7 @@ CREATE TABLE public.live_sessions (
 );
 
 -- جدول رسائل الجلسات المباشرة
-CREATE TABLE public.live_session_messages (
+CREATE TABLE IF NOT EXISTS public.live_session_messages (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     session_id UUID NOT NULL REFERENCES public.live_sessions(id) ON DELETE CASCADE,
     user_id UUID NOT NULL,
@@ -701,7 +701,7 @@ CREATE TABLE public.live_session_messages (
 );
 
 -- جدول توكنات FCM
-CREATE TABLE public.fcm_tokens (
+CREATE TABLE IF NOT EXISTS public.fcm_tokens (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID NOT NULL,
     token TEXT NOT NULL,
@@ -711,7 +711,7 @@ CREATE TABLE public.fcm_tokens (
 );
 
 -- جدول النقاط
-CREATE TABLE public.user_points (
+CREATE TABLE IF NOT EXISTS public.user_points (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID NOT NULL UNIQUE,
     total_points INTEGER NOT NULL DEFAULT 0,
@@ -723,7 +723,7 @@ CREATE TABLE public.user_points (
 );
 
 -- جدول معاملات النقاط
-CREATE TABLE public.point_transactions (
+CREATE TABLE IF NOT EXISTS public.point_transactions (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID NOT NULL,
     points INTEGER NOT NULL,
@@ -735,7 +735,7 @@ CREATE TABLE public.point_transactions (
 );
 
 -- جدول الشارات
-CREATE TABLE public.badges (
+CREATE TABLE IF NOT EXISTS public.badges (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     name_ar TEXT NOT NULL,
     name_en TEXT NOT NULL DEFAULT '',
@@ -751,7 +751,7 @@ CREATE TABLE public.badges (
 );
 
 -- جدول شارات المستخدمين
-CREATE TABLE public.user_badges (
+CREATE TABLE IF NOT EXISTS public.user_badges (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID NOT NULL,
     badge_id UUID NOT NULL REFERENCES public.badges(id) ON DELETE CASCADE,
@@ -760,7 +760,7 @@ CREATE TABLE public.user_badges (
 );
 
 -- جدول السلاسل (Streaks)
-CREATE TABLE public.user_streaks (
+CREATE TABLE IF NOT EXISTS public.user_streaks (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID NOT NULL UNIQUE,
     current_streak INTEGER NOT NULL DEFAULT 0,
@@ -772,7 +772,7 @@ CREATE TABLE public.user_streaks (
 );
 
 -- جدول المهام اليومية
-CREATE TABLE public.daily_quests (
+CREATE TABLE IF NOT EXISTS public.daily_quests (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     quest_key TEXT NOT NULL UNIQUE,
     title_ar TEXT NOT NULL,
@@ -789,7 +789,7 @@ CREATE TABLE public.daily_quests (
 );
 
 -- جدول تقدم المهام اليومية
-CREATE TABLE public.user_daily_progress (
+CREATE TABLE IF NOT EXISTS public.user_daily_progress (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID NOT NULL,
     quest_id UUID NOT NULL REFERENCES public.daily_quests(id) ON DELETE CASCADE,
@@ -803,7 +803,7 @@ CREATE TABLE public.user_daily_progress (
 );
 
 -- جدول الإحالات
-CREATE TABLE public.referrals (
+CREATE TABLE IF NOT EXISTS public.referrals (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     referrer_id UUID NOT NULL,
     referred_id UUID NOT NULL,
@@ -814,7 +814,7 @@ CREATE TABLE public.referrals (
 );
 
 -- جدول مكافآت الإحالات
-CREATE TABLE public.referral_rewards (
+CREATE TABLE IF NOT EXISTS public.referral_rewards (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     name_ar TEXT NOT NULL,
     name_en TEXT NOT NULL DEFAULT '',
@@ -832,7 +832,7 @@ CREATE TABLE public.referral_rewards (
 );
 
 -- جدول استبدال المكافآت
-CREATE TABLE public.reward_redemptions (
+CREATE TABLE IF NOT EXISTS public.reward_redemptions (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID NOT NULL,
     reward_id UUID REFERENCES public.referral_rewards(id) ON DELETE SET NULL,
@@ -848,7 +848,7 @@ CREATE TABLE public.reward_redemptions (
 );
 
 -- جدول طلبات التوثيق
-CREATE TABLE public.verification_requests (
+CREATE TABLE IF NOT EXISTS public.verification_requests (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID NOT NULL,
     document_type TEXT NOT NULL DEFAULT 'national_id',
@@ -863,7 +863,7 @@ CREATE TABLE public.verification_requests (
 );
 
 -- جدول مشاهدات المحتوى
-CREATE TABLE public.content_views (
+CREATE TABLE IF NOT EXISTS public.content_views (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID NOT NULL,
     content_type TEXT NOT NULL,
@@ -873,7 +873,7 @@ CREATE TABLE public.content_views (
 );
 
 -- جدول تحديثات الإشارات
-CREATE TABLE public.signal_updates (
+CREATE TABLE IF NOT EXISTS public.signal_updates (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     parent_id UUID NOT NULL,
     parent_type TEXT NOT NULL,
