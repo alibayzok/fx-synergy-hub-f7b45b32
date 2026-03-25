@@ -1638,75 +1638,129 @@ END; $$;
 CREATE OR REPLACE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- Triggers تحديث updated_at
+DROP TRIGGER IF EXISTS update_profiles_updated_at ON public.profiles;
 CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_conversations_updated_at ON public.conversations;
 CREATE TRIGGER update_conversations_updated_at BEFORE UPDATE ON public.conversations FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_direct_messages_updated_at ON public.direct_messages;
 CREATE TRIGGER update_direct_messages_updated_at BEFORE UPDATE ON public.direct_messages FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_friend_requests_updated_at ON public.friend_requests;
 CREATE TRIGGER update_friend_requests_updated_at BEFORE UPDATE ON public.friend_requests FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_user_privacy_settings_updated_at ON public.user_privacy_settings;
 CREATE TRIGGER update_user_privacy_settings_updated_at BEFORE UPDATE ON public.user_privacy_settings FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_service_requests_updated_at ON public.service_requests;
 CREATE TRIGGER update_service_requests_updated_at BEFORE UPDATE ON public.service_requests FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_usdt_listings_updated_at ON public.usdt_listings;
 CREATE TRIGGER update_usdt_listings_updated_at BEFORE UPDATE ON public.usdt_listings FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_threads_updated_at ON public.threads;
 CREATE TRIGGER update_threads_updated_at BEFORE UPDATE ON public.threads FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_replies_updated_at ON public.replies;
 CREATE TRIGGER update_replies_updated_at BEFORE UPDATE ON public.replies FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_analyses_updated_at ON public.analyses;
 CREATE TRIGGER update_analyses_updated_at BEFORE UPDATE ON public.analyses FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_user_posts_updated_at ON public.user_posts;
 CREATE TRIGGER update_user_posts_updated_at BEFORE UPDATE ON public.user_posts FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_post_comments_updated_at ON public.post_comments;
 CREATE TRIGGER update_post_comments_updated_at BEFORE UPDATE ON public.post_comments FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_learning_categories_updated_at ON public.learning_categories;
 CREATE TRIGGER update_learning_categories_updated_at BEFORE UPDATE ON public.learning_categories FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_learning_courses_updated_at ON public.learning_courses;
 CREATE TRIGGER update_learning_courses_updated_at BEFORE UPDATE ON public.learning_courses FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_learning_lessons_updated_at ON public.learning_lessons;
 CREATE TRIGGER update_learning_lessons_updated_at BEFORE UPDATE ON public.learning_lessons FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_support_tickets_updated_at ON public.support_tickets;
 CREATE TRIGGER update_support_tickets_updated_at BEFORE UPDATE ON public.support_tickets FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_app_settings_updated_at ON public.app_settings;
 CREATE TRIGGER update_app_settings_updated_at BEFORE UPDATE ON public.app_settings FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_signals_updated_at ON public.signals;
 CREATE TRIGGER update_signals_updated_at BEFORE UPDATE ON public.signals FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_vip_subscriptions_updated_at ON public.vip_subscriptions;
 CREATE TRIGGER update_vip_subscriptions_updated_at BEFORE UPDATE ON public.vip_subscriptions FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_virtual_cards_updated_at ON public.virtual_cards;
 CREATE TRIGGER update_virtual_cards_updated_at BEFORE UPDATE ON public.virtual_cards FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_live_sessions_updated_at ON public.live_sessions;
 CREATE TRIGGER update_live_sessions_updated_at BEFORE UPDATE ON public.live_sessions FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_brokers_updated_at ON public.brokers;
 CREATE TRIGGER update_brokers_updated_at BEFORE UPDATE ON public.brokers FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_services_updated_at ON public.services;
 CREATE TRIGGER update_services_updated_at BEFORE UPDATE ON public.services FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_articles_updated_at ON public.articles;
 CREATE TRIGGER update_articles_updated_at BEFORE UPDATE ON public.articles FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DROP TRIGGER IF EXISTS update_fcm_tokens_updated_at ON public.fcm_tokens;
 CREATE TRIGGER update_fcm_tokens_updated_at BEFORE UPDATE ON public.fcm_tokens FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 -- Triggers الإشعارات
+DROP TRIGGER IF EXISTS on_new_profile ON public.profiles;
 CREATE TRIGGER on_new_profile AFTER INSERT ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.notify_admin_new_user();
+DROP TRIGGER IF EXISTS on_new_service_request ON public.service_requests;
 CREATE TRIGGER on_new_service_request AFTER INSERT ON public.service_requests FOR EACH ROW EXECUTE FUNCTION public.notify_admin_new_service_request();
+DROP TRIGGER IF EXISTS on_new_reply ON public.replies;
 CREATE TRIGGER on_new_reply AFTER INSERT ON public.replies FOR EACH ROW EXECUTE FUNCTION public.notify_thread_owner_on_reply();
+DROP TRIGGER IF EXISTS on_new_direct_message ON public.direct_messages;
 CREATE TRIGGER on_new_direct_message AFTER INSERT ON public.direct_messages FOR EACH ROW EXECUTE FUNCTION public.notify_new_message();
+DROP TRIGGER IF EXISTS on_friend_request_change ON public.friend_requests;
 CREATE TRIGGER on_friend_request_change AFTER INSERT OR UPDATE ON public.friend_requests FOR EACH ROW EXECUTE FUNCTION public.notify_friend_request();
+DROP TRIGGER IF EXISTS on_flagged_content ON public.flagged_content;
 CREATE TRIGGER on_flagged_content AFTER INSERT ON public.flagged_content FOR EACH ROW EXECUTE FUNCTION public.notify_admin_flagged_content();
+DROP TRIGGER IF EXISTS on_new_support_ticket ON public.support_tickets;
 CREATE TRIGGER on_new_support_ticket AFTER INSERT ON public.support_tickets FOR EACH ROW EXECUTE FUNCTION public.notify_admin_new_support_ticket();
+DROP TRIGGER IF EXISTS on_support_ticket_transfer ON public.support_tickets;
 CREATE TRIGGER on_support_ticket_transfer AFTER UPDATE ON public.support_tickets FOR EACH ROW EXECUTE FUNCTION public.notify_ticket_transfer();
+DROP TRIGGER IF EXISTS on_room_join_request ON public.room_join_requests;
 CREATE TRIGGER on_room_join_request AFTER INSERT ON public.room_join_requests FOR EACH ROW EXECUTE FUNCTION public.notify_room_join_request();
+DROP TRIGGER IF EXISTS on_room_request_status_change ON public.room_join_requests;
 CREATE TRIGGER on_room_request_status_change AFTER UPDATE ON public.room_join_requests FOR EACH ROW EXECUTE FUNCTION public.notify_room_request_status();
 
 -- Triggers العدادات
+DROP TRIGGER IF EXISTS on_reply_count ON public.replies;
 CREATE TRIGGER on_reply_count AFTER INSERT OR DELETE ON public.replies FOR EACH ROW EXECUTE FUNCTION public.update_thread_replies_count();
+DROP TRIGGER IF EXISTS on_reply_like_count ON public.reply_likes;
 CREATE TRIGGER on_reply_like_count AFTER INSERT OR DELETE ON public.reply_likes FOR EACH ROW EXECUTE FUNCTION public.update_reply_likes_count();
+DROP TRIGGER IF EXISTS on_analysis_like_count ON public.analysis_likes;
 CREATE TRIGGER on_analysis_like_count AFTER INSERT OR DELETE ON public.analysis_likes FOR EACH ROW EXECUTE FUNCTION public.update_analysis_likes_count();
+DROP TRIGGER IF EXISTS on_post_like_count ON public.post_likes;
 CREATE TRIGGER on_post_like_count AFTER INSERT OR DELETE ON public.post_likes FOR EACH ROW EXECUTE FUNCTION public.update_post_likes_count();
+DROP TRIGGER IF EXISTS on_post_comment_count ON public.post_comments;
 CREATE TRIGGER on_post_comment_count AFTER INSERT OR DELETE ON public.post_comments FOR EACH ROW EXECUTE FUNCTION public.update_post_comments_count();
 
 -- Triggers الإشعارات المتقدمة
+DROP TRIGGER IF EXISTS on_post_like_notify ON public.post_likes;
 CREATE TRIGGER on_post_like_notify AFTER INSERT ON public.post_likes FOR EACH ROW EXECUTE FUNCTION public.notify_post_like();
+DROP TRIGGER IF EXISTS on_post_comment_notify ON public.post_comments;
 CREATE TRIGGER on_post_comment_notify AFTER INSERT ON public.post_comments FOR EACH ROW EXECUTE FUNCTION public.notify_post_comment();
+DROP TRIGGER IF EXISTS on_analysis_like_notify ON public.analysis_likes;
 CREATE TRIGGER on_analysis_like_notify AFTER INSERT ON public.analysis_likes FOR EACH ROW EXECUTE FUNCTION public.notify_analysis_like();
+DROP TRIGGER IF EXISTS on_reply_like_notify ON public.reply_likes;
 CREATE TRIGGER on_reply_like_notify AFTER INSERT ON public.reply_likes FOR EACH ROW EXECUTE FUNCTION public.notify_reply_like();
 
 -- Triggers التلعيب
+DROP TRIGGER IF EXISTS on_room_message_points ON public.room_messages;
 CREATE TRIGGER on_room_message_points AFTER INSERT ON public.room_messages FOR EACH ROW EXECUTE FUNCTION public.award_points_on_room_message();
+DROP TRIGGER IF EXISTS on_post_created_points ON public.user_posts;
 CREATE TRIGGER on_post_created_points AFTER INSERT ON public.user_posts FOR EACH ROW EXECUTE FUNCTION public.award_points_on_post();
+DROP TRIGGER IF EXISTS on_post_liked_points ON public.post_likes;
 CREATE TRIGGER on_post_liked_points AFTER INSERT ON public.post_likes FOR EACH ROW EXECUTE FUNCTION public.award_points_on_post_like();
 
 -- Triggers الإحالات
+DROP TRIGGER IF EXISTS set_referral_code ON public.profiles;
 CREATE TRIGGER set_referral_code BEFORE INSERT ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.generate_referral_code();
+DROP TRIGGER IF EXISTS trigger_award_referral_on_kyc ON public.profiles;
 CREATE TRIGGER trigger_award_referral_on_kyc AFTER UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.award_referral_on_kyc_approval();
 
 -- Triggers مشاهدات رسائل الغرف
+DROP TRIGGER IF EXISTS trg_increment_room_message_views ON public.room_message_views;
 CREATE TRIGGER trg_increment_room_message_views AFTER INSERT ON public.room_message_views FOR EACH ROW EXECUTE FUNCTION public.increment_room_message_views();
 
 -- Triggers SLA الدعم الفني
+DROP TRIGGER IF EXISTS trg_set_sla_deadline ON public.support_tickets;
 CREATE TRIGGER trg_set_sla_deadline BEFORE INSERT ON public.support_tickets FOR EACH ROW EXECUTE FUNCTION public.set_sla_deadline();
+DROP TRIGGER IF EXISTS trg_update_sla_on_priority ON public.support_tickets;
 CREATE TRIGGER trg_update_sla_on_priority BEFORE UPDATE ON public.support_tickets FOR EACH ROW EXECUTE FUNCTION public.update_sla_on_priority_change();
+DROP TRIGGER IF EXISTS trg_record_first_response ON public.support_messages;
 CREATE TRIGGER trg_record_first_response AFTER INSERT ON public.support_messages FOR EACH ROW EXECUTE FUNCTION public.record_first_response();
 
 -- Trigger Push Notification
+DROP TRIGGER IF EXISTS on_user_notification_push ON public.user_notifications;
 CREATE TRIGGER on_user_notification_push AFTER INSERT ON public.user_notifications FOR EACH ROW EXECUTE FUNCTION public.notify_push_on_user_notification();
 
 
