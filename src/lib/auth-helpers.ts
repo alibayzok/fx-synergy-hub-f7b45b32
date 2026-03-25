@@ -15,14 +15,13 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
-import { lovable } from '@/integrations/lovable/index';
 
 /**
  * ⚙️ إعداد التبديل بين Lovable و Supabase
  * 
  * للترحيل: غيّر هذا إلى false
  */
-const USE_LOVABLE_AUTH = true;
+const USE_LOVABLE_AUTH = false;
 
 export type OAuthProvider = 'google' | 'apple';
 
