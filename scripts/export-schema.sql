@@ -1660,6 +1660,18 @@ CREATE TRIGGER on_room_message_points AFTER INSERT ON public.room_messages FOR E
 CREATE TRIGGER on_post_created_points AFTER INSERT ON public.user_posts FOR EACH ROW EXECUTE FUNCTION public.award_points_on_post();
 CREATE TRIGGER on_post_liked_points AFTER INSERT ON public.post_likes FOR EACH ROW EXECUTE FUNCTION public.award_points_on_post_like();
 
+-- Triggers الإحالات
+CREATE TRIGGER set_referral_code BEFORE INSERT ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.generate_referral_code();
+CREATE TRIGGER trigger_award_referral_on_kyc AFTER UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.award_referral_on_kyc_approval();
+
+-- Triggers مشاهدات رسائل الغرف
+CREATE TRIGGER trg_increment_room_message_views AFTER INSERT ON public.room_message_views FOR EACH ROW EXECUTE FUNCTION public.increment_room_message_views();
+
+-- Triggers SLA الدعم الفني
+CREATE TRIGGER trg_set_sla_deadline BEFORE INSERT ON public.support_tickets FOR EACH ROW EXECUTE FUNCTION public.set_sla_deadline();
+CREATE TRIGGER trg_update_sla_on_priority BEFORE UPDATE ON public.support_tickets FOR EACH ROW EXECUTE FUNCTION public.update_sla_on_priority_change();
+CREATE TRIGGER trg_record_first_response AFTER INSERT ON public.support_messages FOR EACH ROW EXECUTE FUNCTION public.record_first_response();
+
 -- Trigger Push Notification
 CREATE TRIGGER on_user_notification_push AFTER INSERT ON public.user_notifications FOR EACH ROW EXECUTE FUNCTION public.notify_push_on_user_notification();
 
