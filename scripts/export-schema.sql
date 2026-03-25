@@ -545,6 +545,10 @@ CREATE TABLE IF NOT EXISTS public.support_tickets (
     escalated_by UUID,
     escalated_at TIMESTAMP WITH TIME ZONE,
     escalation_reason TEXT,
+    sla_deadline TIMESTAMP WITH TIME ZONE,
+    sla_breached BOOLEAN DEFAULT false,
+    sla_notified BOOLEAN DEFAULT false,
+    first_response_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
