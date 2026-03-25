@@ -24,22 +24,56 @@
 -- 1. ENUMS (أنواع البيانات المخصصة)
 -- ============================================================
 
-CREATE TYPE public.app_role AS ENUM ('admin', 'vip', 'free', 'moderator', 'support');
-CREATE TYPE public.asset_type AS ENUM ('forex', 'metals', 'crypto');
-CREATE TYPE public.content_visibility AS ENUM ('free', 'vip');
-CREATE TYPE public.conversation_type AS ENUM ('direct', 'group');
-CREATE TYPE public.course_level AS ENUM ('beginner', 'intermediate', 'advanced');
-CREATE TYPE public.friend_request_status AS ENUM ('pending', 'accepted', 'rejected');
-CREATE TYPE public.post_visibility AS ENUM ('everyone', 'friends_only', 'followers_only', 'nobody');
-CREATE TYPE public.privacy_setting AS ENUM ('everyone', 'friends_only', 'followers_only', 'nobody');
-CREATE TYPE public.room_membership_status AS ENUM ('pending', 'approved', 'rejected', 'banned');
-CREATE TYPE public.room_role AS ENUM ('member', 'moderator', 'owner');
-CREATE TYPE public.service_status AS ENUM ('pending', 'in_progress', 'approved', 'rejected', 'completed');
-CREATE TYPE public.redemption_status AS ENUM ('pending', 'approved', 'rejected', 'delivered');
-CREATE TYPE public.service_type AS ENUM ('broker_deposit', 'broker_withdraw', 'usdt_buy', 'usdt_sell', 'broker_account', 'card_fund');
-CREATE TYPE public.signal_type AS ENUM ('signal', 'tip');
-CREATE TYPE public.timeframe AS ENUM ('M5', 'M15', 'H1', 'H4', 'D1');
-CREATE TYPE public.usdt_listing_type AS ENUM ('buy', 'sell');
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'app_role') THEN
+    CREATE TYPE public.app_role AS ENUM ('admin', 'vip', 'free', 'moderator', 'support');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'asset_type') THEN
+    CREATE TYPE public.asset_type AS ENUM ('forex', 'metals', 'crypto');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'content_visibility') THEN
+    CREATE TYPE public.content_visibility AS ENUM ('free', 'vip');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'conversation_type') THEN
+    CREATE TYPE public.conversation_type AS ENUM ('direct', 'group');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'course_level') THEN
+    CREATE TYPE public.course_level AS ENUM ('beginner', 'intermediate', 'advanced');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'friend_request_status') THEN
+    CREATE TYPE public.friend_request_status AS ENUM ('pending', 'accepted', 'rejected');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'post_visibility') THEN
+    CREATE TYPE public.post_visibility AS ENUM ('everyone', 'friends_only', 'followers_only', 'nobody');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'privacy_setting') THEN
+    CREATE TYPE public.privacy_setting AS ENUM ('everyone', 'friends_only', 'followers_only', 'nobody');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'room_membership_status') THEN
+    CREATE TYPE public.room_membership_status AS ENUM ('pending', 'approved', 'rejected', 'banned');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'room_role') THEN
+    CREATE TYPE public.room_role AS ENUM ('member', 'moderator', 'owner');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'service_status') THEN
+    CREATE TYPE public.service_status AS ENUM ('pending', 'in_progress', 'approved', 'rejected', 'completed');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'redemption_status') THEN
+    CREATE TYPE public.redemption_status AS ENUM ('pending', 'approved', 'rejected', 'delivered');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'service_type') THEN
+    CREATE TYPE public.service_type AS ENUM ('broker_deposit', 'broker_withdraw', 'usdt_buy', 'usdt_sell', 'broker_account', 'card_fund');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'signal_type') THEN
+    CREATE TYPE public.signal_type AS ENUM ('signal', 'tip');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'timeframe') THEN
+    CREATE TYPE public.timeframe AS ENUM ('M5', 'M15', 'H1', 'H4', 'D1');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'usdt_listing_type') THEN
+    CREATE TYPE public.usdt_listing_type AS ENUM ('buy', 'sell');
+  END IF;
+END $$;
 
 
 -- ============================================================
