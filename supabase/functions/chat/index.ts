@@ -99,8 +99,16 @@ serve(async (req) => {
       }
       apiKey = resolvedKey;
       endpoint = customEndpoint || 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
-      // For custom providers, strip provider prefix from model name if present
+      // Strip provider prefix from model name if present
       modelToUse = aiModel.includes('/') ? aiModel.split('/').pop()! : aiModel;
+      
+      // If using Google endpoint but model is not a Gemini model, fallback to a safe default
+      const isGoogleEndpoint = endpoint.includes('generativelanguage.googleapis.com');
+      const isGeminiModel = modelToUse.toLowerCase().startsWith('gemini');
+      if (isGoogleEndpoint && !isGeminiModel) {
+        console.warn(`Model "${modelToUse}" is not compatible with Google endpoint, falling back to gemini-2.5-flash-lite`);
+        modelToUse = 'gemini-2.5-flash-lite';
+      }
     } else {
       const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
       if (!LOVABLE_API_KEY) {
