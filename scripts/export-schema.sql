@@ -236,7 +236,28 @@ CREATE TABLE public.room_messages (
     room_id TEXT NOT NULL,
     user_id UUID NOT NULL,
     content TEXT NOT NULL,
+    image_url TEXT,
+    views_count INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- جدول تفاعلات رسائل الغرف
+CREATE TABLE public.room_message_reactions (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    message_id UUID NOT NULL REFERENCES public.room_messages(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL,
+    emoji TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    UNIQUE(message_id, user_id, emoji)
+);
+
+-- جدول مشاهدات رسائل الغرف
+CREATE TABLE public.room_message_views (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    message_id UUID NOT NULL REFERENCES public.room_messages(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    UNIQUE(message_id, user_id)
 );
 
 -- جدول المواضيع
