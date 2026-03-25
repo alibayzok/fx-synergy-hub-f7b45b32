@@ -197,6 +197,7 @@ supabase functions deploy send-push-notification
 supabase functions deploy fetch-news
 supabase functions deploy fetch-article
 supabase functions deploy fetch-calendar
+supabase functions deploy check-sla
 supabase functions deploy marqeta-cards
 supabase functions deploy telegram-webhook
 supabase functions deploy setup-telegram-webhook
