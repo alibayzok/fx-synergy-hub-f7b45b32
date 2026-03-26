@@ -17,12 +17,12 @@ import { signInWithGoogle } from '@/lib/auth-helpers';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import appLogo from '@/assets/logo-dark.png';
 
-type AuthMode = 'login' | 'register' | 'forgot' | 'verify-otp';
+type AuthMode = 'login' | 'register' | 'forgot' | 'verify-otp' | 'reset-otp' | 'new-password';
 
 const AuthPage = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { signIn, signUp, verifyOtp, resetPassword, user, loading: authLoading } = useAuth();
+  const { signIn, signUp, verifyOtp, resetPassword, updatePassword, user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const isRTL = i18n.language === 'ar';
   const { getSetting } = useAppSettings();
@@ -47,6 +47,8 @@ const AuthPage = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [pendingEmail, setPendingEmail] = useState('');
   const [otpCode, setOtpCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
@@ -136,8 +138,9 @@ const AuthPage = () => {
         if (error) {
           toast({ title: t('common.error'), description: error.message, variant: 'destructive' });
         } else {
-          toast({ title: t('auth.checkEmail'), description: t('auth.resetEmailSent') });
-          setMode('login');
+          setPendingEmail(email);
+          setMode('reset-otp');
+          toast({ title: t('auth.checkEmail'), description: t('auth.resetOtpSent', 'تم إرسال رمز إعادة التعيين إلى بريدك الإلكتروني') });
         }
       }
     } finally {
@@ -202,6 +205,8 @@ const AuthPage = () => {
           size="sm"
           onClick={() => {
             if (mode === 'verify-otp') { setMode('register'); setOtpCode(''); }
+            else if (mode === 'reset-otp') { setMode('forgot'); setOtpCode(''); }
+            else if (mode === 'new-password') { setMode('reset-otp'); }
             else navigate('/');
           }}
           className="gap-2 text-white/60 hover:text-white hover:bg-white/5"
@@ -258,13 +263,13 @@ const AuthPage = () => {
                   </h1>
                   <p className="text-sm text-white/40 mt-1 flex items-center justify-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5" />
-                    {mode === 'login' ? t('auth.login') : mode === 'register' ? t('auth.register') : mode === 'verify-otp' ? t('auth.verifyOtp') : t('auth.forgotPassword')}
+                    {mode === 'login' ? t('auth.login') : mode === 'register' ? t('auth.register') : mode === 'verify-otp' ? t('auth.verifyOtp') : mode === 'reset-otp' ? t('auth.enterResetCode', 'أدخل رمز التحقق') : mode === 'new-password' ? t('auth.setNewPassword', 'تعيين كلمة مرور جديدة') : t('auth.forgotPassword')}
                   </p>
                 </div>
               </div>
 
               {/* OTP Verification */}
-              {mode === 'verify-otp' ? (
+              {mode === 'verify-otp' || mode === 'reset-otp' ? (
                 <div className="space-y-6">
                   <div className="text-center space-y-4">
                     <motion.div
@@ -278,7 +283,9 @@ const AuthPage = () => {
                         <ShieldCheck className="relative w-16 h-16 mx-auto text-primary" />
                       </div>
                     </motion.div>
-                    <h2 className="text-xl font-semibold text-white">{t('auth.verifyOtp')}</h2>
+                    <h2 className="text-xl font-semibold text-white">
+                      {mode === 'verify-otp' ? t('auth.verifyOtp') : t('auth.enterResetCode', 'أدخل رمز إعادة التعيين')}
+                    </h2>
                     <p className="text-sm text-white/50">
                       {t('auth.otpSentTo')}{' '}
                       <span className="font-medium text-primary">{pendingEmail}</span>
@@ -305,25 +312,114 @@ const AuthPage = () => {
                     onClick={async () => {
                       setLoading(true);
                       try {
-                        const { error } = await verifyOtp(pendingEmail, otpCode);
+                        if (mode === 'verify-otp') {
+                          const { error } = await verifyOtp(pendingEmail, otpCode);
+                          if (error) {
+                            toast({ title: t('common.error'), description: error.message, variant: 'destructive' });
+                          } else {
+                            toast({ title: t('auth.verificationSuccess') || 'تم التحقق بنجاح', description: t('auth.accountVerified') || 'تم تأكيد حسابك بنجاح' });
+                            navigate('/');
+                          }
+                        } else {
+                          // reset-otp: verify recovery OTP
+                          const { error } = await supabase.auth.verifyOtp({
+                            email: pendingEmail,
+                            token: otpCode,
+                            type: 'recovery',
+                          });
+                          if (error) {
+                            toast({ title: t('common.error'), description: error.message, variant: 'destructive' });
+                          } else {
+                            setOtpCode('');
+                            setMode('new-password');
+                          }
+                        }
+                      } finally { setLoading(false); }
+                    }}
+                  >
+                    {loading ? t('common.loading') : mode === 'verify-otp' ? t('auth.verify') : t('auth.verifyCode', 'تحقق من الرمز')}
+                  </Button>
+
+                  <div className="text-center">
+                    <button type="button" onClick={() => {
+                      if (mode === 'verify-otp') { setMode('register'); setOtpCode(''); }
+                      else { setMode('forgot'); setOtpCode(''); }
+                    }}
+                      className="text-sm text-primary/70 hover:text-primary transition-colors">
+                      {mode === 'verify-otp' ? (t('auth.backToRegister') || 'العودة للتسجيل') : t('auth.backToLogin')}
+                    </button>
+                  </div>
+                </div>
+              ) : mode === 'new-password' ? (
+                <div className="space-y-6">
+                  <div className="text-center space-y-4">
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+                    >
+                      <div className="relative inline-block">
+                        <div className="absolute inset-0 rounded-full blur-xl opacity-50"
+                          style={{ background: 'hsl(var(--primary))' }} />
+                        <Lock className="relative w-16 h-16 mx-auto text-primary" />
+                      </div>
+                    </motion.div>
+                    <h2 className="text-xl font-semibold text-white">{t('auth.setNewPassword', 'تعيين كلمة مرور جديدة')}</h2>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="newPassword" className="text-white/60 text-xs">{t('auth.newPassword', 'كلمة المرور الجديدة')}</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 rtl:left-auto rtl:right-3" />
+                        <Input id="newPassword" type={showPassword ? 'text' : 'password'} value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
+                          className="pl-10 pr-10 rtl:pl-10 rtl:pr-10 bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25 rounded-xl h-11 focus:border-primary/50 focus:ring-primary/20"
+                          placeholder="••••••••" required minLength={6} />
+                        <button type="button" onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors rtl:right-auto rtl:left-3">
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmNewPassword" className="text-white/60 text-xs">{t('auth.confirmPassword', 'تأكيد كلمة المرور')}</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 rtl:left-auto rtl:right-3" />
+                        <Input id="confirmNewPassword" type={showPassword ? 'text' : 'password'} value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)}
+                          className="pl-10 rtl:pl-3 rtl:pr-10 bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25 rounded-xl h-11 focus:border-primary/50 focus:ring-primary/20"
+                          placeholder="••••••••" required minLength={6} />
+                      </div>
+                    </div>
+                  </div>
+
+                  <Button
+                    className="w-full h-12 rounded-xl text-base font-semibold border-0 transition-all duration-300"
+                    style={{
+                      background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(45, 70%, 40%))',
+                      boxShadow: '0 8px 30px hsl(var(--primary) / 0.3)',
+                    }}
+                    disabled={loading || newPassword.length < 6}
+                    onClick={async () => {
+                      if (newPassword !== confirmNewPassword) {
+                        toast({ title: t('common.error'), description: t('auth.passwordMismatch', 'كلمتا المرور غير متطابقتين'), variant: 'destructive' });
+                        return;
+                      }
+                      setLoading(true);
+                      try {
+                        const { error } = await updatePassword(newPassword);
                         if (error) {
                           toast({ title: t('common.error'), description: error.message, variant: 'destructive' });
                         } else {
-                          toast({ title: t('auth.verificationSuccess') || 'تم التحقق بنجاح', description: t('auth.accountVerified') || 'تم تأكيد حسابك بنجاح' });
+                          toast({ title: t('auth.passwordUpdated', 'تم تحديث كلمة المرور'), description: t('auth.passwordUpdatedDesc', 'يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة') });
+                          setNewPassword('');
+                          setConfirmNewPassword('');
                           navigate('/');
                         }
                       } finally { setLoading(false); }
                     }}
                   >
-                    {loading ? t('common.loading') : t('auth.verify')}
+                    {loading ? t('common.loading') : t('auth.updatePassword', 'تحديث كلمة المرور')}
                   </Button>
-
-                  <div className="text-center">
-                    <button type="button" onClick={() => { setMode('register'); setOtpCode(''); }}
-                      className="text-sm text-primary/70 hover:text-primary transition-colors">
-                      {t('auth.backToRegister') || 'العودة للتسجيل'}
-                    </button>
-                  </div>
                 </div>
               ) : (
                 <>
@@ -429,7 +525,7 @@ const AuthPage = () => {
                         <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                           className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full" />
                       ) : (
-                        mode === 'login' ? t('auth.login') : mode === 'register' ? t('auth.register') : t('auth.sendResetLink')
+                        mode === 'login' ? t('auth.login') : mode === 'register' ? t('auth.register') : t('auth.sendResetCode', 'إرسال رمز التحقق')
                       )}
                     </Button>
                   </form>
