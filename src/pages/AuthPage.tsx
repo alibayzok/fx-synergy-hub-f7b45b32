@@ -29,12 +29,6 @@ const AuthPage = () => {
   const logoUrl = getSetting('logo_url');
   const authBgUrl = getSetting('auth_bg_url');
 
-  useEffect(() => {
-    if (!authLoading && user) {
-      navigate('/', { replace: true });
-    }
-  }, [user, authLoading, navigate]);
-
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -49,6 +43,12 @@ const AuthPage = () => {
   const [otpCode, setOtpCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
+
+  useEffect(() => {
+    if (!authLoading && user && mode !== 'new-password' && mode !== 'reset-otp') {
+      navigate('/', { replace: true });
+    }
+  }, [user, authLoading, navigate, mode]);
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
