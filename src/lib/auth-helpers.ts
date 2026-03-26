@@ -41,32 +41,15 @@ export async function signInWithOAuth(
 ): Promise<{ error: Error | null }> {
   const redirectTo = options?.redirectTo || window.location.origin;
 
-  if (USE_LOVABLE_AUTH) {
-    // استخدام Lovable Cloud OAuth (الوضع الحالي)
-    try {
-      const result = await lovable.auth.signInWithOAuth(provider, {
-        redirect_uri: redirectTo,
-        extraParams: options?.extraParams,
-      });
-      
-      if (result.error) {
-        return { error: result.error as Error };
-      }
-      return { error: null };
-    } catch (err) {
-      return { error: err instanceof Error ? err : new Error(String(err)) };
-    }
-  } else {
-    // استخدام Supabase OAuth العادي (بعد الترحيل)
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo,
-        queryParams: options?.extraParams,
-      },
-    });
-    return { error: error as Error | null };
-  }
+  // استخدام Supabase OAuth العادي
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider,
+    options: {
+      redirectTo,
+      queryParams: options?.extraParams,
+    },
+  });
+  return { error: error as Error | null };
 }
 
 /**
