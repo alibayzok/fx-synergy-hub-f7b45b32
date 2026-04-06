@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Crown, User, Shield, Search, Users, Sparkles, Headphones, Eye, X, Check, Plus, Minus, ChevronRight, BadgeCheck } from 'lucide-react';
+import { Crown, User, Shield, Search, Users, Sparkles, Headphones, Eye, Check, ChevronRight, BadgeCheck, Mail, Phone, Calendar, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,6 +20,7 @@ interface UserProfile {
   last_name: string;
   country: string;
   phone: string;
+  email?: string;
   avatar_url: string;
   onboarding_completed: boolean;
   trading_preferences: any;
@@ -256,22 +256,59 @@ export const UserManagement = () => {
                     : "bg-card/50 border-border/20 hover:border-border/40"
                 )}
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-start gap-3">
+                  {/* Avatar */}
                   <div className={cn(
-                    "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border",
+                    "w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border overflow-hidden",
                     badges[0]?.bg, badges[0]?.border
                   )}>
-                    {badges[0] && (() => { const Icon = badges[0].icon; return <Icon className={cn("w-4 h-4", badges[0].color)} />; })()}
+                    {user.avatar_url ? (
+                      <img src={user.avatar_url} className="w-full h-full object-cover" alt="" />
+                    ) : (
+                      <User className={cn("w-5 h-5", badges[0]?.color || "text-muted-foreground")} />
+                    )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-foreground text-sm truncate">
-                      {user.display_name || t('admin.unnamed')}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground/60 truncate">
-                      @{user.username || user.user_id.slice(0, 8)}
-                      {user.country && ` • 🌍 ${user.country}`}
-                    </p>
-                    <div className="flex flex-wrap gap-1.5 mt-1.5">
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0 space-y-1.5">
+                    {/* Name + Username */}
+                    <div>
+                      <p className="font-bold text-foreground text-sm truncate">
+                        {user.display_name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || t('admin.unnamed')}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground/50 truncate">
+                        @{user.username || user.user_id.slice(0, 8)}
+                      </p>
+                    </div>
+
+                    {/* Contact Info Row */}
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                      {user.email && (
+                        <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground/70">
+                          <Mail className="w-3 h-3" />
+                          <span className="truncate max-w-[180px]">{user.email}</span>
+                        </span>
+                      )}
+                      {user.phone && (
+                        <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground/70">
+                          <Phone className="w-3 h-3" />
+                          {user.phone}
+                        </span>
+                      )}
+                      {user.country && (
+                        <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground/70">
+                          <Globe className="w-3 h-3" />
+                          {user.country}
+                        </span>
+                      )}
+                      <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground/40">
+                        <Calendar className="w-3 h-3" />
+                        {new Date(user.created_at).toLocaleDateString(isRTL ? 'ar-EG' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                      </span>
+                    </div>
+
+                    {/* Role Badges */}
+                    <div className="flex flex-wrap gap-1.5">
                       {badges.map((badge, i) => (
                         <span key={i} className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold border", badge.bg, badge.color, badge.border)}>
                           <badge.icon className="w-3 h-3" />
@@ -280,7 +317,8 @@ export const UserManagement = () => {
                       ))}
                     </div>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-primary/60 transition-colors rtl:rotate-180 shrink-0" />
+
+                  <ChevronRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-primary/60 transition-colors rtl:rotate-180 shrink-0 mt-1" />
                 </div>
               </motion.button>
             );
