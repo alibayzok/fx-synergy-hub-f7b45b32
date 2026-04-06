@@ -139,7 +139,7 @@ const OnboardingPage = () => {
             <h1 className="text-3xl font-bold text-foreground">
               {isRTL ? 'مرحباً بك في' : 'Welcome to'}
             </h1>
-            <p className="text-2xl font-bold gold-gradient">FX Synergy Hub</p>
+            <p className="text-2xl font-bold gold-gradient">Assassin FX</p>
             <p className="text-muted-foreground text-lg max-w-xs">
               {isRTL 
                 ? 'عزز كفاءة التداول الخاصة بك مع التوصيات والتحليلات والمجتمع'
