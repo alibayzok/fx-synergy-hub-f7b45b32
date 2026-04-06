@@ -6,6 +6,7 @@ import {
   GripVertical, Star, StarOff, Loader2, Building2, Palette, Link2, Type,
   Coins, CreditCard
 } from 'lucide-react';
+import { UsdtListingsManagement } from './UsdtListingsManagement';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -258,10 +259,14 @@ export const ServicesAndBrokersManagement = () => {
       </motion.div>
 
       <Tabs defaultValue="services">
-        <TabsList className="w-full grid grid-cols-3">
+        <TabsList className="w-full grid grid-cols-4">
           <TabsTrigger value="services" className="gap-2">
             <Briefcase className="w-4 h-4" />
             الخدمات
+          </TabsTrigger>
+          <TabsTrigger value="usdt_listings" className="gap-2">
+            <Coins className="w-4 h-4" />
+            إعلانات USDT
           </TabsTrigger>
           <TabsTrigger value="brokers" className="gap-2">
             <Building2 className="w-4 h-4" />
@@ -336,6 +341,11 @@ export const ServicesAndBrokersManagement = () => {
               لا توجد خدمات بعد. أضف خدمة جديدة!
             </div>
           )}
+        </TabsContent>
+
+        {/* USDT Listings Tab */}
+        <TabsContent value="usdt_listings" className="space-y-4 mt-4">
+          <UsdtListingsManagement />
         </TabsContent>
 
         {/* Brokers Tab */}
