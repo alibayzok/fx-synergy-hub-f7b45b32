@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { Coins, TrendingUp, TrendingDown, Info } from 'lucide-react';
+import { Coins, Info, Shield, Zap, Clock } from 'lucide-react';
 import { UsdtPriceCards } from './UsdtPriceCards';
 import { UsdtRequestForm } from './UsdtRequestForm';
 import { UsdtListingsDisplay } from './UsdtListingsDisplay';
@@ -12,44 +12,78 @@ interface UsdtServiceSectionProps {
 }
 
 export const UsdtServiceSection = ({ onRequestSubmitted }: UsdtServiceSectionProps) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
   const { listings, loading } = useUsdtListings();
   const [selectedType, setSelectedType] = useState<'buy' | 'sell'>('buy');
 
-  // Get best prices from listings
   const prices = useMemo(() => {
     const buyListings = listings.filter(l => l.listing_type === 'buy' && l.is_active);
     const sellListings = listings.filter(l => l.listing_type === 'sell' && l.is_active);
     
     return {
-      // For users: "buy" means they buy, so we show admin's "sell" price
       buyPrice: sellListings.length > 0 
         ? Math.min(...sellListings.map(l => l.price)) 
         : null,
-      // For users: "sell" means they sell, so we show admin's "buy" price
       sellPrice: buyListings.length > 0 
         ? Math.max(...buyListings.map(l => l.price)) 
         : null,
     };
   }, [listings]);
 
+  const features = [
+    { icon: Shield, label: isRTL ? 'معاملات آمنة' : 'Secure Transactions', color: 'text-emerald-400' },
+    { icon: Zap, label: isRTL ? 'تنفيذ فوري' : 'Instant Execution', color: 'text-amber-400' },
+    { icon: Clock, label: isRTL ? 'دعم 24/7' : '24/7 Support', color: 'text-blue-400' },
+  ];
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-5">
+      {/* Hero Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-center"
+        className="relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent border border-emerald-500/20"
       >
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 mb-4 shadow-lg shadow-emerald-500/30">
-          <Coins className="w-8 h-8 text-white" />
+        <div className="absolute top-0 end-0 w-48 h-48 bg-emerald-500/8 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 start-0 w-32 h-32 bg-teal-500/8 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="relative z-10">
+          <div className="flex items-center gap-4 mb-4">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: 'spring', stiffness: 200, delay: 0.1 }}
+              className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/25"
+            >
+              <Coins className="w-7 h-7 text-white" />
+            </motion.div>
+            <div>
+              <h2 className="text-xl font-bold text-foreground">
+                {t('services.usdtSection.title')}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {t('services.usdtSection.subtitle')}
+              </p>
+            </div>
+          </div>
+
+          {/* Feature badges */}
+          <div className="flex flex-wrap gap-2">
+            {features.map((feat, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 + i * 0.1 }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-card/60 border border-border/30 text-xs font-medium"
+              >
+                <feat.icon className={`w-3.5 h-3.5 ${feat.color}`} />
+                <span className="text-foreground">{feat.label}</span>
+              </motion.div>
+            ))}
+          </div>
         </div>
-        <h2 className="text-2xl font-bold text-foreground mb-1">
-          {t('services.usdtSection.title')}
-        </h2>
-        <p className="text-muted-foreground">
-          {t('services.usdtSection.subtitle')}
-        </p>
       </motion.div>
 
       {/* Price Cards */}
@@ -83,13 +117,13 @@ export const UsdtServiceSection = ({ onRequestSubmitted }: UsdtServiceSectionPro
 
       {/* Info Note */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         transition={{ delay: 0.4 }}
-        className="flex items-start gap-3 p-4 rounded-xl bg-muted/30 border border-border/30"
+        className="flex items-start gap-3 p-4 rounded-xl bg-muted/20 border border-border/20"
       >
-        <Info className="w-5 h-5 text-muted-foreground flex-shrink-0 mt-0.5" />
-        <p className="text-sm text-muted-foreground">
+        <Info className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+        <p className="text-xs text-muted-foreground leading-relaxed">
           {t('services.usdtSection.infoNote')}
         </p>
       </motion.div>
