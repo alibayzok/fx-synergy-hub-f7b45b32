@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { 
   Shield, Users, ArrowLeft, LayoutDashboard, BarChart3, ClipboardList,
   Database, FileText, AlertTriangle, GraduationCap, Settings2, Radio, Crown,
-  Sparkles, ChevronRight
+  Sparkles, ChevronRight, ShieldCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
@@ -26,6 +26,7 @@ import { ServicesAndBrokersManagement } from '@/components/admin/ServicesAndBrok
 import { VerificationManagement } from '@/components/admin/VerificationManagement';
 import { ReferralManagement } from '@/components/admin/ReferralManagement';
 import { CommunityManagement } from '@/components/admin/CommunityManagement';
+import { AnalystRequestsManagement } from '@/components/admin/AnalystRequestsManagement';
 
 const contentSections = [
   {
@@ -39,6 +40,7 @@ const contentSections = [
       { value: 'courses', icon: GraduationCap, label: 'الكورسات', labelEn: 'Courses', color: 'from-amber-500/20 to-yellow-500/20', iconColor: 'text-amber-500', borderColor: 'border-amber-500/20' },
       { value: 'community', icon: Users, label: 'المجتمع', labelEn: 'Community', color: 'from-cyan-500/20 to-teal-500/20', iconColor: 'text-cyan-500', borderColor: 'border-cyan-500/20' },
       { value: 'moderation', icon: AlertTriangle, label: 'المخالفات', labelEn: 'Moderation', color: 'from-red-500/20 to-rose-500/20', iconColor: 'text-red-500', borderColor: 'border-red-500/20' },
+      { value: 'analyst-requests', icon: ShieldCheck, label: 'طلبات المحللين', labelEn: 'Analyst Requests', color: 'from-emerald-500/20 to-green-500/20', iconColor: 'text-emerald-500', borderColor: 'border-emerald-500/20' },
     ],
   },
   {
@@ -71,6 +73,7 @@ const componentMap: Record<string, React.FC> = {
   verification: VerificationManagement,
   referrals: ReferralManagement,
   community: CommunityManagement,
+  'analyst-requests': AnalystRequestsManagement,
 };
 
 const AdminPage = () => {
