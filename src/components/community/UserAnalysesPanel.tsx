@@ -5,8 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, ArrowRight, Plus, TrendingUp, Heart, MessageCircle,
   Image, Send, X, Loader2, Sparkles, BarChart3, Clock, Eye,
-  ArrowLeftRight, Upload, GraduationCap, RefreshCw, ShieldCheck, Clock3
+  ArrowLeftRight, Upload, GraduationCap, RefreshCw, ShieldCheck, Clock3, Trash2
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -58,17 +59,22 @@ const useAnalystStatus = () => {
     mutationFn: async (message: string) => {
       if (!user) throw new Error('Not authenticated');
       if (isRejected && analystRequest) {
-        // Re-apply: update existing record back to pending
         const { error } = await supabase
           .from('approved_analysts')
           .update({ status: 'pending', message: message || null, updated_at: new Date().toISOString(), admin_notes: null, reviewed_by: null, reviewed_at: null } as any)
           .eq('user_id', user.id);
-        if (error) throw error;
+        if (error) {
+          console.error('Analyst re-apply error:', error);
+          throw error;
+        }
       } else {
         const { error } = await supabase
           .from('approved_analysts')
-          .insert({ user_id: user.id, message: message || null });
-        if (error) throw error;
+          .insert([{ user_id: user.id, message: message || null }]);
+        if (error) {
+          console.error('Analyst request insert error:', error);
+          throw error;
+        }
       }
     },
     onSuccess: () => {
@@ -326,17 +332,20 @@ const UpdateResultDialog = ({ post, onUpdated }: { post: any; onUpdated: () => v
 };
 
 // ── Analysis Card ────────────────────────────────────────────────────────
-const AnalysisCard = ({ post, onLike, onUpdated }: { post: any; onLike: (id: string, liked: boolean) => void; onUpdated: () => void }) => {
+const AnalysisCard = ({ post, onLike, onUpdated, onDelete }: { post: any; onLike: (id: string, liked: boolean) => void; onUpdated: () => void; onDelete: (id: string) => void }) => {
   const { i18n } = useTranslation();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
+  const navigate = useNavigate();
   const isArabic = i18n.language === 'ar';
   const [showComments, setShowComments] = useState(false);
   const [viewingBefore, setViewingBefore] = useState(true);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerSrc, setViewerSrc] = useState<string | null>(null);
+  
   const hasTwoImages = (post.attachments?.length || 0) >= 2;
   const hasImages = (post.attachments?.length || 0) > 0;
   const isOwner = user?.id === post.user_id;
+  const canDelete = isOwner || isAdmin;
   const canUpdateResult = isOwner && (post.attachments?.length || 0) < 2 && hasImages;
 
   const school = analysisSchools.find(s => s.value === post.analysis_school);
@@ -355,7 +364,10 @@ const AnalysisCard = ({ post, onLike, onUpdated }: { post: any; onLike: (id: str
     >
       {/* Header */}
       <div className="flex items-center gap-3 p-4 pb-2">
-        <Avatar className="w-10 h-10 ring-2 ring-primary/10">
+        <Avatar
+          className="w-10 h-10 ring-2 ring-primary/10 cursor-pointer hover:ring-primary/30 transition-all"
+          onClick={() => post.user_id && navigate(`/user/${post.user_id}`)}
+        >
           <AvatarImage src={post.profile?.avatar_url || ''} />
           <AvatarFallback className="bg-primary/10 text-primary text-sm font-bold">
             {(post.profile?.display_name || '?')[0]}
@@ -363,7 +375,10 @@ const AnalysisCard = ({ post, onLike, onUpdated }: { post: any; onLike: (id: str
         </Avatar>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
-            <span className="font-semibold text-foreground text-sm truncate">
+            <span
+              className="font-semibold text-foreground text-sm truncate cursor-pointer hover:text-primary transition-colors"
+              onClick={() => post.user_id && navigate(`/user/${post.user_id}`)}
+            >
               {post.profile?.display_name || post.profile?.username || '—'}
             </span>
             {post.profile?.is_verified && <VerifiedBadge size="sm" />}
@@ -508,10 +523,22 @@ const AnalysisCard = ({ post, onLike, onUpdated }: { post: any; onLike: (id: str
             <span className="text-xs font-medium">{post.comments_count || 0}</span>
           </button>
         </div>
-        {/* Update result button for owner */}
-        {canUpdateResult && (
-          <UpdateResultDialog post={post} onUpdated={onUpdated} />
-        )}
+        <div className="flex items-center gap-2">
+          {canUpdateResult && (
+            <UpdateResultDialog post={post} onUpdated={onUpdated} />
+          )}
+          {canDelete && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1.5 text-xs h-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+              onClick={() => onDelete(post.id)}
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              {isArabic ? 'حذف' : 'Delete'}
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Comments */}
@@ -853,6 +880,18 @@ export const UserAnalysesPanel = ({ onBack }: UserAnalysesPanelProps) => {
     queryClient.invalidateQueries({ queryKey: ['community-analyses'] });
   };
 
+  const handleDelete = async (postId: string) => {
+    if (!confirm(isArabic ? 'هل أنت متأكد من حذف هذا التحليل؟' : 'Are you sure you want to delete this analysis?')) return;
+    try {
+      const { error } = await supabase.from('user_posts').delete().eq('id', postId);
+      if (error) throw error;
+      toast.success(isArabic ? 'تم حذف التحليل' : 'Analysis deleted');
+      handleRefetch();
+    } catch {
+      toast.error(isArabic ? 'فشل في الحذف' : 'Delete failed');
+    }
+  };
+
   const handleSubmitRequest = (message: string) => {
     submitRequest.mutate(message, {
       onSuccess: () => {
@@ -992,7 +1031,7 @@ export const UserAnalysesPanel = ({ onBack }: UserAnalysesPanelProps) => {
             </div>
           ) : (
             filteredAnalyses.map((post: any) => (
-              <AnalysisCard key={post.id} post={post} onLike={handleLike} onUpdated={handleRefetch} />
+              <AnalysisCard key={post.id} post={post} onLike={handleLike} onUpdated={handleRefetch} onDelete={handleDelete} />
             ))
           )}
         </div>
