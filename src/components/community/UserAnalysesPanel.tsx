@@ -895,11 +895,17 @@ export const UserAnalysesPanel = ({ onBack }: UserAnalysesPanelProps) => {
 
   const handleSubmitRequest = (message: string) => {
     submitRequest.mutate(message, {
-      onSuccess: () => {
+      onSuccess: (data) => {
+        console.log('[AnalystRequest] Submit success:', data);
         toast.success(isArabic ? 'تم إرسال طلبك بنجاح ✅' : 'Request submitted successfully ✅');
       },
-      onError: () => {
-        toast.error(isArabic ? 'فشل إرسال الطلب' : 'Failed to submit request');
+      onError: (error: any) => {
+        console.error('[AnalystRequest] Submit error:', error);
+        toast.error(
+          isArabic 
+            ? `فشل إرسال الطلب: ${error?.message || 'خطأ غير معروف'}` 
+            : `Failed to submit: ${error?.message || 'Unknown error'}`
+        );
       },
     });
   };
