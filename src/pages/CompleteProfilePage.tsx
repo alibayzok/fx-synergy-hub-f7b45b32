@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { User, Phone, MapPin, Sparkles } from 'lucide-react';
+import { User, Phone, MapPin, Sparkles, Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,7 +27,21 @@ const CompleteProfilePage = () => {
   const [lastName, setLastName] = useState('');
   const [country, setCountry] = useState('');
   const [phone, setPhone] = useState('');
+  const [tradingStyles, setTradingStyles] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const tradingStyleOptions = [
+    { value: 'scalping', ar: 'سكالبينج', en: 'Scalping' },
+    { value: 'day_trading', ar: 'يومي', en: 'Day Trading' },
+    { value: 'swing', ar: 'سوينج', en: 'Swing' },
+    { value: 'position', ar: 'طويل المدى', en: 'Position' },
+  ];
+
+  const toggleStyle = (value: string) => {
+    setTradingStyles(prev =>
+      prev.includes(value) ? prev.filter(s => s !== value) : [...prev, value]
+    );
+  };
 
   // Pre-fill existing data
   useEffect(() => {
@@ -115,6 +130,7 @@ const CompleteProfilePage = () => {
           display_name: displayName,
           country,
           phone: fullPhone,
+          trading_preferences: { trading_styles: tradingStyles } as any,
         })
         .eq('user_id', user.id);
 
@@ -245,6 +261,33 @@ const CompleteProfilePage = () => {
                       required
                     />
                   </div>
+                </div>
+              </div>
+
+              {/* Trading Style - Multi Select */}
+              <div className="space-y-2">
+                <Label className="text-white/60 text-xs">{isRTL ? 'أسلوب التداول (اختر واحد أو أكثر)' : 'Trading Style (select one or more)'}</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {tradingStyleOptions.map(style => (
+                    <button
+                      key={style.value}
+                      type="button"
+                      onClick={() => toggleStyle(style.value)}
+                      className={cn(
+                        "relative px-4 py-3 rounded-xl border text-sm font-medium transition-all text-center",
+                        tradingStyles.includes(style.value)
+                          ? "border-primary bg-primary/15 text-primary"
+                          : "border-white/10 bg-white/[0.04] text-white/60 hover:border-white/20"
+                      )}
+                    >
+                      {isRTL ? style.ar : style.en}
+                      {tradingStyles.includes(style.value) && (
+                        <div className="absolute -top-1.5 -end-1.5 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                          <Check className="w-3 h-3 text-primary-foreground" />
+                        </div>
+                      )}
+                    </button>
+                  ))}
                 </div>
               </div>
 
