@@ -212,19 +212,33 @@ export const AnalystRequestsManagement = () => {
 
   const handleAction = async (id: string, userId: string, status: 'approved' | 'rejected') => {
     const notes = adminNotes[id] || null;
-    const { error } = await supabase
+    const currentUser = (await supabase.auth.getUser()).data.user;
+    
+    console.log('[AnalystRequests] Approving request:', { id, userId, status, adminId: currentUser?.id });
+    
+    const { data: updateData, error, count } = await supabase
       .from('approved_analysts')
       .update({
         status,
         admin_notes: notes,
-        reviewed_by: (await supabase.auth.getUser()).data.user?.id,
+        reviewed_by: currentUser?.id,
         reviewed_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
-      .eq('id', id);
+      .eq('id', id)
+      .select();
+
+    console.log('[AnalystRequests] Update result:', { updateData, error, count });
 
     if (error) {
-      toast.error(isArabic ? 'فشل في تحديث الطلب' : 'Failed to update request');
+      console.error('[AnalystRequests] Update error:', error);
+      toast.error(isArabic ? 'فشل في تحديث الطلب: ' + error.message : 'Failed to update: ' + error.message);
+      return;
+    }
+    
+    if (!updateData || updateData.length === 0) {
+      console.error('[AnalystRequests] No rows updated - RLS may be blocking');
+      toast.error(isArabic ? 'لم يتم تحديث أي صف - تحقق من الصلاحيات' : 'No rows updated - check permissions');
       return;
     }
 
