@@ -58,19 +58,29 @@ const useAnalystStatus = () => {
   const submitRequest = useMutation({
     mutationFn: async (message: string) => {
       if (!user) throw new Error('Not authenticated');
-      if (isRejected && analystRequest) {
+      
+      // Check if a record already exists for this user
+      const { data: existing } = await supabase
+        .from('approved_analysts')
+        .select('id, status')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (existing) {
+        // Update existing record (works for rejected re-apply or any existing record)
         const { error } = await supabase
           .from('approved_analysts')
           .update({ status: 'pending', message: message || null, updated_at: new Date().toISOString(), admin_notes: null, reviewed_by: null, reviewed_at: null } as any)
           .eq('user_id', user.id);
         if (error) {
-          console.error('Analyst re-apply error:', error);
+          console.error('Analyst update error:', error);
           throw error;
         }
       } else {
+        // First time request - insert new record
         const { error } = await supabase
           .from('approved_analysts')
-          .upsert([{ user_id: user.id, message: message || null, status: 'pending' }], { onConflict: 'user_id' });
+          .insert([{ user_id: user.id, message: message || null }]);
         if (error) {
           console.error('Analyst request insert error:', error);
           throw error;
