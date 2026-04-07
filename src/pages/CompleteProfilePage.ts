@@ -15,7 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import appLogo from '@/assets/logo-dark.png';
 
 const CompleteProfilePage = () => {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { profile, loading: profileLoading } = useProfile();
@@ -28,6 +28,7 @@ const CompleteProfilePage = () => {
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Pre-fill existing data
   useEffect(() => {
     if (profile) {
       if (profile.first_name) setFirstName(profile.first_name);
@@ -37,12 +38,14 @@ const CompleteProfilePage = () => {
     }
   }, [profile]);
 
+  // Redirect if not logged in
   useEffect(() => {
     if (!authLoading && !user) {
       navigate('/auth', { replace: true });
     }
   }, [user, authLoading, navigate]);
 
+  // Redirect if profile is already complete
   useEffect(() => {
     if (!profileLoading && profile && profile.first_name && profile.last_name && profile.country && profile.phone) {
       navigate('/', { replace: true });
@@ -62,7 +65,8 @@ const CompleteProfilePage = () => {
 
     setLoading(true);
     try {
-      let cleanPhone = phone.replace(/[\s\-()\]/g, '');
+      // Normalize phone
+      let cleanPhone = phone.replace(/[\s\-()]/g, '');
       if (selectedCountry) {
         const dialDigits = selectedCountry.dialCode.replace('+', '');
         if (cleanPhone.startsWith('+')) {
@@ -77,6 +81,7 @@ const CompleteProfilePage = () => {
       }
       const fullPhone = selectedCountry ? `${selectedCountry.dialCode}${cleanPhone}` : cleanPhone;
 
+      // Check duplicate phone
       if (cleanPhone) {
         const dialDigits = selectedCountry?.dialCode?.replace('+', '') || '';
         const phoneVariants = [
@@ -119,7 +124,7 @@ const CompleteProfilePage = () => {
         toast({ title: isRTL ? '✅ تم حفظ البيانات بنجاح' : '✅ Profile updated successfully' });
         navigate('/', { replace: true });
       }
-    } catch {
+    } catch (err) {
       toast({ title: isRTL ? 'حدث خطأ' : 'Error', variant: 'destructive' });
     } finally {
       setLoading(false);
@@ -137,16 +142,31 @@ const CompleteProfilePage = () => {
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden" dir={isRTL ? 'rtl' : 'ltr'}
       style={{ background: 'linear-gradient(145deg, #050508 0%, #0a0a12 30%, #0d0b14 60%, #080810 100%)' }}>
+      
+      {/* Ambient light */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full opacity-20 blur-[120px]"
         style={{ background: 'radial-gradient(circle, hsl(var(--primary)) 0%, transparent 70%)' }} />
+
       <div className="flex-1 flex items-center justify-center p-6 relative z-10">
-        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="w-full max-w-md">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="w-full max-w-md"
+        >
           <div className="relative rounded-3xl border border-white/[0.08] p-8 space-y-7"
-            style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)', backdropFilter: 'blur(40px)', boxShadow: '0 25px 60px -12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05)' }}>
+            style={{
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)',
+              backdropFilter: 'blur(40px)',
+              boxShadow: '0 25px 60px -12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05)',
+            }}>
+
+            {/* Logo & Title */}
             <div className="text-center space-y-4">
               <img src={appLogo} alt="Logo" className="h-20 w-20 mx-auto rounded-full border-2 border-primary/40" />
               <div>
-                <h1 className="text-2xl font-bold" style={{ background: 'linear-gradient(135deg, hsl(45, 80%, 65%), hsl(var(--primary)))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                <h1 className="text-2xl font-bold"
+                  style={{ background: 'linear-gradient(135deg, hsl(45, 80%, 65%), hsl(var(--primary)))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                   {isRTL ? 'أكمل بياناتك' : 'Complete Your Profile'}
                 </h1>
                 <p className="text-sm text-white/40 mt-1 flex items-center justify-center gap-1.5">
@@ -155,21 +175,39 @@ const CompleteProfilePage = () => {
                 </p>
               </div>
             </div>
+
             <form onSubmit={handleSubmit} className="space-y-5">
+              {/* First Name */}
               <div className="space-y-2">
                 <Label className="text-white/60 text-xs">{isRTL ? 'الاسم الأول' : 'First Name'}</Label>
                 <div className="relative">
                   <User className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-                  <Input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder={isRTL ? 'أدخل اسمك الأول' : 'Enter your first name'} className="ps-10 h-12 rounded-xl border-white/10 bg-white/[0.04] text-white placeholder:text-white/20" required />
+                  <Input
+                    value={firstName}
+                    onChange={e => setFirstName(e.target.value)}
+                    placeholder={isRTL ? 'أدخل اسمك الأول' : 'Enter your first name'}
+                    className="ps-10 h-12 rounded-xl border-white/10 bg-white/[0.04] text-white placeholder:text-white/20"
+                    required
+                  />
                 </div>
               </div>
+
+              {/* Last Name */}
               <div className="space-y-2">
                 <Label className="text-white/60 text-xs">{isRTL ? 'الكنية' : 'Last Name'}</Label>
                 <div className="relative">
                   <User className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-                  <Input value={lastName} onChange={e => setLastName(e.target.value)} placeholder={isRTL ? 'أدخل كنيتك' : 'Enter your last name'} className="ps-10 h-12 rounded-xl border-white/10 bg-white/[0.04] text-white placeholder:text-white/20" required />
+                  <Input
+                    value={lastName}
+                    onChange={e => setLastName(e.target.value)}
+                    placeholder={isRTL ? 'أدخل كنيتك' : 'Enter your last name'}
+                    className="ps-10 h-12 rounded-xl border-white/10 bg-white/[0.04] text-white placeholder:text-white/20"
+                    required
+                  />
                 </div>
               </div>
+
+              {/* Country */}
               <div className="space-y-2">
                 <Label className="text-white/60 text-xs">{isRTL ? 'الدولة' : 'Country'}</Label>
                 <Select value={country} onValueChange={setCountry}>
@@ -188,6 +226,8 @@ const CompleteProfilePage = () => {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Phone */}
               <div className="space-y-2">
                 <Label className="text-white/60 text-xs">{isRTL ? 'رقم الهاتف' : 'Phone Number'}</Label>
                 <div className="flex gap-2">
@@ -196,12 +236,30 @@ const CompleteProfilePage = () => {
                   </div>
                   <div className="relative flex-1">
                     <Phone className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-                    <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder={isRTL ? 'رقم الهاتف' : 'Phone number'} className="ps-10 h-12 rounded-xl border-white/10 bg-white/[0.04] text-white placeholder:text-white/20" dir="ltr" required />
+                    <Input
+                      value={phone}
+                      onChange={e => setPhone(e.target.value)}
+                      placeholder={isRTL ? 'رقم الهاتف' : 'Phone number'}
+                      className="ps-10 h-12 rounded-xl border-white/10 bg-white/[0.04] text-white placeholder:text-white/20"
+                      dir="ltr"
+                      required
+                    />
                   </div>
                 </div>
               </div>
-              <Button type="submit" className="w-full h-12 rounded-xl text-base font-semibold border-0 transition-all duration-300" style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(45, 70%, 40%))', boxShadow: '0 8px 30px hsl(var(--primary) / 0.4)' }} disabled={loading}>
-                {loading ? (isRTL ? 'جاري الحفظ...' : 'Saving...') : (isRTL ? 'حفظ ومتابعة' : 'Save & Continue')}
+
+              <Button
+                type="submit"
+                className="w-full h-12 rounded-xl text-base font-semibold border-0 transition-all duration-300"
+                style={{
+                  background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(45, 70%, 40%))',
+                  boxShadow: '0 8px 30px hsl(var(--primary) / 0.4)',
+                }}
+                disabled={loading}
+              >
+                {loading
+                  ? (isRTL ? 'جاري الحفظ...' : 'Saving...')
+                  : (isRTL ? 'حفظ ومتابعة' : 'Save & Continue')}
               </Button>
             </form>
           </div>
