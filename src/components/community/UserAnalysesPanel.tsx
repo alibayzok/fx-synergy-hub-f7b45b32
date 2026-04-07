@@ -167,10 +167,11 @@ const RequestAnalystDialog = ({ isPending, isRejected, onSubmit, isSubmitting, i
   );
 };
 
-const assetTypes: { value: AssetType; label: string; emoji: string }[] = [
-  { value: 'forex', label: 'Forex', emoji: '💱' },
-  { value: 'crypto', label: 'Crypto', emoji: '₿' },
-  { value: 'metals', label: 'Metals', emoji: '🥇' },
+const assetTypes: { value: AssetType; label: string; labelAr: string; emoji: string }[] = [
+  { value: 'forex', label: 'Forex', labelAr: 'فوركس', emoji: '💱' },
+  { value: 'metals', label: 'Metals', labelAr: 'معادن', emoji: '🥇' },
+  { value: 'crypto', label: 'Crypto', labelAr: 'كريبتو', emoji: '₿' },
+  { value: 'indices', label: 'Indices', labelAr: 'مؤشرات', emoji: '📈' },
 ];
 
 const timeframes: Timeframe[] = ['M5', 'M15', 'H1', 'H4', 'D1'];
@@ -856,11 +857,14 @@ export const UserAnalysesPanel = ({ onBack }: UserAnalysesPanelProps) => {
   const { data: analyses = [], isLoading, refetch } = useCommunityAnalyses();
   const queryClient = useQueryClient();
   const [activeSchool, setActiveSchool] = useState<AnalysisSchool | 'all'>('all');
+  const [activeAssetType, setActiveAssetType] = useState<AssetType | 'all'>('all');
   const { isApproved, isPending, isRejected, submitRequest } = useAnalystStatus();
 
-  const filteredAnalyses = activeSchool === 'all'
-    ? analyses
-    : analyses.filter((a: any) => a.analysis_school === activeSchool);
+  const filteredAnalyses = analyses.filter((a: any) => {
+    if (activeSchool !== 'all' && a.analysis_school !== activeSchool) return false;
+    if (activeAssetType !== 'all' && a.asset_type !== activeAssetType) return false;
+    return true;
+  });
 
   const handleLike = async (postId: string, isLiked: boolean) => {
     if (!user) return;
@@ -948,6 +952,43 @@ export const UserAnalysesPanel = ({ onBack }: UserAnalysesPanelProps) => {
                   isSuccess={submitRequest.isSuccess}
                 />
           )}
+        </div>
+
+        {/* Asset Type Filter */}
+        <div className="px-4 pb-2">
+          <ScrollArea className="w-full" dir="ltr">
+            <div className="flex gap-2 pb-1" dir={isArabic ? 'rtl' : 'ltr'}>
+              <button
+                onClick={() => setActiveAssetType('all')}
+                className={cn(
+                  'px-3 py-1.5 rounded-full text-xs font-medium border whitespace-nowrap transition-all shrink-0',
+                  activeAssetType === 'all'
+                    ? 'bg-primary/10 text-primary border-primary/30 ring-1 ring-primary/20'
+                    : 'bg-muted/50 text-muted-foreground border-border/50 hover:bg-muted'
+                )}
+              >
+                📊 {isArabic ? 'كل الأصول' : 'All Assets'}
+              </button>
+              {assetTypes.map(at => {
+                const count = analyses.filter((a: any) => a.asset_type === at.value).length;
+                return (
+                  <button
+                    key={at.value}
+                    onClick={() => setActiveAssetType(at.value)}
+                    className={cn(
+                      'px-3 py-1.5 rounded-full text-xs font-medium border whitespace-nowrap transition-all shrink-0',
+                      activeAssetType === at.value
+                        ? 'bg-primary/10 text-primary border-primary/30 ring-1 ring-primary/20'
+                        : 'bg-muted/50 text-muted-foreground border-border/50 hover:bg-muted'
+                    )}
+                  >
+                    {at.emoji} {isArabic ? at.labelAr : at.label}
+                    {count > 0 && <span className="ms-1 opacity-70">({count})</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </ScrollArea>
         </div>
 
         {/* School Filter Tabs */}
