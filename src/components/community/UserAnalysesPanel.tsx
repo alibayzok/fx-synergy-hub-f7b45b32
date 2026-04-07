@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, ArrowRight, Plus, TrendingUp, Heart, MessageCircle,
   Image, Send, X, Loader2, Sparkles, BarChart3, Clock, Eye,
-  ArrowLeftRight, Upload, GraduationCap, RefreshCw
+  ArrowLeftRight, Upload, GraduationCap, RefreshCw, ShieldCheck, Clock3
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,6 +29,136 @@ import { ar, enUS } from 'date-fns/locale';
 import { PremiumImageViewer } from '@/components/ui/premium-image-viewer';
 import { VerifiedBadge } from '@/components/ui/verified-badge';
 import { toast } from 'sonner';
+
+// ── Analyst Approval Hook ────────────────────────────────────────────────
+const useAnalystStatus = () => {
+  const { user, isAdmin } = useAuth();
+  const queryClient = useQueryClient();
+
+  const { data: analystRequest, isLoading } = useQuery({
+    queryKey: ['analyst-status', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data, error } = await supabase
+        .from('approved_analysts')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const isApproved = isAdmin || analystRequest?.status === 'approved';
+  const isPending = analystRequest?.status === 'pending';
+  const isRejected = analystRequest?.status === 'rejected';
+
+  const submitRequest = useMutation({
+    mutationFn: async (message: string) => {
+      if (!user) throw new Error('Not authenticated');
+      if (isRejected && analystRequest) {
+        // Re-apply: update existing record back to pending
+        const { error } = await supabase
+          .from('approved_analysts')
+          .update({ status: 'pending', message: message || null, updated_at: new Date().toISOString(), admin_notes: null, reviewed_by: null, reviewed_at: null } as any)
+          .eq('user_id', user.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('approved_analysts')
+          .insert({ user_id: user.id, message: message || null });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['analyst-status'] });
+    },
+  });
+
+  return { analystRequest, isApproved, isPending, isRejected, isLoading, submitRequest };
+};
+
+// ── Request Analyst Dialog ───────────────────────────────────────────────
+const RequestAnalystDialog = ({ isPending, isRejected, onSubmit, isSubmitting }: {
+  isPending: boolean;
+  isRejected: boolean;
+  onSubmit: (message: string) => void;
+  isSubmitting: boolean;
+}) => {
+  const { i18n } = useTranslation();
+  const isArabic = i18n.language === 'ar';
+  const [open, setOpen] = useState(false);
+  const [message, setMessage] = useState('');
+
+  if (isPending) {
+    return (
+      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20">
+        <Clock3 className="w-4 h-4 text-amber-500" />
+        <span className="text-xs font-medium text-amber-600">
+          {isArabic ? 'طلبك قيد المراجعة' : 'Request pending'}
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button className="gap-2 shadow-lg shadow-primary/20" variant={isRejected ? 'outline' : 'default'}>
+          <ShieldCheck className="w-4 h-4" />
+          {isRejected
+            ? (isArabic ? 'أعد تقديم الطلب' : 'Re-apply')
+            : (isArabic ? 'طلب صلاحية نشر' : 'Request Access')
+          }
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <ShieldCheck className="w-5 h-5 text-primary" />
+            {isArabic ? 'طلب صلاحية محلل معتمد' : 'Request Approved Analyst'}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            {isArabic
+              ? 'لنشر تحليلاتك في الساحة، تحتاج موافقة الإدارة. قدّم طلبك وسيتم مراجعته.'
+              : 'To publish analyses in the arena, you need admin approval. Submit your request and it will be reviewed.'}
+          </p>
+          {isRejected && (
+            <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+              <p className="text-xs text-destructive font-medium">
+                {isArabic ? 'تم رفض طلبك السابق. يمكنك إعادة التقديم.' : 'Your previous request was rejected. You can re-apply.'}
+              </p>
+            </div>
+          )}
+          <div className="space-y-1.5">
+            <Label className="text-xs">{isArabic ? 'رسالة (اختياري)' : 'Message (optional)'}</Label>
+            <Textarea
+              value={message}
+              onChange={e => setMessage(e.target.value)}
+              placeholder={isArabic ? 'اشرح خبرتك في التحليل...' : 'Describe your analysis experience...'}
+              className="min-h-[80px] resize-none text-sm"
+            />
+          </div>
+          <Button
+            onClick={() => {
+              onSubmit(message);
+              setOpen(false);
+              setMessage('');
+            }}
+            disabled={isSubmitting}
+            className="w-full gap-2"
+          >
+            {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            {isArabic ? 'إرسال الطلب' : 'Submit Request'}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 const assetTypes: { value: AssetType; label: string; emoji: string }[] = [
   { value: 'forex', label: 'Forex', emoji: '💱' },
@@ -698,6 +828,7 @@ export const UserAnalysesPanel = ({ onBack }: UserAnalysesPanelProps) => {
   const { data: analyses = [], isLoading, refetch } = useCommunityAnalyses();
   const queryClient = useQueryClient();
   const [activeSchool, setActiveSchool] = useState<AnalysisSchool | 'all'>('all');
+  const { isApproved, isPending, isRejected, submitRequest } = useAnalystStatus();
 
   const filteredAnalyses = activeSchool === 'all'
     ? analyses
@@ -720,6 +851,17 @@ export const UserAnalysesPanel = ({ onBack }: UserAnalysesPanelProps) => {
   const handleRefetch = () => {
     refetch();
     queryClient.invalidateQueries({ queryKey: ['community-analyses'] });
+  };
+
+  const handleSubmitRequest = (message: string) => {
+    submitRequest.mutate(message, {
+      onSuccess: () => {
+        toast.success(isArabic ? 'تم إرسال طلبك بنجاح ✅' : 'Request submitted successfully ✅');
+      },
+      onError: () => {
+        toast.error(isArabic ? 'فشل إرسال الطلب' : 'Failed to submit request');
+      },
+    });
   };
 
   const BackIcon = isArabic ? ArrowRight : ArrowLeft;
@@ -749,7 +891,16 @@ export const UserAnalysesPanel = ({ onBack }: UserAnalysesPanelProps) => {
               </p>
             </div>
           </div>
-          {user && <CreateAnalysisDialog onCreated={handleRefetch} />}
+          {user && (
+            isApproved
+              ? <CreateAnalysisDialog onCreated={handleRefetch} />
+              : <RequestAnalystDialog
+                  isPending={isPending}
+                  isRejected={isRejected}
+                  onSubmit={handleSubmitRequest}
+                  isSubmitting={submitRequest.isPending}
+                />
+          )}
         </div>
 
         {/* School Filter Tabs */}
