@@ -52,16 +52,15 @@ const HomePage = () => {
   const [articlesLoading, setArticlesLoading] = useState(true);
 
   useEffect(() => {
-    if (user && !profileLoading && profile) {
-      // Check if essential profile data is missing (e.g. Google sign-in without filling details)
-      const isProfileIncomplete = !profile.first_name || !profile.last_name || !profile.country || !profile.phone;
-      if (isProfileIncomplete) {
-        navigate('/complete-profile', { replace: true });
-        return;
-      }
-      if (!profile.onboarding_completed) {
-        navigate('/onboarding', { replace: true });
-      }
+    if (!user || profileLoading) return;
+    
+    // If profile doesn't exist yet or essential data is missing, redirect to complete profile
+    if (!profile || !profile.first_name || !profile.last_name || !profile.country || !profile.phone) {
+      navigate('/complete-profile', { replace: true });
+      return;
+    }
+    if (!profile.onboarding_completed) {
+      navigate('/onboarding', { replace: true });
     }
   }, [user, profile, profileLoading, navigate]);
 
