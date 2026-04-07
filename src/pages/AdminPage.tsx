@@ -25,6 +25,7 @@ import { ArticlesManagement } from '@/components/admin/ArticlesManagement';
 import { ServicesAndBrokersManagement } from '@/components/admin/ServicesAndBrokersManagement';
 import { VerificationManagement } from '@/components/admin/VerificationManagement';
 import { ReferralManagement } from '@/components/admin/ReferralManagement';
+import { CommunityManagement } from '@/components/admin/CommunityManagement';
 
 const contentSections = [
   {
@@ -36,6 +37,7 @@ const contentSections = [
       { value: 'signals', icon: Radio, label: 'الإشارات', labelEn: 'Signals', color: 'from-emerald-500/20 to-green-500/20', iconColor: 'text-emerald-500', borderColor: 'border-emerald-500/20' },
       { value: 'articles', icon: FileText, label: 'المقالات', labelEn: 'Articles', color: 'from-violet-500/20 to-purple-500/20', iconColor: 'text-violet-500', borderColor: 'border-violet-500/20' },
       { value: 'courses', icon: GraduationCap, label: 'الكورسات', labelEn: 'Courses', color: 'from-amber-500/20 to-yellow-500/20', iconColor: 'text-amber-500', borderColor: 'border-amber-500/20' },
+      { value: 'community', icon: Users, label: 'المجتمع', labelEn: 'Community', color: 'from-cyan-500/20 to-teal-500/20', iconColor: 'text-cyan-500', borderColor: 'border-cyan-500/20' },
       { value: 'moderation', icon: AlertTriangle, label: 'المخالفات', labelEn: 'Moderation', color: 'from-red-500/20 to-rose-500/20', iconColor: 'text-red-500', borderColor: 'border-red-500/20' },
     ],
   },
@@ -68,6 +70,7 @@ const componentMap: Record<string, React.FC> = {
   export: DatabaseExport,
   verification: VerificationManagement,
   referrals: ReferralManagement,
+  community: CommunityManagement,
 };
 
 const AdminPage = () => {
