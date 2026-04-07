@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ShieldCheck, Check, X, Clock, MessageSquare, Phone, Mail, Send, RefreshCw, Trash2 } from 'lucide-react';
@@ -163,14 +163,16 @@ export const AnalystRequestsManagement = () => {
   const { data: requests = [], isLoading, error: fetchError, refetch } = useQuery({
     queryKey: ['admin-analyst-requests'],
     queryFn: async () => {
+      console.log('[AnalystRequests] Fetching approved_analysts...');
       const { data, error } = await supabase
         .from('approved_analysts')
         .select('*')
         .order('created_at', { ascending: false });
       if (error) {
-        console.error('Error fetching analyst requests:', error);
+        console.error('[AnalystRequests] Error fetching:', error);
         throw error;
       }
+      console.log('[AnalystRequests] Fetched rows:', data?.length, data);
 
       const userIds = data?.map(r => r.user_id) || [];
       if (userIds.length === 0) return [];
@@ -188,6 +190,25 @@ export const AnalystRequestsManagement = () => {
       }));
     },
   });
+
+  // Realtime subscription to auto-refresh when new requests arrive
+  useEffect(() => {
+    const channel = supabase
+      .channel('analyst-requests-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'approved_analysts' },
+        (payload) => {
+          console.log('[AnalystRequests] Realtime event:', payload);
+          queryClient.invalidateQueries({ queryKey: ['admin-analyst-requests'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const handleAction = async (id: string, userId: string, status: 'approved' | 'rejected') => {
     const notes = adminNotes[id] || null;
