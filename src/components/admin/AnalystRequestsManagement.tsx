@@ -1,16 +1,161 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ShieldCheck, Check, X, Clock, MessageSquare } from 'lucide-react';
+import { ShieldCheck, Check, X, Clock, MessageSquare, Phone, Mail, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger
+} from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
 
+// ── Contact User Dialog ──────────────────────────────────────────────────
+const ContactUserDialog = ({ userId, displayName, isArabic }: {
+  userId: string;
+  displayName: string;
+  isArabic: boolean;
+}) => {
+  const [open, setOpen] = useState(false);
+  const [messageContent, setMessageContent] = useState('');
+  const [senderName, setSenderName] = useState(isArabic ? 'إدارة المنصة' : 'Platform Admin');
+  const [sending, setSending] = useState(false);
+
+  const handleSendMessage = async () => {
+    if (!messageContent.trim()) return;
+    setSending(true);
+    try {
+      // Get current admin user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      // Find or create a conversation with this user
+      // First check if a direct conversation already exists
+      const { data: existingConvs } = await supabase
+        .from('conversation_participants')
+        .select('conversation_id')
+        .eq('user_id', user.id);
+
+      let conversationId: string | null = null;
+
+      if (existingConvs && existingConvs.length > 0) {
+        const convIds = existingConvs.map(c => c.conversation_id);
+        const { data: sharedConv } = await supabase
+          .from('conversation_participants')
+          .select('conversation_id')
+          .eq('user_id', userId)
+          .in('conversation_id', convIds);
+
+        if (sharedConv && sharedConv.length > 0) {
+          conversationId = sharedConv[0].conversation_id;
+        }
+      }
+
+      // If no existing conversation, create one
+      if (!conversationId) {
+        const { data: newConv, error: convError } = await supabase
+          .from('conversations')
+          .insert([{ created_by: user.id, type: 'direct' as any, name: null }])
+          .select('id')
+          .single();
+
+        if (convError) throw convError;
+        conversationId = newConv.id;
+
+        // Add both participants
+        await supabase
+          .from('conversation_participants')
+          .insert([
+            { conversation_id: conversationId, user_id: user.id, is_admin: true },
+            { conversation_id: conversationId, user_id: userId, is_admin: false },
+          ]);
+      }
+
+      // Send the message with the custom sender name prefix
+      const fullMessage = `[${senderName}]: ${messageContent}`;
+      const { error: msgError } = await supabase
+        .from('direct_messages')
+        .insert([{
+          conversation_id: conversationId,
+          sender_id: user.id,
+          content: fullMessage,
+        }]);
+
+      if (msgError) throw msgError;
+
+      toast.success(isArabic ? 'تم إرسال الرسالة ✅' : 'Message sent ✅');
+      setOpen(false);
+      setMessageContent('');
+    } catch (error: any) {
+      console.error('Error sending message:', error);
+      toast.error(isArabic ? 'فشل إرسال الرسالة' : 'Failed to send message');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+          <MessageSquare className="w-3.5 h-3.5" />
+          {isArabic ? 'مراسلة' : 'Message'}
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-sm">
+            <Mail className="w-4 h-4 text-primary" />
+            {isArabic ? `مراسلة ${displayName}` : `Message ${displayName}`}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 pt-2">
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">
+              {isArabic ? 'اسم المرسل' : 'Sender Name'}
+            </label>
+            <Input
+              value={senderName}
+              onChange={e => setSenderName(e.target.value)}
+              placeholder={isArabic ? 'إدارة المنصة' : 'Platform Admin'}
+              className="text-sm h-9"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">
+              {isArabic ? 'الرسالة' : 'Message'}
+            </label>
+            <Textarea
+              value={messageContent}
+              onChange={e => setMessageContent(e.target.value)}
+              placeholder={isArabic ? 'اكتب رسالتك هنا...' : 'Write your message here...'}
+              className="min-h-[100px] resize-none text-sm"
+            />
+          </div>
+          <Button
+            onClick={handleSendMessage}
+            disabled={!messageContent.trim() || sending}
+            className="w-full gap-2"
+          >
+            {sending ? (
+              <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
+            {isArabic ? 'إرسال' : 'Send'}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// ── Main Component ───────────────────────────────────────────────────────
 export const AnalystRequestsManagement = () => {
   const { i18n } = useTranslation();
   const isArabic = i18n.language === 'ar';
@@ -31,7 +176,7 @@ export const AnalystRequestsManagement = () => {
 
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('user_id, display_name, username, avatar_url')
+        .select('user_id, display_name, username, avatar_url, phone, country')
         .in('user_id', userIds);
 
       const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
@@ -57,8 +202,28 @@ export const AnalystRequestsManagement = () => {
       .eq('id', id);
 
     if (error) {
-      toast.error('فشل في تحديث الطلب');
+      toast.error(isArabic ? 'فشل في تحديث الطلب' : 'Failed to update request');
       return;
+    }
+
+    // Send notification to the user
+    try {
+      const notifTitle = status === 'approved'
+        ? (isArabic ? 'تم قبول طلبك كمحلل ✅' : 'Analyst request approved ✅')
+        : (isArabic ? 'تم رفض طلبك كمحلل ❌' : 'Analyst request rejected ❌');
+      const notifMessage = status === 'approved'
+        ? (isArabic ? 'تهانينا! تم اعتمادك كمحلل معتمد. يمكنك الآن نشر تحليلاتك.' : 'Congratulations! You are now an approved analyst.')
+        : (isArabic ? 'للأسف تم رفض طلبك.' + (notes ? ' السبب: ' + notes : '') : 'Unfortunately your request was rejected.' + (notes ? ' Reason: ' + notes : ''));
+
+      await supabase.from('user_notifications').insert([{
+        user_id: userId,
+        type: 'analyst_status',
+        title: notifTitle,
+        message: notifMessage,
+        data: { status, admin_notes: notes },
+      }]);
+    } catch (e) {
+      console.error('Error sending notification:', e);
     }
 
     toast.success(status === 'approved'
@@ -111,6 +276,7 @@ export const AnalystRequestsManagement = () => {
         <div className="space-y-3">
           {[...pending, ...others].map(req => (
             <div key={req.id} className="rounded-xl border border-border/50 bg-card p-4 space-y-3">
+              {/* User info row */}
               <div className="flex items-center gap-3">
                 <Avatar className="w-10 h-10">
                   <AvatarImage src={req.profile?.avatar_url || ''} />
@@ -122,13 +288,18 @@ export const AnalystRequestsManagement = () => {
                   <span className="font-semibold text-sm">
                     {req.profile?.display_name || req.profile?.username || 'Unknown'}
                   </span>
-                  <p className="text-[11px] text-muted-foreground">
-                    {formatDistanceToNow(new Date(req.created_at), { addSuffix: true, locale: isArabic ? ar : enUS })}
-                  </p>
+                  {req.profile?.username && (
+                    <span className="text-[11px] text-muted-foreground ms-1.5">@{req.profile.username}</span>
+                  )}
+                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                    <span>{formatDistanceToNow(new Date(req.created_at), { addSuffix: true, locale: isArabic ? ar : enUS })}</span>
+                    {req.profile?.country && <span>· {req.profile.country}</span>}
+                  </div>
                 </div>
                 {statusBadge(req.status)}
               </div>
 
+              {/* User message */}
               {req.message && (
                 <div className="flex gap-2 items-start p-3 rounded-lg bg-muted/50">
                   <MessageSquare className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
@@ -136,6 +307,27 @@ export const AnalystRequestsManagement = () => {
                 </div>
               )}
 
+              {/* Contact options - always visible */}
+              <div className="flex gap-2 flex-wrap">
+                <ContactUserDialog
+                  userId={req.user_id}
+                  displayName={req.profile?.display_name || req.profile?.username || 'User'}
+                  isArabic={isArabic}
+                />
+                {req.profile?.phone && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-xs"
+                    onClick={() => window.open(`tel:${req.profile.phone}`, '_blank')}
+                  >
+                    <Phone className="w-3.5 h-3.5" />
+                    {isArabic ? 'اتصال' : 'Call'}
+                  </Button>
+                )}
+              </div>
+
+              {/* Actions for pending */}
               {req.status === 'pending' && (
                 <div className="space-y-2">
                   <Textarea
@@ -164,6 +356,17 @@ export const AnalystRequestsManagement = () => {
                 </div>
               )}
 
+              {/* Admin notes display for reviewed */}
+              {req.status !== 'pending' && req.admin_notes && (
+                <div className="p-2.5 rounded-lg bg-muted/30 border border-border/30">
+                  <p className="text-[11px] text-muted-foreground">
+                    <span className="font-medium">{isArabic ? 'ملاحظات: ' : 'Notes: '}</span>
+                    {req.admin_notes}
+                  </p>
+                </div>
+              )}
+
+              {/* Delete for reviewed */}
               {req.status !== 'pending' && (
                 <div className="flex justify-end">
                   <Button variant="ghost" size="sm" className="text-xs text-destructive" onClick={() => handleDelete(req.id)}>
