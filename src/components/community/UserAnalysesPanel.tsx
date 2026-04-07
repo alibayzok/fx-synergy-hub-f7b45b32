@@ -59,36 +59,17 @@ const useAnalystStatus = () => {
     mutationFn: async (message: string) => {
       if (!user) throw new Error('Not authenticated');
       
-      // Check if a record already exists for this user
-      const { data: existing } = await supabase
-        .from('approved_analysts')
-        .select('id, status')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      const { data, error } = await supabase.rpc('submit_analyst_request', {
+        p_message: message || null,
+      });
       
-      if (existing) {
-        // Update existing record (works for rejected re-apply or any existing record)
-        const { error } = await supabase
-          .from('approved_analysts')
-          .update({ status: 'pending', message: message || null, updated_at: new Date().toISOString(), admin_notes: null, reviewed_by: null, reviewed_at: null } as any)
-          .eq('user_id', user.id);
-        if (error) {
-          console.error('Analyst update error:', error);
-          throw error;
-        }
-      } else {
-        // First time request - insert new record
-        console.log('Inserting new analyst request for user:', user.id);
-        const { data: insertData, error } = await supabase
-          .from('approved_analysts')
-          .insert([{ user_id: user.id, message: message || null }])
-          .select();
-        if (error) {
-          console.error('Analyst request insert error:', error);
-          throw error;
-        }
-        console.log('Insert result:', insertData);
+      if (error) {
+        console.error('Analyst request error:', error);
+        throw error;
       }
+      
+      console.log('Analyst request result:', data);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['analyst-status'] });
