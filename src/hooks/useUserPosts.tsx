@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { moderateImage, type ModerationResult } from '@/lib/image-moderation';
 export type PostVisibility = 'everyone' | 'friends_only' | 'followers_only' | 'nobody';
-export type AssetType = 'forex' | 'metals' | 'crypto';
+export type AssetType = 'forex' | 'metals' | 'crypto' | 'indices';
 export type Timeframe = 'M5' | 'M15' | 'H1' | 'H4' | 'D1';
 
 export interface UserPost {
