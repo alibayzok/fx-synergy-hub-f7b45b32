@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ShieldCheck, Check, X, Clock, MessageSquare, Phone, Mail, Send } from 'lucide-react';
+import { ShieldCheck, Check, X, Clock, MessageSquare, Phone, Mail, Send, RefreshCw, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,6 +10,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger
 } from '@/components/ui/dialog';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
+} from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
@@ -30,12 +34,9 @@ const ContactUserDialog = ({ userId, displayName, isArabic }: {
     if (!messageContent.trim()) return;
     setSending(true);
     try {
-      // Get current admin user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Find or create a conversation with this user
-      // First check if a direct conversation already exists
       const { data: existingConvs } = await supabase
         .from('conversation_participants')
         .select('conversation_id')
@@ -56,7 +57,6 @@ const ContactUserDialog = ({ userId, displayName, isArabic }: {
         }
       }
 
-      // If no existing conversation, create one
       if (!conversationId) {
         const { data: newConv, error: convError } = await supabase
           .from('conversations')
@@ -67,7 +67,6 @@ const ContactUserDialog = ({ userId, displayName, isArabic }: {
         if (convError) throw convError;
         conversationId = newConv.id;
 
-        // Add both participants
         await supabase
           .from('conversation_participants')
           .insert([
@@ -76,7 +75,6 @@ const ContactUserDialog = ({ userId, displayName, isArabic }: {
           ]);
       }
 
-      // Send the message with the custom sender name prefix
       const fullMessage = `[${senderName}]: ${messageContent}`;
       const { error: msgError } = await supabase
         .from('direct_messages')
@@ -162,14 +160,17 @@ export const AnalystRequestsManagement = () => {
   const queryClient = useQueryClient();
   const [adminNotes, setAdminNotes] = useState<Record<string, string>>({});
 
-  const { data: requests = [], isLoading } = useQuery({
+  const { data: requests = [], isLoading, error: fetchError, refetch } = useQuery({
     queryKey: ['admin-analyst-requests'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('approved_analysts')
         .select('*')
         .order('created_at', { ascending: false });
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching analyst requests:', error);
+        throw error;
+      }
 
       const userIds = data?.map(r => r.user_id) || [];
       if (userIds.length === 0) return [];
@@ -206,7 +207,6 @@ export const AnalystRequestsManagement = () => {
       return;
     }
 
-    // Send notification to the user
     try {
       const notifTitle = status === 'approved'
         ? (isArabic ? 'تم قبول طلبك كمحلل ✅' : 'Analyst request approved ✅')
@@ -234,9 +234,13 @@ export const AnalystRequestsManagement = () => {
   };
 
   const handleDelete = async (id: string) => {
-    await supabase.from('approved_analysts').delete().eq('id', id);
+    const { error } = await supabase.from('approved_analysts').delete().eq('id', id);
+    if (error) {
+      toast.error(isArabic ? 'فشل في الحذف' : 'Failed to delete');
+      return;
+    }
     queryClient.invalidateQueries({ queryKey: ['admin-analyst-requests'] });
-    toast.success(isArabic ? 'تم الحذف' : 'Deleted');
+    toast.success(isArabic ? 'تم الحذف ✅' : 'Deleted ✅');
   };
 
   const statusBadge = (status: string) => {
@@ -255,23 +259,40 @@ export const AnalystRequestsManagement = () => {
     <div className="space-y-6" dir={isArabic ? 'rtl' : 'ltr'}>
       <div className="flex items-center gap-3">
         <ShieldCheck className="w-6 h-6 text-primary" />
-        <div>
+        <div className="flex-1">
           <h2 className="text-lg font-bold">{isArabic ? 'طلبات المحللين' : 'Analyst Requests'}</h2>
           <p className="text-xs text-muted-foreground">
             {isArabic ? 'إدارة طلبات الانضمام كمحلل معتمد' : 'Manage analyst approval requests'}
           </p>
         </div>
-        {pending.length > 0 && (
-          <Badge className="bg-amber-500 text-white ms-auto">{pending.length} {isArabic ? 'معلق' : 'pending'}</Badge>
-        )}
+        <div className="flex items-center gap-2">
+          {pending.length > 0 && (
+            <Badge className="bg-amber-500 text-white">{pending.length} {isArabic ? 'معلق' : 'pending'}</Badge>
+          )}
+          <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-1.5">
+            <RefreshCw className="w-3.5 h-3.5" />
+            {isArabic ? 'تحديث' : 'Refresh'}
+          </Button>
+        </div>
       </div>
+
+      {fetchError && (
+        <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs">
+          {isArabic ? 'خطأ في جلب البيانات: ' : 'Error fetching data: '}{(fetchError as Error).message}
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
       ) : requests.length === 0 ? (
-        <p className="text-center text-muted-foreground py-8">{isArabic ? 'لا توجد طلبات' : 'No requests'}</p>
+        <div className="text-center py-8 space-y-2">
+          <p className="text-muted-foreground">{isArabic ? 'لا توجد طلبات حالياً' : 'No requests currently'}</p>
+          <p className="text-xs text-muted-foreground/60">
+            {isArabic ? 'ستظهر الطلبات هنا عندما يتقدم مستخدم بطلب ليصبح محلل معتمد' : 'Requests will appear here when users apply to become analysts'}
+          </p>
+        </div>
       ) : (
         <div className="space-y-3">
           {[...pending, ...others].map(req => (
@@ -307,7 +328,7 @@ export const AnalystRequestsManagement = () => {
                 </div>
               )}
 
-              {/* Contact options - always visible */}
+              {/* Contact options */}
               <div className="flex gap-2 flex-wrap">
                 <ContactUserDialog
                   userId={req.user_id}
@@ -366,14 +387,39 @@ export const AnalystRequestsManagement = () => {
                 </div>
               )}
 
-              {/* Delete for reviewed */}
-              {req.status !== 'pending' && (
-                <div className="flex justify-end">
-                  <Button variant="ghost" size="sm" className="text-xs text-destructive" onClick={() => handleDelete(req.id)}>
-                    {isArabic ? 'حذف' : 'Delete'}
-                  </Button>
-                </div>
-              )}
+              {/* Delete button with confirmation - all statuses */}
+              <div className="flex justify-end">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="sm" className="text-xs text-destructive gap-1.5">
+                      <Trash2 className="w-3.5 h-3.5" />
+                      {isArabic ? 'حذف' : 'Delete'}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>
+                        {isArabic ? 'تأكيد الحذف' : 'Confirm Delete'}
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {isArabic 
+                          ? `هل أنت متأكد من حذف طلب ${req.profile?.display_name || 'هذا المستخدم'}؟ لا يمكن التراجع عن هذا الإجراء.`
+                          : `Are you sure you want to delete ${req.profile?.display_name || 'this user'}'s request? This action cannot be undone.`
+                        }
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{isArabic ? 'إلغاء' : 'Cancel'}</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => handleDelete(req.id)}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        {isArabic ? 'حذف' : 'Delete'}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
             </div>
           ))}
         </div>
