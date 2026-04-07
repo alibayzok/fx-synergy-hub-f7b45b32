@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -78,13 +78,16 @@ const useAnalystStatus = () => {
         }
       } else {
         // First time request - insert new record
-        const { error } = await supabase
+        console.log('Inserting new analyst request for user:', user.id);
+        const { data: insertData, error } = await supabase
           .from('approved_analysts')
-          .insert([{ user_id: user.id, message: message || null }]);
+          .insert([{ user_id: user.id, message: message || null }])
+          .select();
         if (error) {
           console.error('Analyst request insert error:', error);
           throw error;
         }
+        console.log('Insert result:', insertData);
       }
     },
     onSuccess: () => {
@@ -96,16 +99,25 @@ const useAnalystStatus = () => {
 };
 
 // ── Request Analyst Dialog ───────────────────────────────────────────────
-const RequestAnalystDialog = ({ isPending, isRejected, onSubmit, isSubmitting }: {
+const RequestAnalystDialog = ({ isPending, isRejected, onSubmit, isSubmitting, isSuccess }: {
   isPending: boolean;
   isRejected: boolean;
   onSubmit: (message: string) => void;
   isSubmitting: boolean;
+  isSuccess?: boolean;
 }) => {
   const { i18n } = useTranslation();
   const isArabic = i18n.language === 'ar';
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState('');
+
+  // Close dialog when mutation succeeds
+  useEffect(() => {
+    if (isSuccess && open) {
+      setOpen(false);
+      setMessage('');
+    }
+  }, [isSuccess, open]);
 
   if (isPending) {
     return (
@@ -161,8 +173,6 @@ const RequestAnalystDialog = ({ isPending, isRejected, onSubmit, isSubmitting }:
           <Button
             onClick={() => {
               onSubmit(message);
-              setOpen(false);
-              setMessage('');
             }}
             disabled={isSubmitting}
             className="w-full gap-2"
@@ -948,6 +958,7 @@ export const UserAnalysesPanel = ({ onBack }: UserAnalysesPanelProps) => {
                   isRejected={isRejected}
                   onSubmit={handleSubmitRequest}
                   isSubmitting={submitRequest.isPending}
+                  isSuccess={submitRequest.isSuccess}
                 />
           )}
         </div>
