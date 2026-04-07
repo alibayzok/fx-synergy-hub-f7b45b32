@@ -34,7 +34,7 @@ export const APP_URLS = {
    * للترحيل: غيّره إلى الدومين الخاص بك
    * مثال: 'https://app.yourdomain.com'
    */
-  production: 'https://assassinfx.vercel.app',
+  production: 'https://www.fxassassin.com',
   
   /**
    * رابط المعاينة (التطوير)
