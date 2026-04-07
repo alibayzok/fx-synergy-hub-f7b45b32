@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { LogIn, Megaphone, MessageSquare, GraduationCap } from 'lucide-react';
+import { LogIn, Megaphone, MessageSquare, GraduationCap, TrendingUp } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { LegacyRoomCard } from '@/components/community/RoomCard';
 import { RoomChatPanel } from '@/components/community/RoomChatPanel';
 import { RoomModerationPanel } from '@/components/community/RoomModerationPanel';
 import { LearningRoomPanel } from '@/components/community/LearningRoomPanel';
+import { UserAnalysesPanel } from '@/components/community/UserAnalysesPanel';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -14,14 +15,15 @@ import { useToast } from '@/hooks/use-toast';
 import { useCommunityRooms, RoomWithCounts } from '@/hooks/useCommunityRooms';
 import { cn } from '@/lib/utils';
 
-type TabKey = 'channels' | 'discussions' | 'learning';
+type TabKey = 'channels' | 'discussions' | 'learning' | 'analyses';
 
-type ViewMode = 'list' | 'chat' | 'learning' | 'moderation';
+type ViewMode = 'list' | 'chat' | 'learning' | 'moderation' | 'analyses';
 
 const TABS: { key: TabKey; icon: typeof Megaphone; labelAr: string; labelEn: string }[] = [
   { key: 'channels', icon: Megaphone, labelAr: 'القنوات', labelEn: 'Channels' },
   { key: 'discussions', icon: MessageSquare, labelAr: 'النقاشات', labelEn: 'Discussions' },
   { key: 'learning', icon: GraduationCap, labelAr: 'التعليم', labelEn: 'Learning' },
+  { key: 'analyses', icon: TrendingUp, labelAr: 'التحليلات', labelEn: 'Analyses' },
 ];
 
 const CommunityPage = () => {
@@ -47,13 +49,15 @@ const CommunityPage = () => {
     channels: channels.reduce((s, r) => s + r.unread_count, 0),
     discussions: discussions.reduce((s, r) => s + r.unread_count, 0),
     learning: learningRooms.reduce((s, r) => s + r.unread_count, 0),
+    analyses: 0,
   };
 
-  const roomsMap: Record<TabKey, RoomWithCounts[]> = { channels, discussions, learning: learningRooms };
+  const roomsMap: Record<TabKey, RoomWithCounts[]> = { channels, discussions, learning: learningRooms, analyses: [] };
   const emptyMap: Record<TabKey, string> = {
     channels: isArabic ? 'لا توجد قنوات حالياً' : 'No channels yet',
     discussions: isArabic ? 'لا توجد نقاشات حالياً' : 'No discussions yet',
     learning: isArabic ? 'لا توجد غرف تعليم حالياً' : 'No learning rooms yet',
+    analyses: '',
   };
 
   const activeIndex = TABS.findIndex(t => t.key === activeTab);
@@ -104,6 +108,10 @@ const CommunityPage = () => {
         </div>
       </AppLayout>
     );
+  }
+
+  if (viewMode === 'analyses') {
+    return <AppLayout><UserAnalysesPanel onBack={handleBackToList} /></AppLayout>;
   }
 
   if (viewMode === 'learning') {
@@ -198,7 +206,10 @@ const CommunityPage = () => {
                 return (
                   <button
                     key={tab.key}
-                    onClick={() => setActiveTab(tab.key)}
+                    onClick={() => {
+                      setActiveTab(tab.key);
+                      if (tab.key === 'analyses') setViewMode('analyses');
+                    }}
                     className={cn(
                       'relative z-10 flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-semibold transition-colors duration-200',
                       isActive
