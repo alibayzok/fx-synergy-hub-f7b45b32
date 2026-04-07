@@ -70,8 +70,7 @@ const useAnalystStatus = () => {
       } else {
         const { error } = await supabase
           .from('approved_analysts')
-          .upsert([{ user_id: user.id, message: message || null, status: 'pending' }], { onConflict: 'user_id' })
-;
+          .upsert([{ user_id: user.id, message: message || null, status: 'pending' }], { onConflict: 'user_id' });
         if (error) {
           console.error('Analyst request insert error:', error);
           throw error;
