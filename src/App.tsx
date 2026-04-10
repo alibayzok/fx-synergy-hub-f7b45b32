@@ -10,6 +10,7 @@ import { AppSettingsProvider } from "./hooks/useAppSettings";
 import { SplashScreen } from "./components/layout/SplashScreen";
 import { PWAInstallBanner } from "./components/layout/PWAInstallBanner";
 import { captureReferralCode } from "./hooks/useReferrals";
+import { initCapacitorAuthListener } from "./lib/capacitor-auth";
 import HomePage from "./pages/HomePage";
 import "./i18n";
 
@@ -47,7 +48,7 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 2, // 2 minutes
-      gcTime: 1000 * 60 * 10, // 10 minutes  
+      gcTime: 1000 * 60 * 10, // 10 minutes
       retry: 1,
       refetchOnWindowFocus: false,
     },
@@ -65,6 +66,8 @@ const App = () => {
   const [isFirstVisit, setIsFirstVisit] = useState(true);
 
   useEffect(() => {
+    initCapacitorAuthListener();
+
     // Only show splash on first visit per session
     const hasVisited = sessionStorage.getItem('hasVisited');
     if (hasVisited) {
