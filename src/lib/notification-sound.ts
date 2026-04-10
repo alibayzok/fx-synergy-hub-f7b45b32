@@ -108,13 +108,22 @@ const notificationTypeToSound: Record<string, NotificationSoundType> = {
   'new_trade': 'trade',
   'trade_update': 'trade',
   
-  // Signals
+  // Signals & Analyses
   'signal': 'signal',
   'new_signal': 'signal',
+  'new_analysis': 'signal',
   
-  // Friends
+  // Friends & Follows
   'friend_request': 'friend',
   'friend_accepted': 'friend',
+  'new_follow': 'friend',
+  
+  // Articles & Channel
+  'article': 'alert',
+  'channel_post': 'alert',
+  
+  // Services
+  'service_update': 'alert',
   
   // Alerts
   'alert': 'alert',
