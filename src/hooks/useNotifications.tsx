@@ -11,6 +11,7 @@ import {
 } from '@/lib/push-notifications';
 import { registerFcmForUser, unregisterFcm } from '@/lib/fcm-manager';
 import { isFirebaseConfigured } from '@/lib/firebase-config';
+import { isNativePlatform, initCapacitorPush } from '@/lib/capacitor-push';
 
 export interface UserNotification {
   id: string;
@@ -41,17 +42,22 @@ export const useNotifications = () => {
     }
   }, []);
 
-  // Register FCM token when user logs in
+  // Register push notifications when user logs in
   useEffect(() => {
-    if (user && isFirebaseConfigured()) {
+    if (!user) return;
+
+    if (isNativePlatform()) {
+      // على التطبيق الأصلي (APK) - استخدم Capacitor Push
+      initCapacitorPush(user.id).then((success) => {
+        if (success) console.log('Capacitor push registered for user');
+        else console.warn('Capacitor push registration failed');
+      });
+    } else if (isFirebaseConfigured()) {
+      // على الويب - استخدم Firebase Web SDK
       registerFcmForUser(user.id).then((success) => {
         if (success) console.log('FCM registered for user');
       });
     }
-
-    return () => {
-      // Cleanup on logout handled separately
-    };
   }, [user]);
 
   const fetchNotifications = useCallback(async () => {
@@ -156,8 +162,6 @@ export const useNotifications = () => {
           // Types handled by dedicated icons - skip toast/sound here
           const dedicatedTypes = [
             'message',           // → Message icon
-            'friend_request',    // → Friend Requests icon
-            'friend_accepted',   // → Friend Requests icon
             'support_ticket',    // → Support Headset icon
           ];
 
