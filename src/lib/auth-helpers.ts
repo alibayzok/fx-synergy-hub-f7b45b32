@@ -1,27 +1,10 @@
 /**
- * ============================================================
  * مساعدات المصادقة - ASSASSIN FX
- * ============================================================
- * 
- * هذا الملف يوفر دوال مساعدة للمصادقة تعمل مع:
- * - Lovable Cloud (الوضع الحالي)
- * - Supabase العادي (بعد الترحيل)
- * 
- * عند الترحيل:
- * 1. غيّر USE_LOVABLE_AUTH إلى false
- * 2. أعد Google OAuth في Supabase Dashboard
- * 
- * ============================================================
+ * Safe for web — all Capacitor imports are dynamic
  */
 
 import { supabase } from '@/integrations/supabase/client';
-
-/**
- * ⚙️ إعداد التبديل بين Lovable و Supabase
- * 
- * للترحيل: غيّر هذا إلى false
- */
-const USE_LOVABLE_AUTH = false;
+import { APP_URLS } from '@/config/environment';
 
 export type OAuthProvider = 'google' | 'apple';
 
@@ -30,18 +13,47 @@ interface SignInWithOAuthOptions {
   extraParams?: Record<string, string>;
 }
 
-/**
- * تسجيل الدخول بـ OAuth (Google/Apple)
- * 
- * يعمل تلقائياً مع Lovable Cloud أو Supabase العادي
- */
+const NATIVE_REDIRECT_URI = 'com.assassinfx.app://auth/callback';
+
+function isNative(): boolean {
+  try {
+    return !!(window as any)?.Capacitor?.isNativePlatform?.();
+  } catch {
+    return false;
+  }
+}
+
 export async function signInWithOAuth(
   provider: OAuthProvider,
   options?: SignInWithOAuthOptions
 ): Promise<{ error: Error | null }> {
-  const redirectTo = options?.redirectTo || window.location.origin;
+  const redirectTo = isNative()
+    ? NATIVE_REDIRECT_URI
+    : (options?.redirectTo || window.location.origin);
 
-  // استخدام Supabase OAuth العادي
+  if (isNative()) {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo,
+        queryParams: options?.extraParams,
+        skipBrowserRedirect: true,
+      },
+    });
+
+    if (error) return { error: error as Error | null };
+
+    if (data?.url) {
+      try {
+        const { Browser } = await import('@capacitor/browser');
+        await Browser.open({ url: data.url, windowName: '_self' });
+      } catch {
+        window.open(data.url, '_blank');
+      }
+    }
+    return { error: null };
+  }
+
   const { error } = await supabase.auth.signInWithOAuth({
     provider,
     options: {
@@ -52,43 +64,10 @@ export async function signInWithOAuth(
   return { error: error as Error | null };
 }
 
-/**
- * تسجيل الدخول بـ Google
- * 
- * اختصار لـ signInWithOAuth('google', ...)
- */
-export async function signInWithGoogle(
-  options?: SignInWithOAuthOptions
-): Promise<{ error: Error | null }> {
+export async function signInWithGoogle(options?: SignInWithOAuthOptions): Promise<{ error: Error | null }> {
   return signInWithOAuth('google', options);
 }
 
-/**
- * تسجيل الدخول بـ Apple
- * 
- * اختصار لـ signInWithOAuth('apple', ...)
- */
-export async function signInWithApple(
-  options?: SignInWithOAuthOptions
-): Promise<{ error: Error | null }> {
+export async function signInWithApple(options?: SignInWithOAuthOptions): Promise<{ error: Error | null }> {
   return signInWithOAuth('apple', options);
 }
-
-/**
- * ============================================================
- * تعليمات الترحيل لـ Google OAuth
- * ============================================================
- * 
- * 1. أنشئ مشروع في Google Cloud Console
- * 2. فعّل Google+ API
- * 3. أنشئ OAuth 2.0 credentials
- * 4. أضف Authorized redirect URIs:
- *    - https://YOUR_PROJECT.supabase.co/auth/v1/callback
- * 5. انسخ Client ID و Client Secret
- * 6. في Supabase Dashboard:
- *    - Settings → Auth → Providers → Google
- *    - الصق Client ID و Client Secret
- * 7. غيّر USE_LOVABLE_AUTH إلى false في هذا الملف
- * 
- * ============================================================
- */
