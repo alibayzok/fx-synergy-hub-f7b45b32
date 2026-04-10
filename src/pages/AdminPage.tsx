@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { 
   Shield, Users, ArrowLeft, LayoutDashboard, BarChart3, ClipboardList,
   Database, FileText, AlertTriangle, GraduationCap, Settings2, Radio, Crown,
-  Sparkles, ChevronRight, ShieldCheck
+  Sparkles, ChevronRight, ShieldCheck, Bell
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
@@ -27,6 +27,7 @@ import { VerificationManagement } from '@/components/admin/VerificationManagemen
 import { ReferralManagement } from '@/components/admin/ReferralManagement';
 import { CommunityManagement } from '@/components/admin/CommunityManagement';
 import { AnalystRequestsManagement } from '@/components/admin/AnalystRequestsManagement';
+import { BroadcastNotification } from '@/components/admin/BroadcastNotification';
 
 const contentSections = [
   {
@@ -55,6 +56,7 @@ const contentSections = [
       { value: 'services-mgmt', icon: BarChart3, label: 'الخدمات', labelEn: 'Services', color: 'from-teal-500/20 to-cyan-500/20', iconColor: 'text-teal-500', borderColor: 'border-teal-500/20' },
       { value: 'cms', icon: Settings2, label: 'CMS', labelEn: 'CMS', color: 'from-slate-500/20 to-gray-500/20', iconColor: 'text-slate-400', borderColor: 'border-slate-500/20' },
       { value: 'export', icon: Database, label: 'تصدير', labelEn: 'Export', color: 'from-indigo-500/20 to-blue-500/20', iconColor: 'text-indigo-500', borderColor: 'border-indigo-500/20' },
+      { value: 'broadcast', icon: Bell, label: 'إشعار جماعي', labelEn: 'Broadcast', color: 'from-rose-500/20 to-pink-500/20', iconColor: 'text-rose-500', borderColor: 'border-rose-500/20' },
     ],
   },
 ];
@@ -74,6 +76,7 @@ const componentMap: Record<string, React.FC> = {
   referrals: ReferralManagement,
   community: CommunityManagement,
   'analyst-requests': AnalystRequestsManagement,
+  broadcast: BroadcastNotification,
 };
 
 const AdminPage = () => {
