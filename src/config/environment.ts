@@ -56,7 +56,7 @@ export const CAPACITOR_CONFIG = {
    * للترحيل: غيّره إلى معرّف خاص بك
    * مثال: 'com.yourcompany.assassinfx'
    */
-  appId: 'app.lovable.ebc9336e82be4f7fb9ee83ee20c32755',
+  appId: 'app.assassinfx.com',
   
   /**
    * اسم التطبيق الظاهر للمستخدم
