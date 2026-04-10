@@ -88,6 +88,7 @@ const HomePage = () => {
 
   const handleQuickAction = (action: string) => {
     switch (action) {
+      case 'searchUsers': navigate('/search-users'); break;
       case 'aiAssistant': navigate('/ai-chat'); break;
       case 'viewAnalyses': navigate('/analyses'); break;
       case 'viewSignals': navigate('/trades'); break;
@@ -172,35 +173,39 @@ const HomePage = () => {
         </motion.div>
       )}
 
-      <div className="px-4 py-4 space-y-6 page-transition">
+      <div className="px-4 py-4 space-y-5 page-transition">
 
         {/* Welcome Section for logged-in users */}
         {user && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-3"
+            className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/15 via-primary/5 to-transparent border border-primary/20 p-4"
           >
-            <div className="flex-1">
-              <h2 className="text-lg font-bold text-foreground">
-                {isRTL ? `أهلاً ${displayName} 👋` : `Hello ${displayName} 👋`}
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                {isRTL ? 'ما الجديد في الأسواق اليوم؟' : "What's new in the markets today?"}
-              </p>
+            <div className="absolute top-0 end-0 w-32 h-32 rounded-full blur-2xl opacity-30" style={{ background: 'radial-gradient(circle, hsl(var(--primary) / 0.4), transparent)' }} />
+            <div className="relative flex items-center gap-3">
+              <motion.div
+                animate={{ rotate: [0, 5, -5, 0] }}
+                transition={{ duration: 4, repeat: Infinity }}
+                className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary/30 to-primary/10 border border-primary/30 flex items-center justify-center shadow-lg"
+              >
+                <Sparkles className="w-5 h-5 text-primary" />
+              </motion.div>
+              <div className="flex-1">
+                <h2 className="text-base font-bold text-foreground">
+                  {isRTL ? `أهلاً ${displayName} 👋` : `Hello ${displayName} 👋`}
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {isRTL ? 'ما الجديد في الأسواق اليوم؟' : "What's new in the markets today?"}
+                </p>
+              </div>
             </div>
-            <motion.div
-              animate={{ rotate: [0, 5, -5, 0] }}
-              transition={{ duration: 4, repeat: Infinity }}
-            >
-              <Sparkles className="w-6 h-6 text-primary/60" />
-            </motion.div>
           </motion.div>
         )}
 
-        {/* Quick Actions */}
-        <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
-          <h2 className="text-sm font-semibold text-muted-foreground mb-3">{t('home.quickActions')}</h2>
+        {/* Quick Actions - Compact horizontal scroll */}
+        <motion.section initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+          <h2 className="text-xs font-semibold text-muted-foreground mb-2.5 uppercase tracking-wider">{t('home.quickActions')}</h2>
           <QuickActions isAdmin={isAdmin} onAction={handleQuickAction} />
         </motion.section>
 
