@@ -62,6 +62,16 @@ export default defineConfig(({ mode }) => ({
       },
     }),
   ].filter(Boolean),
+  build: {
+    rollupOptions: {
+      external: [
+        '@capacitor/core',
+        '@capacitor/app',
+        '@capacitor/browser',
+        '@capacitor/push-notifications',
+      ],
+    },
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
