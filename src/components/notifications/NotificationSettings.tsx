@@ -21,6 +21,7 @@ import {
   isPushNotificationsEnabled,
   setPushNotificationsEnabled
 } from '@/lib/push-notifications';
+import { isNativePlatform } from '@/lib/capacitor-push';
 import { toast } from 'sonner';
 
 interface SoundTestButton {
@@ -35,13 +36,19 @@ export const NotificationSettings = () => {
   const [volume, setVolume] = useState(0.5);
   const [pushEnabled, setPushEnabled] = useState(true);
   const [pushPermission, setPushPermission] = useState<NotificationPermission | 'unsupported'>('default');
-  const pushSupported = isPushSupported();
+  const isNative = isNativePlatform();
+  const pushSupported = isNative || isPushSupported();
 
   useEffect(() => {
     setSoundEnabled(isNotificationSoundEnabled());
     setVolume(getNotificationVolume());
     setPushEnabled(isPushNotificationsEnabled());
-    setPushPermission(getNotificationPermission());
+    if (isNative) {
+      // Native platforms use Capacitor Push - permission is handled separately
+      setPushPermission('granted');
+    } else {
+      setPushPermission(getNotificationPermission());
+    }
   }, []);
 
   const handleSoundToggle = (enabled: boolean) => {
