@@ -42,13 +42,14 @@ const ProjectDocsPage = lazy(() => import("./pages/ProjectDocsPage"));
 const InstallPage = lazy(() => import("./pages/InstallPage"));
 const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
 const CompleteProfilePage = lazy(() => import("./pages/CompleteProfilePage"));
+const SearchUsersPage = lazy(() => import("./pages/SearchUsersPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 2, // 2 minutes
-      gcTime: 1000 * 60 * 10, // 10 minutes
+      gcTime: 1000 * 60 * 10, // 10 minutes  
       retry: 1,
       refetchOnWindowFocus: false,
     },
@@ -122,6 +123,7 @@ const App = () => {
                   <Route path="/install" element={<InstallPage />} />
                   <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
                   <Route path="/complete-profile" element={<CompleteProfilePage />} />
+                  <Route path="/search-users" element={<SearchUsersPage />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
