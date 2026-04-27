@@ -3,9 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
-  Shield, Users, ArrowLeft, LayoutDashboard, BarChart3, ClipboardList,
-  Database, FileText, AlertTriangle, GraduationCap, Settings2, Radio, Crown,
-  Sparkles, ChevronRight, ShieldCheck, Bell
+  Shield, Users, ArrowLeft, BarChart3, ClipboardList,
+  Database, FileText, AlertTriangle, Settings2, Radio, Crown,
+  ChevronRight, ShieldCheck, Bell, GraduationCap
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
@@ -18,7 +18,7 @@ import { ServiceRequestsManagement } from '@/components/admin/ServiceRequestsMan
 import { DatabaseExport } from '@/components/admin/DatabaseExport';
 import { AnalysesManagement } from '@/components/admin/AnalysesManagement';
 import FlaggedContentManagement from '@/components/admin/FlaggedContentManagement';
-import { CoursesManagement } from '@/components/admin/CoursesManagement';
+
 import { CMSManagement } from '@/components/admin/CMSManagement';
 import { SignalsManagement } from '@/components/admin/SignalsManagement';
 import { ArticlesManagement } from '@/components/admin/ArticlesManagement';
@@ -28,6 +28,8 @@ import { ReferralManagement } from '@/components/admin/ReferralManagement';
 import { CommunityManagement } from '@/components/admin/CommunityManagement';
 import { AnalystRequestsManagement } from '@/components/admin/AnalystRequestsManagement';
 import { BroadcastNotification } from '@/components/admin/BroadcastNotification';
+import { AcademyManagement } from '@/components/admin/AcademyManagement';
+
 
 const contentSections = [
   {
@@ -38,7 +40,7 @@ const contentSections = [
       { value: 'analyses', icon: FileText, label: 'التحليلات', labelEn: 'Analyses', color: 'from-blue-500/20 to-cyan-500/20', iconColor: 'text-blue-500', borderColor: 'border-blue-500/20' },
       { value: 'signals', icon: Radio, label: 'الإشارات', labelEn: 'Signals', color: 'from-emerald-500/20 to-green-500/20', iconColor: 'text-emerald-500', borderColor: 'border-emerald-500/20' },
       { value: 'articles', icon: FileText, label: 'المقالات', labelEn: 'Articles', color: 'from-violet-500/20 to-purple-500/20', iconColor: 'text-violet-500', borderColor: 'border-violet-500/20' },
-      { value: 'courses', icon: GraduationCap, label: 'الكورسات', labelEn: 'Courses', color: 'from-amber-500/20 to-yellow-500/20', iconColor: 'text-amber-500', borderColor: 'border-amber-500/20' },
+      { value: 'academy', icon: GraduationCap, label: 'الأكاديمية', labelEn: 'Academy', color: 'from-amber-500/20 to-yellow-500/20', iconColor: 'text-primary', borderColor: 'border-primary/20' },
       { value: 'community', icon: Users, label: 'المجتمع', labelEn: 'Community', color: 'from-cyan-500/20 to-teal-500/20', iconColor: 'text-cyan-500', borderColor: 'border-cyan-500/20' },
       { value: 'moderation', icon: AlertTriangle, label: 'المخالفات', labelEn: 'Moderation', color: 'from-red-500/20 to-rose-500/20', iconColor: 'text-red-500', borderColor: 'border-red-500/20' },
       { value: 'analyst-requests', icon: ShieldCheck, label: 'طلبات المحللين', labelEn: 'Analyst Requests', color: 'from-emerald-500/20 to-green-500/20', iconColor: 'text-emerald-500', borderColor: 'border-emerald-500/20' },
@@ -67,9 +69,10 @@ const componentMap: Record<string, React.FC> = {
   moderation: FlaggedContentManagement,
   analyses: AnalysesManagement,
   signals: SignalsManagement,
-  courses: CoursesManagement,
+  
   users: UserManagement,
   articles: ArticlesManagement,
+  academy: AcademyManagement,
   cms: CMSManagement,
   export: DatabaseExport,
   verification: VerificationManagement,
@@ -77,6 +80,7 @@ const componentMap: Record<string, React.FC> = {
   community: CommunityManagement,
   'analyst-requests': AnalystRequestsManagement,
   broadcast: BroadcastNotification,
+  
 };
 
 const AdminPage = () => {
@@ -88,7 +92,7 @@ const AdminPage = () => {
 
   // Moderators can access content sections, admins can access everything
   const hasAccess = isAdmin || isModerator;
-  const moderatorOnlyItems = ['analyses', 'signals', 'articles', 'courses', 'moderation', 'verification', 'users'];
+  const moderatorOnlyItems = ['analyses', 'signals', 'articles', 'academy', 'courses', 'moderation', 'verification', 'users'];
 
   useEffect(() => {
     if (!authLoading && !hasAccess) navigate('/');
@@ -181,7 +185,7 @@ const AdminPage = () => {
               <div className="relative flex items-center justify-between">
                 <div className="space-y-1">
                   <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-primary" />
+                    <Shield className="w-5 h-5 text-primary" />
                     مرحباً بك في مركز التحكم
                   </h2>
                   <p className="text-xs text-muted-foreground">إدارة شاملة لمنصتك من مكان واحد</p>
