@@ -55,8 +55,8 @@ const extractSourceDataFromFile = async (file: File) => {
       const textContent = await page.getTextContent();
       return textContent.items.map((item: any) => item.str).join(' ');
     }));
-    const pageImages = await renderPdfPageImages(pdf);
-    return { extractedText: pages.join('\n\n'), pageImages };
+    return { extractedText: pages.join('\n\n'), pageImages: [] };
+
   }
 
   if (file.type.startsWith('text/') || /\.(txt|md)$/i.test(file.name)) {
