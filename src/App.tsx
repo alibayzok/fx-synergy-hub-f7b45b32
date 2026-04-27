@@ -30,19 +30,8 @@ const AuthPage = lazy(() => import("./pages/AuthPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
 const AnalysesPage = lazy(() => import("./pages/AnalysesPage"));
-const AIChatPage = lazy(() => import("./pages/AIChatPage"));
-const OnboardingPage = lazy(() => import("./pages/OnboardingPage"));
-const SupportPage = lazy(() => import("./pages/SupportPage"));
-const SupportDashboardPage = lazy(() => import("./pages/SupportDashboardPage"));
-const VipPage = lazy(() => import("./pages/VipPage"));
-const SubscriptionsPage = lazy(() => import("./pages/SubscriptionsPage"));
-const GamificationPage = lazy(() => import("./pages/GamificationPage"));
-const RewardsPage = lazy(() => import("./pages/RewardsPage"));
-const ProjectDocsPage = lazy(() => import("./pages/ProjectDocsPage"));
-const InstallPage = lazy(() => import("./pages/InstallPage"));
-const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
-const CompleteProfilePage = lazy(() => import("./pages/CompleteProfilePage"));
-const SearchUsersPage = lazy(() => import("./pages/SearchUsersPage"));
+const AcademyPage = lazy(() => import("./pages/AcademyPage"));
+const AcademyLessonPage = lazy(() => import("./pages/AcademyLessonPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -111,19 +100,8 @@ const App = () => {
                   <Route path="/admin" element={<AdminPage />} />
                   <Route path="/reset-password" element={<ResetPasswordPage />} />
                   <Route path="/analyses" element={<AnalysesPage />} />
-                  <Route path="/ai-chat" element={<AIChatPage />} />
-                  <Route path="/onboarding" element={<OnboardingPage />} />
-                  <Route path="/support" element={<SupportPage />} />
-                  <Route path="/support-dashboard" element={<SupportDashboardPage />} />
-                  <Route path="/vip" element={<VipPage />} />
-                  <Route path="/admin/subscriptions" element={<SubscriptionsPage />} />
-                  <Route path="/gamification" element={<GamificationPage />} />
-                  <Route path="/rewards" element={<RewardsPage />} />
-                  <Route path="/project-docs" element={<ProjectDocsPage />} />
-                  <Route path="/install" element={<InstallPage />} />
-                  <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
-                  <Route path="/complete-profile" element={<CompleteProfilePage />} />
-                  <Route path="/search-users" element={<SearchUsersPage />} />
+                  <Route path="/academy" element={<AcademyPage />} />
+                  <Route path="/academy/lesson/:lessonId" element={<AcademyLessonPage />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
