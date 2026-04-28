@@ -140,53 +140,111 @@ export const AcademyManagement = () => {
   };
 
   const processSource = useMutation({
-    mutationFn: async (file: File) => {
-      if (!user) throw new Error('لازم تكون مسجّل دخول');
-      const activeSession = await ensureFreshSession();
-      const { extractedText, pageImages } = await extractSourceDataFromFile(file);
-      if ((!extractedText || extractedText.length < 500) && pageImages.length === 0) throw new Error('ما قدرنا نستخرج نص أو صفحات مرئية من الملف. استخدم PDF واضح أو TXT/MD.');
+  mutationFn: async (file: File) => {
+    if (!user) throw new Error('لازم تكون مسجّل دخول');
 
-      const filePath = getSafeStoragePath(activeSession.user.id, file.name);
-      const { error: uploadError } = await supabase.storage.from('academy-sources').upload(filePath, file, { upsert: false });
-      if (uploadError) throw uploadError;
+    const activeSession = await ensureFreshSession();
 
-      const { data: source, error: sourceError } = await (supabase as any)
-        .from('academy_sources')
-        .insert({
-          uploaded_by: activeSession.user.id,
-          title: file.name.replace(/\.[^.]+$/, ''),
-          file_name: file.name,
-          file_path: filePath,
-          file_type: file.type || 'application/octet-stream',
-          file_size: file.size,
-          status: 'uploaded',
-        })
-        .select('*')
-        .single();
-      if (sourceError) throw sourceError;
+    const { extractedText, pageImages } = await extractSourceDataFromFile(file);
 
-      const { data, error } = await supabase.functions.invoke('process-academy-source', {
-        body: { sourceId: source.id, extractedText, pageImages },
-      });
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      return { source, sourceId: source.id, ...(data as any) };
-    },
-    onSuccess: (data) => {
-      toast({ title: 'بدأ التحليل الشامل مع الصور', description: 'المصدر انضاف للطابور، فيك تتابع حالته من قائمة المصادر بدون انتظار.' });
-      setSelectedSourceId(data.sourceId);
-      queryClient.setQueryData(['academy-sources'], (current: any) => {
-        const currentSources = Array.isArray(current) ? current : [];
-        const existing = currentSources.some((source: any) => source.id === data.sourceId);
-        const queuedSource = { ...data.source, status: 'processing', processing_notes: 'تمت إضافة المصدر لطابور التحليل الشامل مع الصور.', academy_source_jobs: [{ id: data.jobId, status: 'pending', progress: 0, error_message: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }] };
-        return existing ? currentSources.map((source: any) => source.id === data.sourceId ? { ...source, ...queuedSource } : source) : [queuedSource, ...currentSources];
-      });
-      queryClient.invalidateQueries({ queryKey: ['academy-sources'] });
-    },
-    onError: (error) => {
-      toast({ title: 'فشل معالجة المصدر', description: error instanceof Error ? error.message : 'جرب ملف تاني.', variant: 'destructive' });
-    },
-  });
+    if ((!extractedText || extractedText.length < 500) && pageImages.length === 0) {
+      throw new Error('ما قدرنا نستخرج نص أو صفحات مرئية من الملف. استخدم PDF واضح أو TXT/MD.');
+    }
+
+    const filePath = getSafeStoragePath(activeSession.user.id, file.name);
+
+    const { error: uploadError } = await supabase.storage
+      .from('academy-sources')
+      .upload(filePath, file, { upsert: false });
+
+    if (uploadError) throw uploadError;
+
+    const { data: source, error: sourceError } = await (supabase as any)
+      .from('academy_sources')
+      .insert({
+        uploaded_by: activeSession.user.id,
+        title: file.name.replace(/\.[^.]+$/, ''),
+        file_name: file.name,
+        file_path: filePath,
+        file_type: file.type || 'application/octet-stream',
+        file_size: file.size,
+        status: 'uploaded',
+      })
+      .select('*')
+      .single();
+
+    if (sourceError) throw sourceError;
+
+    const { data, error } = await supabase.functions.invoke('process-academy-source', {
+      body: {
+        sourceId: source.id,
+        extractedText,
+        pageImages,
+      },
+    });
+
+    if (error) throw error;
+    if ((data as any)?.error) throw new Error((data as any).error);
+
+    return {
+      source,
+      sourceId: source.id,
+      ...(data as any),
+    };
+  },
+
+  onSuccess: (data) => {
+    toast({
+      title: 'بدأ التحليل الشامل مع الصور',
+      description: 'المصدر انضاف للطابور، فيك تتابع حالته من قائمة المصادر بدون انتظار.',
+    });
+
+    setSelectedSourceId(data.sourceId);
+
+    queryClient.setQueryData(['academy-sources'], (current: any) => {
+      const currentSources = Array.isArray(current) ? current : [];
+
+      const existing = currentSources.some((source: any) => source.id === data.sourceId);
+
+      const now = new Date().toISOString();
+
+      const queuedSource = {
+        ...data.source,
+        status: 'processing',
+        processing_notes: 'تمت إضافة المصدر لطابور التحليل الشامل مع الصور.',
+        academy_source_jobs: [
+          {
+            id: data.jobId,
+            status: 'pending',
+            progress: 0,
+            error_message: null,
+            created_at: now,
+            updated_at: now,
+          },
+        ],
+      };
+
+      if (existing) {
+        return currentSources.map((source: any) =>
+          source.id === data.sourceId ? { ...source, ...queuedSource } : source
+        );
+      }
+
+      return [queuedSource, ...currentSources];
+    });
+
+    queryClient.invalidateQueries({ queryKey: ['academy-sources'] });
+  },
+
+  onError: (error) => {
+    toast({
+      title: 'فشل معالجة المصدر',
+      description: error instanceof Error ? error.message : 'جرب ملف تاني.',
+      variant: 'destructive',
+    });
+  },
+});
+
 
   const reprocessSource = useMutation({
     mutationFn: async (sourceId: string) => {
