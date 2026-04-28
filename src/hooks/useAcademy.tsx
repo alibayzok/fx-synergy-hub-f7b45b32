@@ -108,6 +108,15 @@ export type AcademySource = {
   updated_at: string;
 };
 
+const triggerAcademyWorker = async (jobId?: string) => {
+  const { data, error } = await supabase.functions.invoke('process-academy-source-worker', {
+    body: { jobId, internal: true },
+  });
+  if (error) throw error;
+  if ((data as any)?.error) throw new Error((data as any).error);
+  return data;
+};
+
 export type AcademyExtractedExample = {
   id: string;
   source_id: string;
@@ -346,7 +355,14 @@ export const useAcademySources = () => useQuery({
       jobsBySource.set(job.source_id, current);
     });
 
-    return sources.map(source => ({ ...source, academy_source_jobs: jobsBySource.get(source.id) || [] }));
+    const mappedSources = sources.map(source => ({ ...source, academy_source_jobs: jobsBySource.get(source.id) || [] }));
+    const staleJob = mappedSources
+      .map(source => ({ source, job: (source.academy_source_jobs || [])[0] }))
+      .find(({ source, job }) => (source.status === 'processing' || job?.status === 'pending' || job?.status === 'processing') && (job?.progress || 0) <= 10)?.job;
+
+    if (staleJob?.id) triggerAcademyWorker(staleJob.id).catch((error) => console.warn('academy worker retry failed', error));
+
+    return mappedSources;
   },
 });
 
