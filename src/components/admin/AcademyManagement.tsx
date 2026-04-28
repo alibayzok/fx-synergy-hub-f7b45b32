@@ -28,7 +28,7 @@ const getSafeStoragePath = (userId: string, fileName: string) => {
 };
 
 const renderPdfPageImages = async (pdf: any) => {
-  const pageNumbers = Array.from({ length: Math.min(pdf.numPages, 12) }, (_, index) => index + 1);
+  const pageNumbers = Array.from({ length: Math.min(pdf.numPages, 24) }, (_, index) => Math.max(1, Math.round(1 + index * Math.max(0, pdf.numPages - 1) / Math.max(1, Math.min(pdf.numPages, 24) - 1))));
   const images: string[] = [];
 
   for (const pageNumber of pageNumbers) {
@@ -56,9 +56,7 @@ const extractSourceDataFromFile = async (file: File) => {
       return textContent.items.map((item: any) => item.str).join(' ');
     }));
     const pageImages = await renderPdfPageImages(pdf);
-return { extractedText: pages.join('\n\n'), pageImages };
-
-
+    return { extractedText: pages.join('\n\n'), pageImages };
   }
 
   if (file.type.startsWith('text/') || /\.(txt|md)$/i.test(file.name)) {
@@ -158,7 +156,7 @@ export const AcademyManagement = () => {
       return { sourceId: source.id, ...(data as any) };
     },
     onSuccess: (data) => {
-      toast({ title: 'المصدر صار جاهز', description: `استخرجنا ${data.chunksCount} مقاطع و ${data.examplesCount} أمثلة.` });
+      toast({ title: 'بدأ التحليل الشامل مع الصور', description: 'المصدر انضاف للطابور، فيك تتابع حالته من قائمة المصادر بدون انتظار.' });
       setSelectedSourceId(data.sourceId);
       queryClient.invalidateQueries({ queryKey: ['academy-sources'] });
     },
@@ -177,7 +175,7 @@ export const AcademyManagement = () => {
       return { sourceId, ...(data as any) };
     },
     onSuccess: (data) => {
-      toast({ title: 'تمت إعادة التحليل', description: `استخرجنا ${data.examplesCount} أمثلة من المصدر.` });
+      toast({ title: 'بدأت إعادة التحليل', description: 'المصدر انضاف للطابور وسيتم تحديث الحالة تلقائياً بعد انتهاء التحليل.' });
       queryClient.invalidateQueries({ queryKey: ['academy-sources'] });
     },
     onError: (error) => {
@@ -215,6 +213,7 @@ export const AcademyManagement = () => {
     return { total: examples.length, approved, failed, missing: Math.max(0, examples.length - approved - failed) };
   }, [selectedExamples]);
   const draftCourses = courses.filter(course => !course.is_published);
+  const getLatestJob = (source: any) => [...(source.academy_source_jobs || [])].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))[0];
   const roadmapSteps = [
     { title: 'تنظيم الإدارة', status: 'done', detail: 'تبويبات واضحة للمصادر، الصور، البناء، والمراجعة.' },
     { title: 'مسودات قبل النشر', status: 'done', detail: 'الكورس لا يظهر للطلاب قبل فحص الجودة والنشر اليدوي.' },
@@ -429,6 +428,11 @@ export const AcademyManagement = () => {
           <div className="grid gap-3 xl:grid-cols-2">
             {sources.length === 0 ? <p className="text-sm text-muted-foreground">ما في مصادر مرفوعة بعد.</p> : sources.map((source) => (
               <div key={source.id} className="rounded-lg border border-border/50 bg-background/45 p-4">
+                {(() => {
+                  const latestJob = getLatestJob(source);
+                  const progress = latestJob?.progress ?? (source.status === 'ready' ? 100 : source.status === 'processing' ? 10 : 0);
+                  return (
+                <>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="flex items-center gap-2 truncate font-semibold"><FileText className="h-4 w-4 text-primary" />{source.title}</p>
@@ -447,7 +451,16 @@ export const AcademyManagement = () => {
                     </span>
                   </div>
                 </div>
+                {(source.status === 'processing' || latestJob?.status === 'pending' || latestJob?.status === 'processing') && (
+                  <div className="mt-3 space-y-1">
+                    <div className="h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary transition-all" style={{ width: `${Math.max(8, Math.min(100, progress))}%` }} /></div>
+                    <p className="text-xs text-muted-foreground">تحليل شامل مع الصور بالخلفية • {progress}%</p>
+                  </div>
+                )}
                 {source.error_message && <p className="mt-2 text-xs text-destructive">{source.error_message}</p>}
+                </>
+                  );
+                })()}
               </div>
             ))}
           </div>
