@@ -196,7 +196,9 @@ export const AcademyManagement = () => {
       queryClient.setQueryData(['academy-sources'], (current: any) => {
         const currentSources = Array.isArray(current) ? current : [];
         const existing = currentSources.some((source: any) => source.id === data.sourceId);
-        const queuedSource = { ...data.source, status: 'processing', processing_notes: 'تمت إضافة المصدر لطابور التحليل الشامل مع الصور.', academy_source_jobs: [{ id: data.jobId, status: 'pending', progress: 0, error_message: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }] };
+        const queuedSource = data.alreadyReady
+          ? data.source
+          : { ...data.source, status: 'processing', processing_notes: 'تمت إضافة المصدر لطابور التحليل الشامل مع الصور.', academy_source_jobs: [{ id: data.jobId, status: 'pending', progress: 0, error_message: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }] };
         return existing ? currentSources.map((source: any) => source.id === data.sourceId ? { ...source, ...queuedSource } : source) : [queuedSource, ...currentSources];
       });
       queryClient.invalidateQueries({ queryKey: ['academy-sources'] });
@@ -557,9 +559,9 @@ export const AcademyManagement = () => {
                     <Button size="sm" variant="ghost" disabled={source.status !== 'ready'} onClick={() => setSelectedSourceId(source.id)} className="h-8 gap-1 text-xs">
                       <Eye className="h-3 w-3" /> معاينة
                     </Button>
-                    <Button size="sm" variant="outline" disabled={reprocessSource.isPending || resumeSourceJob.isPending || (!source.file_type.includes('text') && !latestJob?.id)} onClick={() => latestJob?.id && source.status === 'processing' ? resumeSourceJob.mutate(latestJob.id) : reprocessSource.mutate(source.id)} className="h-8 gap-1 text-xs">
+                    <Button size="sm" variant="outline" disabled={reprocessSource.isPending || resumeSourceJob.isPending || (!source.file_type.includes('text') && source.status !== 'processing')} onClick={() => latestJob?.id && source.status === 'processing' ? resumeSourceJob.mutate(latestJob.id) : reprocessSource.mutate(source.id)} className="h-8 gap-1 text-xs">
                       {reprocessSource.isPending || resumeSourceJob.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                      {source.status === 'processing' && latestJob?.id ? 'متابعة التحليل' : source.file_type.includes('text') ? 'إعادة تحليل' : 'ارفعه من جديد للصور'}
+                      {source.status === 'processing' && latestJob?.id ? 'متابعة التحليل' : source.file_type.includes('text') ? 'إعادة تحليل' : 'احذف وارفع الملف من جديد'}
                     </Button>
                     {(source.status === 'processing' || latestJob?.status === 'pending' || latestJob?.status === 'processing') && (
                       <Button size="sm" variant="outline" disabled={cancelSourceProcessing.isPending} onClick={() => cancelSourceProcessing.mutate({ sourceId: source.id, jobId: latestJob?.id })} className="h-8 gap-1 text-xs border-destructive/35 text-destructive hover:bg-destructive/10">
