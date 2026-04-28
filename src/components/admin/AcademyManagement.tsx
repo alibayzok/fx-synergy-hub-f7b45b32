@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, ArrowDown, ArrowUp, BarChart3, BookOpen, Bot, CheckCircle2, ClipboardCheck, Database, Edit3, Eye, FileText, GraduationCap, ImagePlus, Layers3, Loader2, Search, Sparkles, Trash2, TrendingUp, Upload, Users } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as pdfjsLib from 'pdfjs-dist';
@@ -111,6 +111,16 @@ export const AcademyManagement = () => {
   const previewExamples = useMemo(() => [...selectedExamples]
     .sort((a, b) => Number(Boolean(b.visual_image_url)) - Number(Boolean(a.visual_image_url)) || (b.relevance_score || 0) - (a.relevance_score || 0))
     .slice(0, 8), [selectedExamples]);
+
+  useEffect(() => {
+    if (selectedSourceId && sources.some((source) => source.id === selectedSourceId)) return;
+
+    const readySource = sources.find((source) => source.status === 'ready' && source.examples_count > 0)
+      || sources.find((source) => source.status === 'ready');
+
+    if (readySource) setSelectedSourceId(readySource.id);
+    else if (selectedSourceId) setSelectedSourceId('');
+  }, [selectedSourceId, sources]);
 
   const generateCoursePreview = () => {
     const title = courseTitle.trim();
