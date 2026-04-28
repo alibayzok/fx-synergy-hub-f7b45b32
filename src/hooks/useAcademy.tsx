@@ -103,6 +103,14 @@ export type AcademySource = {
   chunks_count: number;
   examples_count: number;
   processed_at: string | null;
+  academy_source_jobs?: Array<{
+    id: string;
+    status: 'pending' | 'processing' | 'completed' | 'ready' | 'failed';
+    progress: number;
+    error_message: string | null;
+    created_at: string;
+    updated_at: string;
+  }> | null;
   created_at: string;
   updated_at: string;
 };
@@ -320,10 +328,11 @@ export const useAcademyCourseLessons = (schoolId?: string) => useQuery({
 
 export const useAcademySources = () => useQuery({
   queryKey: ['academy-sources'],
+  refetchInterval: 8000,
   queryFn: async () => {
     const { data, error } = await (supabase as any)
       .from('academy_sources')
-      .select('*')
+      .select('*, academy_source_jobs(id, status, progress, error_message, created_at, updated_at)')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
