@@ -103,14 +103,7 @@ export type AcademySource = {
   chunks_count: number;
   examples_count: number;
   processed_at: string | null;
-  academy_source_jobs?: Array<{
-    id: string;
-    status: 'pending' | 'processing' | 'completed' | 'ready' | 'failed';
-    progress: number;
-    error_message: string | null;
-    created_at: string;
-    updated_at: string;
-  }> | null;
+  academy_source_jobs?: Array<{ id: string; status: 'pending' | 'processing' | 'ready' | 'failed'; progress: number; error_message: string | null; created_at: string; updated_at: string }> | null;
   created_at: string;
   updated_at: string;
 };
@@ -332,11 +325,28 @@ export const useAcademySources = () => useQuery({
   queryFn: async () => {
     const { data, error } = await (supabase as any)
       .from('academy_sources')
-      .select('*, academy_source_jobs(id, status, progress, error_message, created_at, updated_at)')
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return (data || []) as AcademySource[];
+    const sources = (data || []) as AcademySource[];
+    const sourceIds = sources.map(source => source.id);
+    if (sourceIds.length === 0) return sources;
+
+    const { data: jobs } = await (supabase as any)
+      .from('academy_source_jobs')
+      .select('id, source_id, status, progress, error_message, created_at, updated_at')
+      .in('source_id', sourceIds)
+      .order('created_at', { ascending: false });
+
+    const jobsBySource = new Map<string, AcademySource['academy_source_jobs']>();
+    (jobs || []).forEach((job: any) => {
+      const current = jobsBySource.get(job.source_id) || [];
+      current.push({ id: job.id, status: job.status, progress: job.progress, error_message: job.error_message, created_at: job.created_at, updated_at: job.updated_at });
+      jobsBySource.set(job.source_id, current);
+    });
+
+    return sources.map(source => ({ ...source, academy_source_jobs: jobsBySource.get(source.id) || [] }));
   },
 });
 
