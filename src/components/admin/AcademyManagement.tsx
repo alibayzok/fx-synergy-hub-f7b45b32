@@ -143,6 +143,24 @@ export const AcademyManagement = () => {
     mutationFn: async (file: File) => {
       if (!user) throw new Error('لازم تكون مسجّل دخول');
       const activeSession = await ensureFreshSession();
+      const { data: existingSource } = await (supabase as any)
+        .from('academy_sources')
+        .select('*, academy_source_jobs(id, status, progress, error_message, created_at, updated_at)')
+        .eq('uploaded_by', activeSession.user.id)
+        .eq('file_name', file.name)
+        .eq('file_size', file.size)
+        .in('status', ['uploaded', 'processing', 'ready'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (existingSource?.status === 'ready') return { source: existingSource, sourceId: existingSource.id, reused: true, alreadyReady: true };
+      if (existingSource?.id) {
+        const latestJob = [...(existingSource.academy_source_jobs || [])].sort((a: any, b: any) => String(b.created_at).localeCompare(String(a.created_at)))[0];
+        if (latestJob?.id) await supabase.functions.invoke('process-academy-source-worker', { body: { jobId: latestJob.id, internal: true } });
+        return { source: existingSource, sourceId: existingSource.id, jobId: latestJob?.id, reused: true };
+      }
+
       const { extractedText, pageImages } = await extractSourceDataFromFile(file);
       if ((!extractedText || extractedText.length < 500) && pageImages.length === 0) throw new Error('ما قدرنا نستخرج نص أو صفحات مرئية من الملف. استخدم PDF واضح أو TXT/MD.');
 
@@ -173,7 +191,7 @@ export const AcademyManagement = () => {
       return { source, sourceId: source.id, ...(data as any) };
     },
     onSuccess: (data) => {
-      toast({ title: 'بدأ التحليل الشامل مع الصور', description: 'المصدر انضاف للطابور، فيك تتابع حالته من قائمة المصادر بدون انتظار.' });
+      toast({ title: data.alreadyReady ? 'المصدر موجود وجاهز' : data.reused ? 'المصدر موجود بالطابور' : 'بدأ التحليل الشامل مع الصور', description: data.alreadyReady ? 'ما رفعنا نسخة مكررة، فتحنا المصدر الجاهز.' : data.reused ? 'ما رفعنا نسخة مكررة، رجّعنا تشغيل التحليل الموجود.' : 'المصدر انضاف للطابور، فيك تتابع حالته من قائمة المصادر بدون انتظار.' });
       setSelectedSourceId(data.sourceId);
       queryClient.setQueryData(['academy-sources'], (current: any) => {
         const currentSources = Array.isArray(current) ? current : [];
@@ -204,6 +222,79 @@ export const AcademyManagement = () => {
     },
     onError: (error) => {
       toast({ title: 'فشلت إعادة التحليل', description: error instanceof Error ? error.message : 'ارفع المصدر من جديد ليتم تحليل الصور.', variant: 'destructive' });
+    },
+  });
+
+  const resumeSourceJob = useMutation({
+    mutationFn: async (jobId: string) => {
+      await ensureFreshSession();
+      const { data, error } = await supabase.functions.invoke('process-academy-source-worker', {
+        body: { jobId, internal: true },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      return data;
+    },
+    onSuccess: () => {
+      toast({ title: 'رجّعنا تشغيل التحليل', description: 'رح تتحدّث النسبة تلقائياً خلال لحظات.' });
+      queryClient.invalidateQueries({ queryKey: ['academy-sources'] });
+    },
+    onError: (error) => {
+      toast({ title: 'ما قدرنا نكمل التحليل', description: error instanceof Error ? error.message : 'جرب إعادة التحليل.', variant: 'destructive' });
+    },
+  });
+
+  const cancelSourceProcessing = useMutation({
+    mutationFn: async ({ sourceId, jobId }: { sourceId: string; jobId?: string }) => {
+      await ensureFreshSession();
+      if (jobId) {
+        const { error: jobError } = await (supabase as any)
+          .from('academy_source_jobs')
+          .update({ status: 'failed', progress: 100, error_message: 'تم إلغاء التحليل يدوياً', finished_at: new Date().toISOString() })
+          .eq('id', jobId);
+        if (jobError) throw jobError;
+      }
+
+      const { error: sourceError } = await (supabase as any)
+        .from('academy_sources')
+        .update({ status: 'failed', error_message: 'تم إلغاء التحليل يدوياً', processing_notes: 'أُلغي التحليل من لوحة التحكم.' })
+        .eq('id', sourceId);
+      if (sourceError) throw sourceError;
+
+      return { sourceId };
+    },
+    onSuccess: ({ sourceId }) => {
+      toast({ title: 'تم إلغاء التحليل', description: 'صار فيك تحذف المصدر أو تعيد رفعه من جديد.' });
+      queryClient.setQueryData(['academy-sources'], (current: any) => Array.isArray(current) ? current.map((source: any) => source.id === sourceId ? { ...source, status: 'failed', error_message: 'تم إلغاء التحليل يدوياً' } : source) : current);
+      queryClient.invalidateQueries({ queryKey: ['academy-sources'] });
+    },
+    onError: (error) => {
+      toast({ title: 'فشل إلغاء التحليل', description: error instanceof Error ? error.message : 'جرب مرة ثانية.', variant: 'destructive' });
+    },
+  });
+
+  const deleteAcademySource = useMutation({
+    mutationFn: async (source: { id: string; file_path?: string | null }) => {
+      await ensureFreshSession();
+
+      await (supabase as any).from('academy_source_jobs').delete().eq('source_id', source.id);
+      await (supabase as any).from('academy_extracted_examples').delete().eq('source_id', source.id);
+      await (supabase as any).from('academy_source_chunks').delete().eq('source_id', source.id);
+
+      const { error: deleteError } = await (supabase as any).from('academy_sources').delete().eq('id', source.id);
+      if (deleteError) throw deleteError;
+
+      if (source.file_path) await supabase.storage.from('academy-sources').remove([source.file_path]);
+      return source.id;
+    },
+    onSuccess: (sourceId) => {
+      toast({ title: 'تم حذف المصدر', description: 'انحذف المصدر وبيانات التحليل المرتبطة فيه.' });
+      if (selectedSourceId === sourceId) setSelectedSourceId('');
+      queryClient.setQueryData(['academy-sources'], (current: any) => Array.isArray(current) ? current.filter((source: any) => source.id !== sourceId) : current);
+      queryClient.invalidateQueries({ queryKey: ['academy-sources'] });
+    },
+    onError: (error) => {
+      toast({ title: 'فشل حذف المصدر', description: error instanceof Error ? error.message : 'تأكد من الصلاحيات وجرب مرة ثانية.', variant: 'destructive' });
     },
   });
 
@@ -466,9 +557,19 @@ export const AcademyManagement = () => {
                     <Button size="sm" variant="ghost" disabled={source.status !== 'ready'} onClick={() => setSelectedSourceId(source.id)} className="h-8 gap-1 text-xs">
                       <Eye className="h-3 w-3" /> معاينة
                     </Button>
-                    <Button size="sm" variant="outline" disabled={reprocessSource.isPending || !source.file_type.includes('text')} onClick={() => reprocessSource.mutate(source.id)} className="h-8 gap-1 text-xs">
-                      {reprocessSource.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                      {source.file_type.includes('text') ? 'إعادة تحليل' : 'ارفعه من جديد للصور'}
+                    <Button size="sm" variant="outline" disabled={reprocessSource.isPending || resumeSourceJob.isPending || (!source.file_type.includes('text') && !latestJob?.id)} onClick={() => latestJob?.id && source.status === 'processing' ? resumeSourceJob.mutate(latestJob.id) : reprocessSource.mutate(source.id)} className="h-8 gap-1 text-xs">
+                      {reprocessSource.isPending || resumeSourceJob.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                      {source.status === 'processing' && latestJob?.id ? 'متابعة التحليل' : source.file_type.includes('text') ? 'إعادة تحليل' : 'ارفعه من جديد للصور'}
+                    </Button>
+                    {(source.status === 'processing' || latestJob?.status === 'pending' || latestJob?.status === 'processing') && (
+                      <Button size="sm" variant="outline" disabled={cancelSourceProcessing.isPending} onClick={() => cancelSourceProcessing.mutate({ sourceId: source.id, jobId: latestJob?.id })} className="h-8 gap-1 text-xs border-destructive/35 text-destructive hover:bg-destructive/10">
+                        {cancelSourceProcessing.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <AlertTriangle className="h-3 w-3" />}
+                        إلغاء
+                      </Button>
+                    )}
+                    <Button size="sm" variant="ghost" disabled={deleteAcademySource.isPending} onClick={() => deleteAcademySource.mutate({ id: source.id, file_path: source.file_path })} className="h-8 gap-1 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive">
+                      {deleteAcademySource.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                      حذف
                     </Button>
                     <span className={`rounded-full px-2 py-1 text-xs ${source.status === 'ready' ? 'bg-profit/10 text-profit' : source.status === 'failed' ? 'bg-destructive/10 text-destructive' : 'bg-primary/10 text-primary'}`}>
                       {source.status === 'ready' ? <CheckCircle2 className="inline h-3 w-3" /> : source.status === 'failed' ? <AlertTriangle className="inline h-3 w-3" /> : null} {source.status}
