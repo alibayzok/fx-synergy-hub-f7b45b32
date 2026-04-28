@@ -66,6 +66,28 @@ const extractSourceDataFromFile = async (file: File) => {
   return { extractedText: '', pageImages: [] };
 };
 
+const ensureFreshSession = async () => {
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+  if (sessionError) throw sessionError;
+  if (!session) throw new Error('انتهت الجلسة، سجّل دخولك من جديد.');
+
+  const expiresAtMs = (session.expires_at ?? 0) * 1000;
+  const shouldRefresh = !expiresAtMs || expiresAtMs - Date.now() < 60_000;
+
+  if (!shouldRefresh) return session;
+
+  const { data, error } = await supabase.auth.refreshSession({
+    refresh_token: session.refresh_token,
+  });
+
+  if (error || !data.session) {
+    throw new Error('انتهت الجلسة، سجّل دخولك من جديد.');
+  }
+
+  return data.session;
+};
+
 export const AcademyManagement = () => {
   const [courseTitle, setCourseTitle] = useState('');
   const [lessonsCount, setLessonsCount] = useState(6);
@@ -126,17 +148,22 @@ export const AcademyManagement = () => {
   const processSource = useMutation({
     mutationFn: async (file: File) => {
       if (!user) throw new Error('لازم تكون مسجّل دخول');
-      const { extractedText, pageImages } = await extractSourceDataFromFile(file);
-      if ((!extractedText || extractedText.length < 500) && pageImages.length === 0) throw new Error('ما قدرنا نستخرج نص أو صفحات مرئية من الملف. استخدم PDF واضح أو TXT/MD.');
 
-      const filePath = getSafeStoragePath(user.id, file.name);
+      const activeSession = await ensureFreshSession();
+      const { extractedText, pageImages } = await extractSourceDataFromFile(file);
+
+      if ((!extractedText || extractedText.length < 500) && pageImages.length === 0) {
+        throw new Error('ما قدرنا نستخرج نص أو صفحات مرئية من الملف. استخدم PDF واضح أو TXT/MD.');
+      }
+
+      const filePath = getSafeStoragePath(activeSession.user.id, file.name);
       const { error: uploadError } = await supabase.storage.from('academy-sources').upload(filePath, file, { upsert: false });
       if (uploadError) throw uploadError;
 
       const { data: source, error: sourceError } = await (supabase as any)
         .from('academy_sources')
         .insert({
-          uploaded_by: user.id,
+          uploaded_by: activeSession.user.id,
           title: file.name.replace(/\.[^.]+$/, ''),
           file_name: file.name,
           file_path: filePath,
@@ -150,6 +177,9 @@ export const AcademyManagement = () => {
 
       const { data, error } = await supabase.functions.invoke('process-academy-source', {
         body: { sourceId: source.id, extractedText, pageImages },
+        headers: {
+          Authorization: `Bearer ${activeSession.access_token}`,
+        },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
@@ -167,14 +197,19 @@ export const AcademyManagement = () => {
 
   const reprocessSource = useMutation({
     mutationFn: async (sourceId: string) => {
+      const activeSession = await ensureFreshSession();
+
       const { data, error } = await supabase.functions.invoke('process-academy-source', {
         body: { sourceId },
+        headers: {
+          Authorization: `Bearer ${activeSession.access_token}`,
+        },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
       return { sourceId, ...(data as any) };
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       toast({ title: 'بدأت إعادة التحليل', description: 'المصدر انضاف للطابور وسيتم تحديث الحالة تلقائياً بعد انتهاء التحليل.' });
       queryClient.invalidateQueries({ queryKey: ['academy-sources'] });
     },
