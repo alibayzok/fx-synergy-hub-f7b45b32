@@ -68,7 +68,6 @@ const extractSourceDataFromFile = async (file: File) => {
 
 const ensureFreshSession = async () => {
   const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
   if (sessionError) throw sessionError;
   if (!session) throw new Error('انتهت الجلسة، سجّل دخولك من جديد.');
 
@@ -77,13 +76,8 @@ const ensureFreshSession = async () => {
 
   if (!shouldRefresh) return session;
 
-  const { data, error } = await supabase.auth.refreshSession({
-    refresh_token: session.refresh_token,
-  });
-
-  if (error || !data.session) {
-    throw new Error('انتهت الجلسة، سجّل دخولك من جديد.');
-  }
+  const { data, error } = await supabase.auth.refreshSession({ refresh_token: session.refresh_token });
+  if (error || !data.session) throw new Error('انتهت الجلسة، سجّل دخولك من جديد.');
 
   return data.session;
 };
@@ -148,13 +142,9 @@ export const AcademyManagement = () => {
   const processSource = useMutation({
     mutationFn: async (file: File) => {
       if (!user) throw new Error('لازم تكون مسجّل دخول');
-
       const activeSession = await ensureFreshSession();
       const { extractedText, pageImages } = await extractSourceDataFromFile(file);
-
-      if ((!extractedText || extractedText.length < 500) && pageImages.length === 0) {
-        throw new Error('ما قدرنا نستخرج نص أو صفحات مرئية من الملف. استخدم PDF واضح أو TXT/MD.');
-      }
+      if ((!extractedText || extractedText.length < 500) && pageImages.length === 0) throw new Error('ما قدرنا نستخرج نص أو صفحات مرئية من الملف. استخدم PDF واضح أو TXT/MD.');
 
       const filePath = getSafeStoragePath(activeSession.user.id, file.name);
       const { error: uploadError } = await supabase.storage.from('academy-sources').upload(filePath, file, { upsert: false });
@@ -171,23 +161,26 @@ export const AcademyManagement = () => {
           file_size: file.size,
           status: 'uploaded',
         })
-        .select('id')
+        .select('*')
         .single();
       if (sourceError) throw sourceError;
 
       const { data, error } = await supabase.functions.invoke('process-academy-source', {
         body: { sourceId: source.id, extractedText, pageImages },
-        headers: {
-          Authorization: `Bearer ${activeSession.access_token}`,
-        },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
-      return { sourceId: source.id, ...(data as any) };
+      return { source, sourceId: source.id, ...(data as any) };
     },
     onSuccess: (data) => {
       toast({ title: 'بدأ التحليل الشامل مع الصور', description: 'المصدر انضاف للطابور، فيك تتابع حالته من قائمة المصادر بدون انتظار.' });
       setSelectedSourceId(data.sourceId);
+      queryClient.setQueryData(['academy-sources'], (current: any) => {
+        const currentSources = Array.isArray(current) ? current : [];
+        const existing = currentSources.some((source: any) => source.id === data.sourceId);
+        const queuedSource = { ...data.source, status: 'processing', processing_notes: 'تمت إضافة المصدر لطابور التحليل الشامل مع الصور.', academy_source_jobs: [{ id: data.jobId, status: 'pending', progress: 0, error_message: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }] };
+        return existing ? currentSources.map((source: any) => source.id === data.sourceId ? { ...source, ...queuedSource } : source) : [queuedSource, ...currentSources];
+      });
       queryClient.invalidateQueries({ queryKey: ['academy-sources'] });
     },
     onError: (error) => {
@@ -197,19 +190,15 @@ export const AcademyManagement = () => {
 
   const reprocessSource = useMutation({
     mutationFn: async (sourceId: string) => {
-      const activeSession = await ensureFreshSession();
-
+      await ensureFreshSession();
       const { data, error } = await supabase.functions.invoke('process-academy-source', {
         body: { sourceId },
-        headers: {
-          Authorization: `Bearer ${activeSession.access_token}`,
-        },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
       return { sourceId, ...(data as any) };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({ title: 'بدأت إعادة التحليل', description: 'المصدر انضاف للطابور وسيتم تحديث الحالة تلقائياً بعد انتهاء التحليل.' });
       queryClient.invalidateQueries({ queryKey: ['academy-sources'] });
     },
